@@ -12,10 +12,12 @@ Original file is located at
 # NOTE: THIS NOTEBOOK ENVIRONMENT DIFFERS FROM KAGGLE'S PYTHON
 # ENVIRONMENT SO THERE MAY BE MISSING LIBRARIES USED BY YOUR
 # NOTEBOOK.
-import kagglehub
-inhlqunhphng_vaccinenlp_clean_data_path = kagglehub.dataset_download('inhlqunhphng/vaccinenlp-clean-data')
-
-print('Data source import complete.')
+try:
+    import kagglehub
+    inhlqunhphng_vaccinenlp_clean_data_path = kagglehub.dataset_download('inhlqunhphng/vaccinenlp-clean-data')
+    print('Data source import complete.')
+except:
+    print('Kagglehub not found, skipping Kaggle-specific download.')
 
 """# 💉 01. PhoBERT Multitask Training - VaccineNLP Phase 5
 Notebook này được xây dựng nhằm huấn luyện một mô hình ngôn ngữ tiếng Việt dựa trên kiến trúc Transformer, cụ thể là PhoBERT, theo hướng học đa nhiệm (Multitask Learning) trên bộ dữ liệu VaccineNLP.
@@ -92,15 +94,13 @@ import seaborn as sns
 
 
 # ==============================
-# ⚙️ CẤU HÌNH ĐƯỜNG DẪN (KAGGLE)
+# ⚙️ CẤU HÌNH ĐƯỜNG DẪN (LINH HOẠT)
 # ==============================
-BASE_PATH = "/kaggle/input/datasets/inhlqunhphng/vaccinenlp-clean-data"
+from src.common import paths
 
-DATA_PATH = os.path.join(BASE_PATH, "04_silver_labels/train_set_final.jsonl")
-BENCHMARK_SAVE_PATH = os.path.join(BASE_PATH, "03_processed/benchmark_test_set.jsonl")
-
-# 👉 Chỗ lưu model PHẢI dùng working (ghi được)
-MODEL_SAVE_DIR = "/kaggle/working/phobert-multitask-v1"
+DATA_PATH = paths.SILVER_LABELS_DIR / "train_set_final.jsonl"
+BENCHMARK_SAVE_PATH = paths.GOLD_DATA_DIR / "benchmark_test_set.jsonl"
+MODEL_SAVE_DIR = paths.MODEL_DIR / "phobert-multitask-v1"
 
 
 # ==============================

@@ -12,10 +12,12 @@ Original file is located at
 # NOTE: THIS NOTEBOOK ENVIRONMENT DIFFERS FROM KAGGLE'S PYTHON
 # ENVIRONMENT SO THERE MAY BE MISSING LIBRARIES USED BY YOUR
 # NOTEBOOK.
-import kagglehub
-inhlqunhphng_vaccinenlp_clean_data_path = kagglehub.dataset_download('inhlqunhphng/vaccinenlp-clean-data')
-
-print('Data source import complete.')
+try:
+    import kagglehub
+    inhlqunhphng_vaccinenlp_clean_data_path = kagglehub.dataset_download('inhlqunhphng/vaccinenlp-clean-data')
+    print('Data source import complete.')
+except:
+    print('Kagglehub not found, skipping Kaggle-specific download.')
 
 """# 💉 VaccineNLP · XLM-R-v1 Multitask Classifier
 ## Phát hiện Tin giả Vắc-xin & Phân tích Thái độ Cộng đồng (Tiếng Việt)
@@ -158,11 +160,13 @@ Tất cả hyperparameter được tập trung tại một cell duy nhất để
 
 # [CELL 3] CẤU HÌNH TẬP TRUNG — Chỉ sửa tại đây
 
-# ── Paths ──────────────────────────────────────────────────────────────────
+# ── Paths (Linh hoạt: Local / Kaggle) ──────────────────────────────────────
+from src.common import paths
+
 MODEL_NAME = "FacebookAI/xlm-roberta-base"
-TRAIN_PATH = "/kaggle/input/datasets/inhlqunhphng/vaccinenlp-clean-data/05_model_ready/train_v2_seg.jsonl"
-TEST_PATH  = "/kaggle/input/datasets/inhlqunhphng/vaccinenlp-clean-data/03_processed/benchmark_test_set.jsonl"
-SAVE_DIR   = "/kaggle/working/xlm-roberta-base"
+TRAIN_PATH = paths.MODEL_READY_DIR / "train_v2_seg.jsonl"
+TEST_PATH  = paths.GOLD_DATA_DIR / "benchmark_test_set.jsonl"
+SAVE_DIR   = paths.MODEL_DIR / "xlm-roberta-base"
 os.makedirs(SAVE_DIR, exist_ok=True)
 
 # ── Hyperparameters ─────────────────────────────────────────────────────────

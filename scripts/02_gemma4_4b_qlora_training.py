@@ -12,10 +12,12 @@ Original file is located at
 # NOTE: THIS NOTEBOOK ENVIRONMENT DIFFERS FROM KAGGLE'S PYTHON
 # ENVIRONMENT SO THERE MAY BE MISSING LIBRARIES USED BY YOUR
 # NOTEBOOK.
-import kagglehub
-inhlqunhphng_vaccinenlp_clean_data_path = kagglehub.dataset_download('inhlqunhphng/vaccinenlp-clean-data')
-
-print('Data source import complete.')
+try:
+    import kagglehub
+    inhlqunhphng_vaccinenlp_clean_data_path = kagglehub.dataset_download('inhlqunhphng/vaccinenlp-clean-data')
+    print('Data source import complete.')
+except:
+    print('Kagglehub not found, skipping Kaggle-specific download.')
 
 # Cài Unsloth cho Kaggle (tag "kaggle-new" đúng cho môi trường Kaggle)
 !pip install "unsloth[kaggle-new]" --upgrade --quiet
@@ -68,9 +70,11 @@ model = FastModel.get_peft_model(
 model.print_trainable_parameters()
 print("✅ Load model hoàn tất!")
 
-TRAIN_PATH      = "/kaggle/input/datasets/inhlqunhphng/vaccinenlp-clean-data/05_model_ready/train_v2_seg.jsonl"
-TEST_PATH       = "/kaggle/input/datasets/inhlqunhphng/vaccinenlp-clean-data/03_processed/benchmark_test_set.jsonl"
-MODELS_SAVE_DIR = "/kaggle/working/gemma_qlora_xai"
+from src.common import paths
+
+TRAIN_PATH      = paths.MODEL_READY_DIR / "train_v2_seg.jsonl"
+TEST_PATH       = paths.GOLD_DATA_DIR / "benchmark_test_set.jsonl"
+MODELS_SAVE_DIR = paths.MODEL_DIR / "gemma_qlora_xai"
 os.makedirs(MODELS_SAVE_DIR, exist_ok=True)
 
 for path in [TRAIN_PATH, TEST_PATH]:

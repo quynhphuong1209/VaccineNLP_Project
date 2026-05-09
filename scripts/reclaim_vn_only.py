@@ -10,8 +10,8 @@ class VNDataReclaimer:
     """Lọc dữ liệu để chỉ giữ lại nội dung tiếng Việt"""
     
     def __init__(self):
-        self.input_file = paths.DATA_DIR / "02_processed" / "corpus_1856_unlabeled.json"
-        self.output_file = paths.DATA_DIR / "03_processed" / "reclaimed_master_pool_vn_clean.json"
+        self.input_file = paths.PROCESSED_DATA_DIR / "corpus_1856_unlabeled.json"
+        self.output_file = paths.GOLD_DATA_DIR / "reclaimed_master_pool_vn_clean.json"
 
     def is_vietnamese(self, text):
         if not text or len(text) < 10:

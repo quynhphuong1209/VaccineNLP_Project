@@ -12,10 +12,12 @@ Original file is located at
 # NOTE: THIS NOTEBOOK ENVIRONMENT DIFFERS FROM KAGGLE'S PYTHON
 # ENVIRONMENT SO THERE MAY BE MISSING LIBRARIES USED BY YOUR
 # NOTEBOOK.
-import kagglehub
-inhlqunhphng_vaccinenlp_clean_data_path = kagglehub.dataset_download('inhlqunhphng/vaccinenlp-clean-data')
-
-print('Data source import complete.')
+try:
+    import kagglehub
+    inhlqunhphng_vaccinenlp_clean_data_path = kagglehub.dataset_download('inhlqunhphng/vaccinenlp-clean-data')
+    print('Data source import complete.')
+except:
+    print('Kagglehub not found, skipping Kaggle-specific download.')
 
 """# 03 — Gemma-4 XAI · Inference & Evaluation (V14 - Chain-of-Thought / XAI)"""
 
@@ -41,11 +43,13 @@ try:
     if VaccineNLP_TOKEN: login(token=VaccineNLP_TOKEN)
 except: pass
 
+# ── Paths (Linh hoạt: Local / Kaggle) ──────────────────────────────────────
+from src.common import paths
+
 HF_MODEL_NAME = 'quynhphuong1209/gemma-4-E4B-unsloth-vaccine-xai'
-found = glob.glob('/kaggle/input/**/benchmark_test_set.jsonl', recursive=True)
-TEST_PATH   = found[0] if found else '/kaggle/input/vaccinenlp-clean-data/03_processed/benchmark_test_set.jsonl'
-# [CHANGE 3] Đổi tên file output sang v14_XAI để tránh ghi đè dữ liệu v13
-TEMP_FILE   = '/kaggle/working/gemma_inference_progress_v14_XAI.jsonl'
+TEST_PATH     = paths.GOLD_DATA_DIR / 'benchmark_test_set.jsonl'
+TEMP_FILE     = paths.MODEL_DIR / 'gemma_inference_progress_v14_XAI.jsonl'
+
 print(f'Test data: {TEST_PATH}')
 print(f'Output file: {TEMP_FILE}')
 

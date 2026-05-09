@@ -12,10 +12,12 @@ Original file is located at
 # NOTE: THIS NOTEBOOK ENVIRONMENT DIFFERS FROM KAGGLE'S PYTHON
 # ENVIRONMENT SO THERE MAY BE MISSING LIBRARIES USED BY YOUR
 # NOTEBOOK.
-import kagglehub
-inhlqunhphng_vaccinenlp_clean_data_path = kagglehub.dataset_download('inhlqunhphng/vaccinenlp-clean-data')
-
-print('Data source import complete.')
+try:
+    import kagglehub
+    inhlqunhphng_vaccinenlp_clean_data_path = kagglehub.dataset_download('inhlqunhphng/vaccinenlp-clean-data')
+    print('Data source import complete.')
+except:
+    print('Kagglehub not found, skipping Kaggle-specific download.')
 
 import subprocess, sys
 
@@ -50,9 +52,12 @@ try:
 except Exception as e:
     print(f"⚠️ Không tìm thấy VaccineNLP: {e}")
 
-TRAIN_PATH      = "/kaggle/input/datasets/inhlqunhphng/vaccinenlp-clean-data/04_silver_labels/train_set_final.jsonl"
-TEST_PATH       = "/kaggle/input/datasets/inhlqunhphng/vaccinenlp-clean-data/03_processed/benchmark_test_set.jsonl"
-MODELS_SAVE_DIR = "/kaggle/working/gemma_qlora_xai"
+# ── Paths (Linh hoạt: Local / Kaggle) ──────────────────────────────────────
+from src.common import paths
+
+TRAIN_PATH      = paths.SILVER_LABELS_DIR / "train_set_final.jsonl"
+TEST_PATH       = paths.GOLD_DATA_DIR / "benchmark_test_set.jsonl"
+MODELS_SAVE_DIR = paths.MODEL_DIR / "gemma_qlora_xai"
 os.makedirs(MODELS_SAVE_DIR, exist_ok=True)
 
 for path in [TRAIN_PATH, TEST_PATH]:
