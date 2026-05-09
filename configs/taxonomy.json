@@ -1,0 +1,15 @@
+{
+  "project_name": "VaccineNLP",
+  "version": "1.0",
+  "categories": {
+    "adverse_effects": ["tác dụng phụ", "đau", "sốt", "biến chứng"],
+    "efficacy": ["hiệu quả", "bảo vệ", "kháng thể"],
+    "misinformation": ["tin giả", "lừa đảo", "không có thật"],
+    "policy": ["chính sách", "quy định", "bắt buộc"]
+  },
+  "labels": {
+    "misinfo": [0, 1],
+    "stance": [0, 1, 2],
+    "sentiment": [0, 1, 2]
+  }
+}

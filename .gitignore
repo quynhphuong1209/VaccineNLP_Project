@@ -1,0 +1,53 @@
+# ==========================================
+# VaccineNLP Project .gitignore (LFS Enabled)
+# ==========================================
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+ENV/
+.env
+
+# --- Jupyter Notebook ---
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+
+# --- Kaggle & APIs ---
+.kaggle/
+.kaggle-outputs/
+
+# --- OS & IDE ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# --- LFS Note ---
+# Large files (*.bin, *.pt, etc.) are NOT ignored.
+# They are tracked by Git LFS via .gitattributes.
+
+# --- Specific Ignores ---
+# You can still ignore temporary logs or very specific folders
+experiments/*/logs/
+datasets/temp/*
+!datasets/temp/README.md
+
+# Allow all code and docs
+!.gitignore
+!.gitattributes
+!README.md
+!ARCHITECTURE.md
+!FOLDER_STRUCTURE.md
+!DOCUMENTATION_INDEX.md
+!requirements.txt
+!*.json
+!*.md
+!*.py
+!*.ipynb
+!*.txt
+!*.sh
+!*.ps1

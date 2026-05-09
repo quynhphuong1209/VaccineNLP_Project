@@ -1,0 +1,47 @@
+{
+  "model": "xlmr-base",
+  "timestamp": "2026-05-08T17:58:39.066162",
+  "val_loss_best": 0.6172,
+  "training_seconds": 853,
+  "misinfo": {
+    "macro_f1": 0.6789,
+    "per_class": [
+      0.0,
+      0.4561,
+      0.9016
+    ],
+    "support": [
+      0,
+      28,
+      158
+    ]
+  },
+  "stance": {
+    "macro_f1": 0.6123,
+    "per_class": [
+      0.5812,
+      0.5545,
+      0.7013,
+      0.0
+    ],
+    "support": [
+      54,
+      48,
+      84,
+      0
+    ]
+  },
+  "sentiment": {
+    "macro_f1": 0.7046,
+    "per_class": [
+      0.7368,
+      0.7534,
+      0.6237
+    ],
+    "support": [
+      71,
+      75,
+      40
+    ]
+  }
+}

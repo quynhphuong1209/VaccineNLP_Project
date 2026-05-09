@@ -1,0 +1,21 @@
+{
+  "id": "inhlqunhphng/02-gemma4-4b-qlora-training",
+  "id_no": 117560258,
+  "title": "02_gemma4_4b_qlora_training",
+  "code_file": "01-phobert-multitask-training.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": false,
+  "enable_gpu": true,
+  "enable_tpu": false,
+  "enable_internet": true,
+  "keywords": [
+    "gpu"
+  ],
+  "dataset_sources": [
+    "inhlqunhphng/vaccinenlp-clean-data"
+  ],
+  "kernel_sources": [],
+  "competition_sources": [],
+  "model_sources": []
+}
