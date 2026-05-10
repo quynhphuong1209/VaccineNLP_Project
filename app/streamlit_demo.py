@@ -29,13 +29,13 @@ XAI_CACHE_PATH = APP_DIR / "xai_cache.json"
 MODEL_CONFIGS = {
     "PhoBERT-v2": {
         "repo_id": "vinai/phobert-base-v2",
-        "path": PROJECT_ROOT / "experiments" / "models" / "phobert_multitask_v2" / "best_model.pt",
+        "path": PROJECT_ROOT / "experiments" / "models" / "phobert-multitask-v2" / "pytorch_model.bin",
         "type": "phobert"
     },
-    "XLM-R-v1": {
-        "repo_id": "xlm-roberta-base",
-        "path": PROJECT_ROOT / "experiments" / "models" / "xlmr_multitask_v1" / "best_model.pt",
-        "type": "xlmr"
+    "PhoBERT-v1": {
+        "repo_id": "vinai/phobert-base",
+        "path": PROJECT_ROOT / "experiments" / "models" / "phobert-v1" / "phobert-multitask-v1" / "pytorch_model.bin",
+        "type": "phobert"
     }
 }
 

@@ -40,3 +40,5 @@ huggingface_hub
 flask
 fastapi
 uvicorn
+streamlit
+plotly
