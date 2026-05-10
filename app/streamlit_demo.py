@@ -9,69 +9,143 @@ Run:  streamlit run app/streamlit_demo.py
 
 import streamlit as st
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 import json
 import time
 import os
 import sys
 from pathlib import Path
-
-# Thêm thư mục gốc vào sys.path để nhận diện 'src'
-root_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-if root_path not in sys.path:
-    sys.path.insert(0, root_path)
-
-from src.common import paths
-from src.modeling.phobert_multitask_trainer import VaccineMultitaskModel
-from src.modeling.inference import VaccineInferenceAPI
+from transformers import AutoModel, AutoConfig, AutoTokenizer
+from underthesea import word_tokenize
 
 # ─────────────────────────────────────────────────────────────
-# CONFIGS
+# PATHS & CONFIGS
 # ─────────────────────────────────────────────────────────────
-XAI_CACHE_PATH = paths.APP_DIR / "xai_cache.json"
+APP_DIR = Path(__file__).parent
+PROJECT_ROOT = APP_DIR.parent
+XAI_CACHE_PATH = APP_DIR / "xai_cache.json"
 
-# Label Taxonomy (mapping match với taxonomy trong inference.py)
+MODEL_CONFIGS = {
+    "PhoBERT-v2": {
+        "repo_id": "vinai/phobert-base-v2",
+        "path": PROJECT_ROOT / "experiments" / "models" / "phobert_multitask_v2" / "best_model.pt",
+        "type": "phobert"
+    },
+    "XLM-R-v1": {
+        "repo_id": "xlm-roberta-base",
+        "path": PROJECT_ROOT / "experiments" / "models" / "xlmr_multitask_v1" / "best_model.pt",
+        "type": "xlmr"
+    }
+}
+
+# ─────────────────────────────────────────────────────────────
+# LABEL TAXONOMY (matches trained checkpoint)
+# ─────────────────────────────────────────────────────────────
 LABEL_MAPS = {
-    "misinfo":   {1: "Tin giả", 2: "Chính xác", 0: "Không liên quan"},
-    "stance":    {1: "Ủng hộ", 2: "Phản đối", 0: "Trung lập", 3: "Không rõ"},
-    "sentiment": {2: "Tiêu cực", 0: "Trung tính", 1: "Tích cực"}
+    "misinfo": {0: "Không phải tin giả", 1: "Tin giả", 2: "Ranh giới"},
+    "stance":  {0: "Ủng hộ", 1: "Phản đối", 2: "Trung lập"},
+    "sentiment": {0: "Tích cực", 1: "Tiêu cực", 2: "Trung lập"},
 }
 
 LABEL_COLORS = {
-    "misinfo":   {1: "#e8504a", 2: "#3db882", 0: "#d48f35"},
-    "stance":    {1: "#3db882", 2: "#e8504a", 0: "#4a9eed", 3: "#7a808c"},
-    "sentiment": {2: "#e8504a", 0: "#4a9eed", 1: "#3db882"},
+    "misinfo": {0: "#3db882", 1: "#e8504a", 2: "#d48f35"},
+    "stance":  {0: "#3db882", 1: "#e8504a", 2: "#4a9eed"},
+    "sentiment": {0: "#3db882", 1: "#e8504a", 2: "#4a9eed"},
 }
 
 LABEL_ICONS = {
-    "misinfo":   {1: "🚨", 2: "✅", 0: "⚠️"},
-    "stance":    {1: "👍", 2: "👎", 0: "🤝", 3: "❓"},
-    "sentiment": {2: "😠", 0: "😐", 1: "😊"},
+    "misinfo": {0: "✅", 1: "🚨", 2: "⚠️"},
+    "stance":  {0: "👍", 1: "👎", 2: "🤝"},
+    "sentiment": {0: "😊", 1: "😠", 2: "😐"},
 }
 
-# Sample texts for Demo
+# ─────────────────────────────────────────────────────────────
+# SAMPLE TEXTS
+# ─────────────────────────────────────────────────────────────
 SAMPLE_TEXTS = {
     "🚨 Tin giả - Chống vaccine cực đoan": (
         "Ko tiêm mũi nào hết. Ko biết bạn thuộc thế hệ nào, chứ bạn nhìn xem thế hệ 8x "
         "trở về trước ko có ai tiêm bất cứ mũi gì vẫn khoẻ mạnh đó thôi. Cha mẹ thời nay "
-        "bị doạ cho sợ hãi, đem con đi tiêm vì bị bóng ma sợ hãi nó đè."
+        "bị doạ cho sợ hãi, đem con đi tiêm vì bị bóng ma sợ hãi nó đè, chứ thực chất chả "
+        "có tác dụng gì còn gây hại cho cơ thể nữa. Bao giờ bạn hết sợ hãi thì tự khắc bạn "
+        "sẽ hết tiêm. Còn sợ là còn tiêm."
     ),
     "💬 Từ lóng MXH - Tin giả nguy hiểm": (
-        "K có vacxin thì hệ miễn dịch khỏe sẽ rất ít khi bị ốm bị bệnh. "
-        "Nhưng tiêm vắc xin thì là tiêm thuốc độc vào người. Càng tiêm nhiều càng bệnh nhiều."
+        "K có vacxin thì hệ miễn dịch khỏe sẽ rất ít khi bị ốm bị bệnh \n"
+        "Nhưng tiêm vắc xin thì là tiêm thuốc độc vào người \n\n"
+        "Càng tiêm nhiều càng bệnh nhiều \n\n"
+        "Bạn xem thời xưa có ai phải tiêm đâu sao ai cũng khỏe mạnh\n\n"
+        "Muốn thải độc vx , kim loại nặng thì nên cho uống nc lá mùi đun lên \n\n"
+        "Muốn hạ sốt ( sốt nóng ) cho con uống nc chanh ấm có đường \n"
+        "Lấy chanh xoa toàn thân"
     ),
     "✅ Tin chính xác - Chia sẻ tích cực": (
-        "Mọi người đã tiêm vaccine hết chưa nhỉ? Đừng quên like, share và subscribe channel của mình nhé💓"
+        "TRẢI NGHIỆM TIÊM VACCINE MODERNA | Kim's here daily vlog #covid19 #vaccine #moderna. "
+        "Mọi người đã tiêm vaccine hết chưa nhỉ?\nNhiều lúc mình cũng hơi ức chế vì khu nhà "
+        "mình nằm trong vùng đỏ ấy vì vẫn phải giãn cách theo chỉ thị 16, nhưng có thể vì "
+        "thế mà tốc độ tiêm của phường được đẩy lên chăng?\nMọi người giữ gìn sức khoẻ nhé! "
+        "Mong là Hà Nội sẽ được trở lại trạng thái bình thường mới sớm nè😇\n"
+        "Đừng quên like, share và subscribe channel của mình nhé💓\n\n"
+        "Link nhạc:\n[No copyright] 1 Hour Relaxing Acoustic Guitar Music Collection: "
+        "https://youtu.be/GgGIHkbXh5w\nMii Channel Music: "
+        "https://www.youtube.com/watch?v=E9s1ltPGQOo\nSad meme music(no copyright material): "
+        "https://youtu.be/0OSIEEM-FzI\nPiano Việt Nam sẽ chiến thắng | Sáng tác: Nguyễn Hải "
+        "Phong: https://www.youtube.com/watch?v=kv6XnfuPyII\n --------\n\nĐọc blog mình viết "
+        "tại: https://kimisgonnabeanadult.blogspot.com/"
     ),
 }
 
 # ─────────────────────────────────────────────────────────────
-# LOADERS
+# MODEL DEFINITION
+# ─────────────────────────────────────────────────────────────
+class VaccineMultitaskModel(nn.Module):
+    """Multitask model with shared PhoBERT encoder and task-specific heads."""
+
+    def __init__(self, model_name="vinai/phobert-base-v2",
+                 num_misinfo=3, num_stance=3, num_sentiment=3):
+        super(VaccineMultitaskModel, self).__init__()
+        self.config = AutoConfig.from_pretrained(model_name)
+        self.encoder = AutoModel.from_pretrained(model_name)
+
+        hidden_size = self.config.hidden_size
+        self.head_misinfo = nn.Linear(hidden_size, num_misinfo)
+        self.head_stance = nn.Linear(hidden_size, num_stance)
+        self.head_sentiment = nn.Linear(hidden_size, num_sentiment)
+        self.dropout = nn.Dropout(0.1)
+
+    def forward(self, input_ids, attention_mask):
+        outputs = self.encoder(input_ids=input_ids, attention_mask=attention_mask)
+        if hasattr(outputs, "pooler_output") and outputs.pooler_output is not None:
+            pooled_output = outputs.pooler_output
+        else:
+            pooled_output = outputs.last_hidden_state[:, 0, :]
+            
+        pooled_output = self.dropout(pooled_output)
+        return (
+            self.head_misinfo(pooled_output),
+            self.head_stance(pooled_output),
+            self.head_sentiment(pooled_output),
+        )
+
+# ─────────────────────────────────────────────────────────────
+# CACHED RESOURCE LOADERS
 # ─────────────────────────────────────────────────────────────
 @st.cache_resource
-def load_inference_api():
-    """Khởi tạo API dự đoán (cached)"""
-    return VaccineInferenceAPI(model_version="phobert-multitask-v2")
+def load_model(model_key="PhoBERT-v2"):
+    """Load selected multitask model + tokenizer (cached)."""
+    cfg = MODEL_CONFIGS[model_key]
+    model = VaccineMultitaskModel(model_name=cfg["repo_id"])
+    checkpoint_loaded = False
+    
+    if cfg["path"].exists():
+        state = torch.load(str(cfg["path"]), map_location="cpu", weights_only=False)
+        model.load_state_dict(state)
+        checkpoint_loaded = True
+        
+    model.eval()
+    tokenizer = AutoTokenizer.from_pretrained(cfg["repo_id"])
+    return model, tokenizer, checkpoint_loaded
 
 @st.cache_data
 def load_xai_cache():
@@ -82,15 +156,38 @@ def load_xai_cache():
     return {}
 
 # ─────────────────────────────────────────────────────────────
-# UI HELPER COMPONENTS
+# INFERENCE & XAI FUNCTIONS
+# ─────────────────────────────────────────────────────────────
+def predict(text: str, model, tokenizer) -> dict:
+    """Run multitask inference with word segmentation + softmax."""
+    segmented = word_tokenize(text, format="text")
+    enc = tokenizer(segmented, truncation=True, max_length=256, return_tensors="pt", padding=True)
+
+    with torch.no_grad():
+        logits_m, logits_st, logits_se = model(enc["input_ids"], enc["attention_mask"])
+
+    probs_m = F.softmax(logits_m, dim=1)[0].tolist()
+    probs_st = F.softmax(logits_st, dim=1)[0].tolist()
+    probs_se = F.softmax(logits_se, dim=1)[0].tolist()
+
+    return {
+        "misinfo":   {"pred": int(probs_m.index(max(probs_m))),   "conf": probs_m},
+        "stance":    {"pred": int(probs_st.index(max(probs_st))), "conf": probs_st},
+        "sentiment": {"pred": int(probs_se.index(max(probs_se))), "conf": probs_se},
+    }
+
+def find_xai_reasoning(text: str, cache: dict) -> str | None:
+    return cache.get(text)
+
+# ─────────────────────────────────────────────────────────────
+# UI COMPONENTS (Premium Style)
 # ─────────────────────────────────────────────────────────────
 def hien_thi_footer_chung():
-    """Hiển thị chân trang (footer) chuyên nghiệp tương tự Rehab-AI-Monitor"""
+    """Hiển thị chân trang chuyên nghiệp"""
     footer_bg = "linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%)"
     footer_text = "#ccc"
     border_color = "#007bff"
     title_color = "#007bff"
-    label_color = "#eee"
     school_name_color = "#fff"
 
     footer_html = f"""
@@ -112,24 +209,15 @@ def hien_thi_footer_chung():
             margin: 0 auto;
             gap: 40px;
         }}
-        .footer-col {{
-            flex: 1;
-            padding: 0 20px;
-        }}
+        .footer-col {{ flex: 1; padding: 0 20px; }}
         .footer-title {{
             color: {title_color};
             font-weight: bold;
             margin-bottom: 20px;
             font-size: 1.2rem;
             text-transform: uppercase;
-            font-family: 'Times New Roman', Times, serif !important;
         }}
-        .info-row {{
-            margin-bottom: 10px;
-            font-size: 1rem;
-            line-height: 1.4;
-            font-family: 'Times New Roman', Times, serif !important;
-        }}
+        .info-row {{ margin-bottom: 10px; font-size: 1rem; line-height: 1.4; }}
         .footer-bottom {{
             padding-top: 20px;
             margin-top: 30px;
@@ -138,12 +226,7 @@ def hien_thi_footer_chung():
             color: #777;
             text-align: center;
         }}
-        .school-name {{
-            font-weight: bold; 
-            color: {school_name_color}; 
-            font-size: 1.1rem;
-            margin-bottom: 5px;
-        }}
+        .school-name {{ font-weight: bold; color: {school_name_color}; font-size: 1.1rem; margin-bottom: 5px; }}
     </style>
     <div class="main-footer">
         <div class="footer-container">
@@ -160,8 +243,8 @@ def hien_thi_footer_chung():
             </div>
             <div class="footer-col">
                 <div class="footer-title">🏫 ĐƠN VỊ CÔNG TÁC</div>
-                <div class="info-row">Khoa Khoa học dữ liệu Y sinh</div>
                 <div class="info-row">Trường Đại học Y tế Công cộng</div>
+                <div class="info-row">MSSV: 2211090016</div>
             </div>
         </div>
         <div class="footer-bottom">
@@ -170,11 +253,15 @@ def hien_thi_footer_chung():
     </div>
     """
     st.markdown(footer_html, unsafe_allow_html=True)
-def render_result_card(task_name: str, task_key: str, label_name: str, confidence: float):
+
+def render_result_card(task_name: str, task_key: str, result: dict):
     """Render a styled result card for one task with premium aesthetics."""
-    pred_id = next((k for k, v in LABEL_MAPS[task_key].items() if v == label_name), 0)
-    color = LABEL_COLORS[task_key].get(pred_id, "#7a808c")
-    icon = LABEL_ICONS[task_key].get(pred_id, "ℹ️")
+    pred_id = result["pred"]
+    conf_list = result["conf"]
+    label = LABEL_MAPS[task_key][pred_id]
+    color = LABEL_COLORS[task_key][pred_id]
+    icon = LABEL_ICONS[task_key][pred_id]
+    confidence = max(conf_list) * 100
 
     st.markdown(f"""
     <div style="
@@ -184,45 +271,68 @@ def render_result_card(task_name: str, task_key: str, label_name: str, confidenc
         padding: 25px;
         text-align: center;
         box-shadow: 0 10px 20px rgba(0,0,0,0.3);
-        transition: transform 0.3s ease;
         font-family: 'Times New Roman', Times, serif !important;
     ">
         <div style="font-size: 40px; margin-bottom: 12px;">{icon}</div>
         <div style="font-size: 0.85rem; color: #888; text-transform: uppercase;
                     letter-spacing: 0.15em; margin-bottom: 8px;">{task_name}</div>
         <div style="font-size: 1.6rem; font-weight: 700; color: {color};
-                    margin-bottom: 10px; font-family: 'Times New Roman', Times, serif !important;">{label_name}</div>
+                    margin-bottom: 10px;">{label}</div>
         <div style="font-size: 1rem; color: #a0a5b0;">
-            Độ tin cậy: <strong style="color: {color};">{confidence*100:.1f}%</strong>
+            Độ tin cậy: <strong style="color: {color};">{confidence:.1f}%</strong>
         </div>
     </div>
     """, unsafe_allow_html=True)
+
+    with st.expander(f"📊 Chi tiết {task_name}", expanded=False):
+        for idx, prob in enumerate(conf_list):
+            class_label = LABEL_MAPS[task_key][idx]
+            class_color = LABEL_COLORS[task_key][idx]
+            pct = prob * 100
+            st.markdown(f"""
+            <div style="margin-bottom: 6px;">
+                <div style="display: flex; justify-content: space-between; font-size: 12px; color: #a0a5b0;">
+                    <span>{class_label}</span>
+                    <span style="color: {class_color};">{pct:.1f}%</span>
+                </div>
+                <div style="background: #1a1e25; border-radius: 4px; height: 6px;">
+                    <div style="background: {class_color}; width: {pct}%; height: 6px; border-radius: 4px;"></div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+def render_benchmark_tab():
+    import pandas as pd
+    import plotly.graph_objects as go
+    st.markdown("### 📊 Kết quả Benchmark (Gold Test Set)")
+    data = [
+        {"Model": "PhoBERT-v2", "Misinfo": 0.4547, "Stance": 0.6608, "Sentiment": 0.7325},
+        {"Model": "XLM-R-v1",   "Misinfo": 0.4572, "Stance": 0.6247, "Sentiment": 0.6918},
+        {"Model": "Gemma-4-4B", "Misinfo": 0.4400, "Stance": 0.6200, "Sentiment": 0.6600},
+    ]
+    df = pd.DataFrame(data)
+    st.table(df)
+
+    fig = go.Figure()
+    tasks = ["Misinfo", "Stance", "Sentiment"]
+    colors = ["#3db882", "#4a9eed", "#e8504a"]
+    for i, task in enumerate(tasks):
+        fig.add_trace(go.Bar(x=df["Model"], y=df[task], name=task, marker_color=colors[i]))
+    fig.update_layout(barmode='group', paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font_color="#e2e4e9")
+    st.plotly_chart(fig, use_container_width=True)
 
 # ─────────────────────────────────────────────────────────────
 # MAIN APP
 # ─────────────────────────────────────────────────────────────
 def main():
-    st.set_page_config(
-        page_title="VaccineNLP · XAI Dashboard",
-        page_icon="🔬",
-        layout="wide",
-    )
+    st.set_page_config(page_title="VaccineNLP · XAI Dashboard", page_icon="🔬", layout="wide")
 
-    # ── Custom CSS (Match Rehab AI Monitor) ──
     st.markdown("""
     <style>
-        /* === GLOBAL TYPOGRAPHY (SERIF) === */
         html, body, [data-testid="stAppViewContainer"], .stMarkdown, p, span, label, h1, h2, h3, h4, h5, h6, button {
             font-family: 'Times New Roman', Times, serif !important;
         }
-
         .stApp { background-color: #0d0f12; }
-        
-        /* === TABS STYLING === */
-        .stTabs [data-baseweb="tab-list"] {
-            gap: 10px;
-            background-color: transparent;
-        }
         .stTabs [data-baseweb="tab"] {
             height: 48px !important;
             background-color: #1a1a2e !important;
@@ -230,33 +340,32 @@ def main():
             color: white !important;
             border: 1px solid rgba(255,255,255,0.1);
             padding: 0 25px !important;
-            font-family: 'Times New Roman', Times, serif !important;
         }
         .stTabs [aria-selected="true"] {
             background-color: #007bff !important;
             border: 1px solid #007bff !important;
             font-weight: bold !important;
-            box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
         }
-        
         .stTextArea textarea { background: #13161b !important; color: #e2e4e9 !important; border-radius: 12px !important; border: 1px solid #2a5298 !important; }
-        .stButton > button { background: linear-gradient(135deg, #007bff, #00c6ff) !important; color: white !important; border-radius: 12px !important; font-weight: 600 !important; border: none !important; padding: 10px 25px !important; }
-        
-        /* Expander styling */
-        .stExpander { background: #13161b !important; border: 1px solid #2a5298 !important; border-radius: 12px !important; }
+        .stButton > button { background: linear-gradient(135deg, #007bff, #00c6ff) !important; color: white !important; border-radius: 12px !important; font-weight: 600 !important; }
     </style>
     """, unsafe_allow_html=True)
 
-    # ── Sidebar ──
     with st.sidebar:
         st.markdown("<h2 style='text-align: center;'>🔬 VaccineNLP</h2>", unsafe_allow_html=True)
         st.divider()
         st.markdown("##### 📋 Mẫu thử nghiệm")
         selected_sample = st.radio("Chọn mẫu:", options=["Tự nhập"] + list(SAMPLE_TEXTS.keys()), index=0)
         st.divider()
-        st.info("Hệ thống sử dụng PhoBERT để phân loại và Gemma-4 để giải thích lý luận (XAI).")
+        st.markdown("##### 🤖 Mô hình Phân loại")
+        model_selection = st.selectbox("Chọn model:", options=list(MODEL_CONFIGS.keys()), index=0)
 
-    # ── Header (Premium Style) ──
+    model, tokenizer, checkpoint_loaded = load_model(model_selection)
+    xai_cache = load_xai_cache()
+
+    if not checkpoint_loaded:
+        st.warning(f"⚠️ Không tìm thấy checkpoint cho `{model_selection}`. Chế độ chưa fine-tune.")
+
     st.markdown("""
     <div style="text-align: center; margin-bottom: 2.5rem; padding: 2rem; background: rgba(255,255,255,0.02); border-radius: 20px; border: 1px solid rgba(255,255,255,0.05);">
         <h1 style="color: #FFD700; font-family: 'Times New Roman', Times, serif; font-weight: bold; font-size: 3rem; margin-bottom: 0.5rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">🔬 VaccineNLP · Dashboard</h1>
@@ -264,78 +373,43 @@ def main():
     </div>
     """, unsafe_allow_html=True)
 
-    # ── TABS ORGANIZATION ──
-    tabs = st.tabs(["🏠 PHÂN TÍCH", "📖 HƯỚNG DẪN", "🌐 CÔNG NGHỆ", "💬 PHẢN HỒI"])
-    
-    with tabs[0]: # TAB: PHÂN TÍCH
-        # ── Load resources ──
-        api = load_inference_api()
-        xai_cache = load_xai_cache()
+    tabs = st.tabs(["🔍 Phân tích Real-time", "📊 Thống kê Benchmark"])
 
-        # ── Input area ──
+    with tabs[0]:
         input_text = SAMPLE_TEXTS[selected_sample] if selected_sample != "Tự nhập" else ""
-        user_text = st.text_area("Nhập văn bản cần phân tích:", value=input_text, height=140)
+        user_text = st.text_area("Nhập văn bản cần phân tích:", value=input_text, height=140, placeholder="Dán nội dung bài viết về vắc-xin...")
+        
+        col_btn1, col_btn2, _ = st.columns([1, 1, 4])
+        with col_btn1:
+            analyze_btn = st.button("🔍 Phân tích", use_container_width=True)
+        with col_btn2:
+            if st.button("🗑️ Reset", use_container_width=True): st.rerun()
 
-        if st.button("🔍 Phân tích"):
-            if user_text.strip():
-                with st.spinner("🧠 Đang phân tích đa nhiệm..."):
-                    result = api.predict(user_text.strip())
-                
-                st.markdown("---")
-                col1, col2, col3 = st.columns(3)
-                
-                res = result["results"]
-                with col1:
-                    render_result_card("Tin giả", "misinfo", res["misinfo"]["label"], res["misinfo"]["confidence"])
-                with col2:
-                    render_result_card("Quan điểm", "stance", res["stance"]["label"], res["stance"]["confidence"])
-                with col3:
-                    render_result_card("Cảm xúc", "sentiment", res["sentiment"]["label"], res["sentiment"]["confidence"])
+        if analyze_btn and user_text.strip():
+            with st.spinner(f"🧠 {model_selection} đang xử lý..."):
+                time.sleep(0.5)
+                result = predict(user_text.strip(), model, tokenizer)
 
-                # ── XAI Reasoning ──
+            st.markdown("---")
+            col1, col2, col3 = st.columns(3)
+            with col1: render_result_card("Tin giả", "misinfo", result["misinfo"])
+            with col2: render_result_card("Quan điểm", "stance", result["stance"])
+            with col3: render_result_card("Cảm xúc", "sentiment", result["sentiment"])
+
+            reasoning = find_xai_reasoning(user_text.strip(), xai_cache)
+            if reasoning:
                 st.markdown("<br>", unsafe_allow_html=True)
-                reasoning = xai_cache.get(user_text.strip())
-                if reasoning:
-                    with st.expander("📖 Xem giải thích từ Gemma-4 (XAI)", expanded=True):
-                        st.info(reasoning)
-                else:
-                    st.caption("💡 Không tìm thấy lý luận XAI trong cache cho văn bản này.")
+                with st.expander("📖 Xem giải thích chi tiết từ Gemma-4 (XAI)", expanded=True):
+                    st.markdown(f"<div style='border-left: 3px solid #007bff; padding-left: 20px; color: #c8cad0;'>{reasoning}</div>", unsafe_allow_html=True)
+                    st.caption("💡 Lý luận được sinh bởi Gemma-4 4B qua cơ chế Knowledge Distillation.")
             else:
-                st.warning("⚠️ Vui lòng nhập văn bản.")
+                st.info("💡 Lý luận XAI không khả dụng cho văn bản này. Hãy chọn mẫu từ thanh bên.")
+        elif analyze_btn:
+            st.warning("⚠️ Vui lòng nhập văn bản.")
 
-    with tabs[1]: # TAB: HƯỚNG DẪN
-        st.markdown("### 📖 HƯỚNG DẪN SỬ DỤNG HỆ THỐNG")
-        st.info("Hệ thống VaccineNLP giúp bạn kiểm tra tính xác thực của các bài đăng về vắc-xin.")
-        with st.expander("Bước 1: Nhập liệu", expanded=True):
-            st.write("Dán nội dung văn bản từ mạng xã hội (Facebook, TikTok, v.v.) vào ô nhập liệu.")
-        with st.expander("Bước 2: Phân tích đa nhiệm"):
-            st.write("Hệ thống sẽ đồng thời dự đoán: Loại tin (Tin giả/Thật), Quan điểm (Ủng hộ/Phản đối) và Cảm xúc.")
-        with st.expander("Bước 3: Xem giải thích XAI"):
-            st.write("Sử dụng tính năng XAI để hiểu tại sao AI lại đưa ra kết luận đó thông qua lý luận từ mô hình ngôn ngữ lớn.")
+    with tabs[1]:
+        render_benchmark_tab()
 
-    with tabs[2]: # TAB: CÔNG NGHỆ
-        st.markdown("### 🌐 HỆ SINH THÁI CÔNG NGHỆ")
-        col_t1, col_t2 = st.columns(2)
-        with col_t1:
-            st.markdown("""
-            #### 🤖 PhoBERT Multitask
-            Mô hình ngôn ngữ tiếng Việt mạnh mẽ, được tinh chỉnh cho 3 nhiệm vụ phân loại đồng thời.
-            """)
-        with col_t2:
-            st.markdown("""
-            #### 🧠 Gemma-4 XAI
-            Trí tuệ nhân tạo thế hệ mới cung cấp khả năng lý luận, giúp minh bạch hóa các quyết định của AI.
-            """)
-
-    with tabs[3]: # TAB: PHẢN HỒI
-        st.markdown("### 💬 Ý KIẾN NGƯỜI DÙNG")
-        with st.form("feedback"):
-            f_name = st.text_input("Tên của bạn")
-            f_msg = st.text_area("Góp ý của bạn")
-            if st.form_submit_button("Gửi phản hồi"):
-                st.success("Cảm ơn bạn đã đóng góp ý kiến!")
-
-    # ── Footer ──
     hien_thi_footer_chung()
 
 if __name__ == "__main__":
