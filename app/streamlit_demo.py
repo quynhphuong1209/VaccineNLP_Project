@@ -44,19 +44,19 @@ MODEL_CONFIGS = {
 # ─────────────────────────────────────────────────────────────
 LABEL_MAPS = {
     "misinfo": {0: "Không phải tin giả", 1: "Tin giả", 2: "Ranh giới"},
-    "stance":  {0: "Ủng hộ", 1: "Phản đối", 2: "Trung lập"},
+    "stance":  {0: "Ủng hộ", 1: "Phản đối", 2: "Trung lập", 3: "Không liên quan"},
     "sentiment": {0: "Tích cực", 1: "Tiêu cực", 2: "Trung lập"},
 }
 
 LABEL_COLORS = {
     "misinfo": {0: "#3db882", 1: "#e8504a", 2: "#d48f35"},
-    "stance":  {0: "#3db882", 1: "#e8504a", 2: "#4a9eed"},
+    "stance":  {0: "#3db882", 1: "#e8504a", 2: "#4a9eed", 3: "#9e9e9e"},
     "sentiment": {0: "#3db882", 1: "#e8504a", 2: "#4a9eed"},
 }
 
 LABEL_ICONS = {
     "misinfo": {0: "✅", 1: "🚨", 2: "⚠️"},
-    "stance":  {0: "👍", 1: "👎", 2: "🤝"},
+    "stance":  {0: "👍", 1: "👎", 2: "🤝", 3: "⚪"},
     "sentiment": {0: "😊", 1: "😠", 2: "😐"},
 }
 
@@ -103,7 +103,7 @@ class VaccineMultitaskModel(nn.Module):
     """Multitask model with shared PhoBERT encoder and task-specific heads."""
 
     def __init__(self, model_name="vinai/phobert-base-v2",
-                 num_misinfo=3, num_stance=3, num_sentiment=3):
+                 num_misinfo=3, num_stance=4, num_sentiment=3):
         super(VaccineMultitaskModel, self).__init__()
         self.config = AutoConfig.from_pretrained(model_name)
         self.encoder = AutoModel.from_pretrained(model_name)
