@@ -1,38 +1,88 @@
 import torch
+import torch.nn.functional as F
 from transformers import AutoTokenizer
-from src.modeling.phobert_multitask_trainer import PhoBertMultitaskTrainer
-from src.data_pipeline.preprocessing.text_cleaner_v2 import TextCleaner
-from src.data_pipeline.preprocessing.vn_tokenizer import VietnameseTokenizer
+from pyvi import ViTokenizer
+from src.common import paths
+from src.modeling.phobert_multitask_trainer import VaccineMultitaskModel
 
 class VaccineInferenceAPI:
-    """API hợp nhất để thực hiện dự đoán cho bất kỳ văn bản nào"""
+    """Unified API for real-time inference using the trained PhoBERT Multitask model"""
     
-    def __init__(self):
-        self.cleaner = TextCleaner()
-        self.tokenizer_vn = VietnameseTokenizer()
-        # Giả lập load model (trong thực tế sẽ load từ paths.MODEL_DIR)
-        print("🤖 Hệ thống Inference đã sẵn sàng.")
+    def __init__(self, model_version="phobert-multitask-v2"):
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.model_path = paths.MODEL_DIR / model_version / "pytorch_model.bin"
+        self.tokenizer_name = "vinai/phobert-base"
+        
+        # Load Tokenizer
+        self.tokenizer = AutoTokenizer.from_pretrained(self.tokenizer_name)
+        
+        # Load Model
+        self.model = VaccineMultitaskModel(model_name=self.tokenizer_name)
+        if self.model_path.exists():
+            self.model.load_state_dict(torch.load(self.model_path, map_location=self.device))
+            print(f"✅ Loaded model weights from: {self.model_path}")
+        else:
+            print(f"⚠️ Model weights not found at {self.model_path}. Running with random initialization (for testing).")
+            
+        self.model.to(self.device)
+        self.model.eval()
+        
+        # Taxonomy mapping
+        self.taxonomy = {
+            'misinfo': {1: "Tin giả", 2: "Chính xác", 0: "Không liên quan"},
+            'stance': {1: "Ủng hộ", 2: "Phản đối", 0: "Trung lập", 3: "Không rõ"},
+            'sentiment': {2: "Tiêu cực", 0: "Trung tính", 1: "Tích cực"}
+        }
 
-    def predict_all(self, raw_text):
-        # 1. Làm sạch & Tách từ
-        cleaned = self.cleaner.clean(raw_text)
-        tokenized = self.tokenizer_vn.tokenize(cleaned)
+    def predict(self, raw_text):
+        # 1. Preprocess (Word Segmentation)
+        segmented_text = ViTokenizer.tokenize(raw_text)
         
-        # 2. Dự đoán (Giả lập kết quả dựa trên logic đơn giản cho bản demo)
-        print(f"🔮 Đang phân tích: {tokenized}")
+        # 2. Tokenize
+        inputs = self.tokenizer(
+            segmented_text, 
+            return_tensors="pt", 
+            truncation=True, 
+            padding=True, 
+            max_length=256
+        ).to(self.device)
         
-        # Kết quả mẫu
+        # 3. Inference
+        with torch.no_grad():
+            logits = self.model(inputs['input_ids'], inputs['attention_mask'])
+            
+            # Extract Probabilities
+            p_m = F.softmax(logits['misinfo'], dim=1)[0]
+            p_st = F.softmax(logits['stance'], dim=1)[0]
+            p_se = F.softmax(logits['sentiment'], dim=1)[0]
+            
+        # 4. Get Labels and Confidence
+        m_idx = p_m.argmax().item()
+        st_idx = p_st.argmax().item()
+        se_idx = p_se.argmax().item()
+        
         return {
             "text": raw_text,
-            "predictions": {
-                "misinfo": "Tin giả" if "thuốc độc" in cleaned else "Không phải tin giả",
-                "stance": "Phản đối" if "không tiêm" in cleaned else "Ủng hộ",
-                "sentiment": "Tiêu cực" if "sợ" in cleaned else "Tích cực"
-            },
-            "confidence": 0.98
+            "segmented_text": segmented_text,
+            "results": {
+                "misinfo": {
+                    "label": self.taxonomy['misinfo'].get(m_idx, "N/A"),
+                    "confidence": p_m[m_idx].item()
+                },
+                "stance": {
+                    "label": self.taxonomy['stance'].get(st_idx, "N/A"),
+                    "confidence": p_st[st_idx].item()
+                },
+                "sentiment": {
+                    "label": self.taxonomy['sentiment'].get(se_idx, "N/A"),
+                    "confidence": p_se[se_idx].item()
+                }
+            }
         }
 
 if __name__ == "__main__":
     api = VaccineInferenceAPI()
-    result = api.predict_all("Đừng tiêm vaccine, nó là thuốc độc đấy!")
-    print(result)
+    test_text = "Tiêm vaccine là cách tốt nhất để bảo vệ sức khỏe cộng đồng."
+    result = api.predict(test_text)
+    print(f"📥 Input: {test_text}")
+    print(f"🔮 Prediction: {result['results']}")
