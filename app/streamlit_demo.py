@@ -200,12 +200,11 @@ def find_xai_reasoning(text: str, cache: dict) -> str | None:
 # ─────────────────────────────────────────────────────────────
 # UI COMPONENTS (Premium Style)
 # ─────────────────────────────────────────────────────────────
-def hien_thi_footer_chung():
+def hien_thi_footer_chung(is_dark=True):
     """Hiển thị chân trang (footer) 3 cột chuyên nghiệp cho đồ án VaccineNLP"""
     import base64
-    import textwrap
     
-    # Xác định đường dẫn logo an toàn (dùng PROJECT_ROOT để đảm bảo tìm thấy file bất kể chạy từ đâu)
+    # Xác định đường dẫn logo an toàn
     logo_path_local = PROJECT_ROOT / "abc1.png"
     logo_src = "https://huph.edu.vn/uploads/logo/logo-huph.png" # Link dự phòng
     
@@ -217,16 +216,29 @@ def hien_thi_footer_chung():
     except Exception:
         pass
 
-    # Cấu hình màu sắc theo giao diện Dark Mode của App
-    footer_bg = "linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%)"
-    footer_text = "#ccc"
-    border_color = "#007bff"
-    title_color = "#007bff"
-    label_color = "#eee"
-    school_name_color = "#fff"
-    col_border = "rgba(255,255,255,0.1)"
+    # Cấu hình màu sắc theo giao diện Sáng/Tối
+    if is_dark:
+        footer_bg = "linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%)"
+        footer_text = "#ccc"
+        title_color = "#007bff"
+        label_color = "#eee"
+        school_name_color = "#fff"
+        col_border = "rgba(255,255,255,0.1)"
+        bottom_text = "#777"
+        project_vi = "#ffd700"
+    else:
+        footer_bg = "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)"
+        footer_text = "#444"
+        title_color = "#0056b3"
+        label_color = "#222"
+        school_name_color = "#000"
+        col_border = "rgba(0,0,0,0.1)"
+        bottom_text = "#666"
+        project_vi = "#b8860b"
 
-    footer_html = f"""<style>.main-footer{{background:{footer_bg};padding:50px 20px;color:{footer_text};font-family:'Times New Roman',Times,serif!important;border-top:4px solid {border_color};box-shadow:0 -10px 25px rgba(0,123,255,0.15);margin-top:60px}}.footer-container{{display:flex;flex-wrap:wrap;justify-content:space-between;max-width:1400px;margin:0 auto;gap:20px}}.footer-col{{flex:1;min-width:300px;padding:0 25px;border-right:1px solid {col_border}}}.footer-col:last-child{{border-right:none}}.logo-col{{text-align:center}}.footer-logo-img{{width:100px;margin-bottom:15px;filter:drop-shadow(0 0 8px rgba(0,123,255,0.4))}}.footer-title{{color:{title_color};font-weight:bold;margin-bottom:15px;font-size:1.2rem;text-transform:uppercase;letter-spacing:1px}}.info-row{{margin-bottom:10px;font-size:1rem;line-height:1.4}}.info-label{{font-weight:bold;color:{label_color}}}.school-name{{font-weight:bold;color:{school_name_color};font-size:1.1rem;margin-bottom:5px}}.footer-bottom{{padding-top:20px;margin-top:30px;border-top:1px solid rgba(255,255,255,0.05);font-size:0.9rem;color:#777;text-align:center}}.project-name-vi{{color:#ffd700;font-weight:bold;font-style:italic;margin-bottom:8px}}.project-name-en{{font-size:0.9rem;opacity:0.8;line-height:1.3}}.footer-link{{color:{title_color}!important;text-decoration:none;transition:opacity 0.2s}}.footer-link:hover{{opacity:0.8;text-decoration:underline}}</style><div class="main-footer"><div class="footer-container"><div class="footer-col logo-col"><img src="{logo_src}" class="footer-logo-img" alt="HUPH Logo"><div class="school-name">TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG</div><div style="font-size:0.9rem;opacity:0.8;"><p>📍 Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</p><p>🌐 <a href="https://huph.edu.vn/" target="_blank" class="footer-link">huph.edu.vn</a></p></div></div><div class="footer-col"><div class="footer-title">🔬 ĐỀ TÀI ĐỒ ÁN</div><div class="project-name-vi">Ứng dụng Xử lý Ngôn ngữ Tự nhiên trong phát hiện thông tin sai lệch về vaccine và phân tích thái độ cộng đồng trên môi trường số tại Việt Nam</div><div class="project-name-en">(Applying NLP for Vaccine Misinformation Detection and Community Attitude Analysis in Vietnamese Digital Environments)</div></div><div class="footer-col"><div class="footer-title">👥 NHÓM THỰC HIỆN</div><div class="info-row"><b>1. Kim Mạnh Hưng</b><br><span style="font-size:0.9rem;opacity:0.8;">MSSV: 2211090016 | Lớp: CNCQ KHDL1-1A<br>📧 <a href="mailto:2211090016@studenthuph.edu.vn" class="footer-link">2211090016@studenthuph.edu.vn</a></span></div><div class="info-row" style="margin-top:15px;"><b>2. Đinh Lê Quỳnh Phương</b><br><span style="font-size:0.9rem;opacity:0.8;">MSSV: 2211090031 | Lớp: CNCQ KHDL1-1A<br>📧 <a href="mailto:2211090031@studenthuph.edu.vn" class="footer-link">2211090031@studenthuph.edu.vn</a></span></div><div class="info-row" style="margin-top:20px;border-top:1px solid rgba(255,255,255,0.1);padding-top:10px;"><span class="info-label">👨‍🏫 Giảng viên hướng dẫn:</span><br><span>TS. Trần Lâm Quân</span></div></div></div><div class="footer-bottom">© 2026 VaccineNLP Project | Đồ án tốt nghiệp chuyên ngành Khoa học Dữ liệu - HUPH</div></div>"""
+    border_color = "#007bff"
+
+    footer_html = f"""<style>.main-footer{{background:{footer_bg};padding:50px 20px;color:{footer_text};font-family:'Times New Roman',Times,serif!important;border-top:4px solid {border_color};box-shadow:0 -10px 25px rgba(0,123,255,0.1);margin-top:60px}}.footer-container{{display:flex;flex-wrap:wrap;justify-content:space-between;max-width:1400px;margin:0 auto;gap:20px}}.footer-col{{flex:1;min-width:300px;padding:0 25px;border-right:1px solid {col_border}}}.footer-col:last-child{{border-right:none}}.logo-col{{text-align:center}}.footer-logo-img{{width:100px;margin-bottom:15px;filter:drop-shadow(0 0 8px rgba(0,123,255,0.2))}}.footer-title{{color:{title_color};font-weight:bold;margin-bottom:15px;font-size:1.2rem;text-transform:uppercase;letter-spacing:1px}}.info-row{{margin-bottom:10px;font-size:1rem;line-height:1.4}}.info-label{{font-weight:bold;color:{label_color}}}.school-name{{font-weight:bold;color:{school_name_color};font-size:1.1rem;margin-bottom:5px}}.footer-bottom{{padding-top:20px;margin-top:30px;border-top:1px solid rgba(0,0,0,0.05);font-size:0.9rem;color:{bottom_text};text-align:center}}.project-name-vi{{color:{project_vi};font-weight:bold;font-style:italic;margin-bottom:8px}}.project-name-en{{font-size:0.9rem;opacity:0.8;line-height:1.3}}.footer-link{{color:{title_color}!important;text-decoration:none;transition:opacity 0.2s}}.footer-link:hover{{opacity:0.8;text-decoration:underline}}</style><div class="main-footer"><div class="footer-container"><div class="footer-col logo-col"><img src="{logo_src}" class="footer-logo-img" alt="HUPH Logo"><div class="school-name">TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG</div><div style="font-size:0.9rem;opacity:0.8;"><p>📍 Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</p><p>🌐 <a href="https://huph.edu.vn/" target="_blank" class="footer-link">huph.edu.vn</a></p></div></div><div class="footer-col"><div class="footer-title">🔬 ĐỀ TÀI ĐỒ ÁN</div><div class="project-name-vi">Ứng dụng Xử lý Ngôn ngữ Tự nhiên trong phát hiện thông tin sai lệch về vaccine và phân tích thái độ cộng đồng trên môi trường số tại Việt Nam</div><div class="project-name-en">(Applying NLP for Vaccine Misinformation Detection and Community Attitude Analysis in Vietnamese Digital Environments)</div></div><div class="footer-col"><div class="footer-title">👥 NHÓM THỰC HIỆN</div><div class="info-row"><b>1. Kim Mạnh Hưng</b><br><span style="font-size:0.9rem;opacity:0.8;">MSSV: 2211090016 | Lớp: CNCQ KHDL1-1A<br>📧 <a href="mailto:2211090016@studenthuph.edu.vn" class="footer-link">2211090016@studenthuph.edu.vn</a></span></div><div class="info-row" style="margin-top:15px;"><b>2. Đinh Lê Quỳnh Phương</b><br><span style="font-size:0.9rem;opacity:0.8;">MSSV: 2211090031 | Lớp: CNCQ KHDL1-1A<br>📧 <a href="mailto:2211090031@studenthuph.edu.vn" class="footer-link">2211090031@studenthuph.edu.vn</a></span></div><div class="info-row" style="margin-top:20px;border-top:1px solid {col_border};padding-top:10px;"><span class="info-label">👨‍🏫 Giảng viên hướng dẫn:</span><br><span>TS. Trần Lâm Quân</span></div></div></div><div class="footer-bottom">© 2026 VaccineNLP Project | Đồ án tốt nghiệp chuyên ngành Khoa học Dữ liệu - HUPH</div></div>"""
     st.markdown(footer_html, unsafe_allow_html=True)
 
 def render_result_card(task_name: str, task_key: str, result: dict):
@@ -339,33 +351,48 @@ def main():
     # DYNAMIC CSS BASED ON THEME
     # ─────────────────────────────────────────────────────────────
     is_dark = st.session_state.theme == "Dark"
-    bg_color = "#0d0f12" if is_dark else "#f5f7f9"
-    card_bg = "rgba(255, 255, 255, 0.03)" if is_dark else "#ffffff"
-    text_color = "#e2e4e9" if is_dark else "#1a1e2e"
-    secondary_text = "#888" if is_dark else "#666"
-    border_color = "rgba(255,255,255,0.05)" if is_dark else "rgba(0,0,0,0.05)"
-    sidebar_bg = "#111" if is_dark else "#fff"
+    bg_color = "#0d0f12" if is_dark else "#ffffff"
+    card_bg = "rgba(255, 255, 255, 0.03)" if is_dark else "#fdfdfd"
+    text_color = "#e2e4e9" if is_dark else "#111111"
+    secondary_text = "#888" if is_dark else "#555"
+    border_color = "rgba(255,255,255,0.05)" if is_dark else "rgba(0,0,0,0.1)"
+    sidebar_bg = "#111" if is_dark else "#f8f9fa"
+    input_bg = "#13161b" if is_dark else "#ffffff"
+    input_border = "#2a5298" if is_dark else "#ced4da"
 
     st.markdown(f"""
     <style>
+        /* GIÃN RỘNG TOÀN MÀN HÌNH */
+        [data-testid="stAppViewContainer"] > section:nth-child(2) > div:first-child {{
+            max-width: none !important;
+            padding-left: 5rem !important;
+            padding-right: 5rem !important;
+        }}
+        
         /* Toàn bộ giao diện chính */
         .stApp {{
             background-color: {bg_color} !important;
             color: {text_color} !important;
         }}
         
-        /* Font chữ toàn cục */
-        html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"], .stMarkdown, p, label, h1, h2, h3, h4, h5, h6, button, input, select, textarea {{
+        /* Font chữ toàn cục và màu chữ */
+        html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"], .stMarkdown, p, label, li, span, h1, h2, h3, h4, h5, h6, button, input, select, textarea {{
             font-family: 'Times New Roman', Times, serif !important;
+            color: {text_color} !important;
         }}
 
         /* Sidebar styling */
         [data-testid="stSidebar"] {{
             background-color: {sidebar_bg} !important;
         }}
+        [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p, 
+        [data-testid="stSidebar"] label,
+        [data-testid="stSidebar"] .stRadio span {{
+            color: {text_color} !important;
+        }}
         
-        /* BẢO VỆ CÁC ICON */
-        .stIconMaterial, [data-testid="stIconMaterial"], span[data-baseweb="icon"], svg, .st-emotion-cache-1vt4ygl {{
+        /* BẢO VỆ CÁC ICON (Không đổi màu hoặc font chữ icon) */
+        .stIconMaterial, [data-testid="stIconMaterial"], span[data-baseweb="icon"], svg {{
             font-family: 'Material Symbols Rounded' !important;
         }}
         
@@ -386,16 +413,23 @@ def main():
 
         /* Input area styling */
         .stTextArea textarea {{ 
-            background: {"#13161b" if is_dark else "#ffffff"} !important; 
+            background: {input_bg} !important; 
             color: {text_color} !important; 
             border-radius: 12px !important; 
-            border: 1px solid {"#2a5298" if is_dark else "#ccd0d5"} !important; 
+            border: 1px solid {input_border} !important; 
         }}
 
         /* Button styling */
         .stButton > button {{ 
             border-radius: 12px !important; 
             font-weight: 600 !important;
+        }}
+        
+        /* Expander styling */
+        [data-testid="stExpander"] {{
+            background-color: {card_bg} !important;
+            border: 1px solid {border_color} !important;
+            border-radius: 12px !important;
         }}
     </style>
     """, unsafe_allow_html=True)
@@ -457,7 +491,7 @@ def main():
     with tabs[1]:
         render_benchmark_tab()
 
-    hien_thi_footer_chung()
+    hien_thi_footer_chung(is_dark=is_dark)
 
 if __name__ == "__main__":
     main()
