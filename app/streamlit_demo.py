@@ -362,11 +362,8 @@ def main():
 
     st.markdown(f"""
     <style>
-        /* GIÃN RỘNG TUYỆT ĐỐI TOÀN MÀN HÌNH */
-        [data-testid="stAppViewBlockContainer"], 
-        .main .block-container,
-        .st-emotion-cache-13ln4jf,
-        .st-emotion-cache-1y4p8pa {{
+        /* PHÁ BỎ MỌI GIỚI HẠN CHIỀU RỘNG (UNIVERSAL FULL-WIDTH) */
+        .main .block-container {{
             max-width: 100% !important;
             width: 100% !important;
             padding-left: 2rem !important;
@@ -374,9 +371,16 @@ def main():
             padding-top: 1rem !important;
         }}
         
-        /* Loại bỏ các khoảng trống thừa của Streamlit */
-        [data-testid="stVerticalBlock"] > div {{
+        /* Cưỡng ép tất cả các container con phải chiếm 100% */
+        [data-testid="stVerticalBlock"] > div,
+        [data-testid="stAppViewBlockContainer"] {{
             width: 100% !important;
+            max-width: 100% !important;
+        }}
+
+        /* Loại bỏ khoảng trắng thừa của Streamlit trên màn hình lớn */
+        [data-testid="stAppViewContainer"] {{
+            background-color: {bg_color} !important;
         }}
         
         /* Toàn bộ giao diện chính */
