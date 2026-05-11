@@ -533,18 +533,27 @@ def main():
             color: {text_color} !important;
         }}
         
-        /* Cực kỳ quan trọng: Fix phần danh sách thả xuống (Popover) */
-        [data-baseweb="popover"], [data-baseweb="listbox"], ul[role="listbox"] {{
+        /* Cực kỳ quan trọng: Fix phần danh sách thả xuống (Popover) - PHIÊN BẢN CUỐI CÙNG */
+        div[data-baseweb="popover"], 
+        div[role="listbox"], 
+        ul[role="listbox"],
+        div[role="option"],
+        li[role="option"] {{
             background-color: {sidebar_bg} !important;
             color: {text_color} !important;
+        }}
+        
+        /* Viền cho danh sách */
+        div[data-baseweb="popover"] {{
             border: 1px solid {input_border} !important;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important;
         }}
-        [data-baseweb="popover"] li, [role="option"] {{
-            background-color: transparent !important;
-            color: {text_color} !important;
-        }}
-        [data-baseweb="popover"] li:hover, [role="option"]:hover {{
-            background-color: {"rgba(255,255,255,0.1)" if is_dark else "rgba(0,0,0,0.05)"} !important;
+
+        [data-baseweb="popover"] li:hover, 
+        [role="option"]:hover,
+        div[data-baseweb="popover"] div:hover {{
+            background-color: {"rgba(255,255,255,0.1)" if is_dark else "rgba(0,0,123,0.05)"} !important;
+            color: #007bff !important;
         }}
 
         /* Fix Radio Button styling (Mẫu thử nghiệm) */
