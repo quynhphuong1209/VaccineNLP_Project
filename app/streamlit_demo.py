@@ -524,6 +524,18 @@ def main():
             border: 1px solid {border_color} !important;
         }}
 
+        /* Fix Divider (st.divider) visibility */
+        hr {{
+            border-top: 1px solid {"rgba(255,255,255,0.1)" if is_dark else "rgba(0,0,0,0.2)"} !important;
+            margin: 1rem 0 !important;
+        }}
+
+        /* Fix Textarea Placeholder color */
+        textarea::placeholder {{
+            color: {"#666" if is_dark else "#888"} !important;
+            opacity: 1 !important;
+        }}
+
         /* Table styling - Thêm viền đen cho bảng Benchmark */
         table {{
             width: 100%;
