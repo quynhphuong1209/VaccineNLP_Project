@@ -288,7 +288,8 @@ MSSV: 2211090031 | Lớp: CNCQ KHDL1-1A<br>
 <b style="font-size:1.1rem;">TS. Trần Lâm Quân</b><br>
 <div style="margin-top:10px; font-size:0.9rem; opacity:0.8;">
 Giảng viên Khoa học dữ liệu<br>
-Trường Đại học Y tế Công Cộng
+Trường Đại học Y tế Công Cộng<br>
+📧 <a href="mailto:tlq@huph.edu.vn" class="footer-link">tlq@huph.edu.vn</a>
 </div>
 </div>
 </div>
