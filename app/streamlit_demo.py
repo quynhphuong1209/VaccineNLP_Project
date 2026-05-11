@@ -515,7 +515,8 @@ def main():
         /* Fix Selectbox (Dropdown) colors - Ép màu toàn diện */
         [data-testid="stSelectbox"] div[data-baseweb="select"], 
         [data-testid="stSelectbox"] button,
-        [data-testid="stSelectbox"] div[data-baseweb="select"] > div {{
+        [data-testid="stSelectbox"] div[data-baseweb="select"] > div,
+        [data-testid="stSidebar"] [data-testid="stSelectbox"] div[data-baseweb="select"] {{
             background-color: {input_bg} !important;
             color: {text_color} !important;
             border: 1px solid {input_border} !important;
@@ -534,11 +535,10 @@ def main():
             color: {text_color} !important;
             border: 1px solid {input_border} !important;
         }}
-            border: 1px solid {input_border} !important;
-        }}
         [data-baseweb="popover"] li, [role="option"] {{
             background-color: transparent !important;
             color: {text_color} !important;
+        }}
         }}
         [data-baseweb="popover"] li:hover, [role="option"]:hover {{
             background-color: {"rgba(255,255,255,0.1)" if is_dark else "rgba(0,0,0,0.05)"} !important;
