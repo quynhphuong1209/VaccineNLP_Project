@@ -18,6 +18,11 @@ import sys
 from pathlib import Path
 from transformers import AutoModel, AutoConfig, AutoTokenizer
 from underthesea import word_tokenize
+import logging
+
+# Ẩn các cảnh báo không cần thiết của transformers
+logging.getLogger("transformers").setLevel(logging.ERROR)
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 # ─────────────────────────────────────────────────────────────
 # PATHS & CONFIGS
@@ -151,6 +156,12 @@ def load_model(model_key="PhoBERT-v2"):
         hf_token = os.environ["HF_TOKEN"]
     elif "VaccineNLP_TOKEN" in st.secrets:
         hf_token = st.secrets["VaccineNLP_TOKEN"]
+        
+    # Debug token (chỉ hiện trong log console để tránh làm xấu giao diện)
+    if hf_token:
+        print(">>> [DEBUG] Đã tìm thấy HF Token từ secrets/env.")
+    else:
+        print(">>> [DEBUG] Cảnh báo: Không tìm thấy HF Token!")
     
     try:
         model = VaccineMultitaskModel(model_name=cfg["repo_id"], token=hf_token)
