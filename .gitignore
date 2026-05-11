@@ -25,6 +25,7 @@ ENV/
 Thumbs.db
 .vscode/
 .idea/
+.streamlit/
 
 # --- Machine Learning Models & Weights (IMPORTANT: Ignoring these to save bandwidth) ---
 # We load these# Model weights and large binary files (Exclude from Git LFS to save budget)
