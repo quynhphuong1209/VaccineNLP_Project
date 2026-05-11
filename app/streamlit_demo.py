@@ -201,12 +201,26 @@ def find_xai_reasoning(text: str, cache: dict) -> str | None:
 # UI COMPONENTS (Premium Style)
 # ─────────────────────────────────────────────────────────────
 def hien_thi_footer_chung():
-    """Hiển thị chân trang chuyên nghiệp"""
+    """Hiển thị chân trang (footer) 3 cột chuyên nghiệp cho đồ án VaccineNLP"""
+    import base64
+    try:
+        if os.path.exists("abc1.png"):
+            with open("abc1.png", "rb") as img_file:
+                logo_b64 = base64.b64encode(img_file.read()).decode()
+                logo_src = f"data:image/png;base64,{logo_b64}"
+        else:
+            logo_src = "https://huph.edu.vn/uploads/logo/logo-huph.png"
+    except:
+        logo_src = "https://huph.edu.vn/uploads/logo/logo-huph.png"
+
+    # Cấu hình màu sắc theo giao diện Dark Mode của App
     footer_bg = "linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%)"
     footer_text = "#ccc"
     border_color = "#007bff"
     title_color = "#007bff"
+    label_color = "#eee"
     school_name_color = "#fff"
+    col_border = "rgba(255,255,255,0.1)"
 
     footer_html = f"""
     <style>
@@ -221,21 +235,52 @@ def hien_thi_footer_chung():
         }}
         .footer-container {{
             display: flex;
-            flex-wrap: nowrap;
+            flex-wrap: wrap;
             justify-content: space-between;
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
-            gap: 40px;
+            gap: 20px;
         }}
-        .footer-col {{ flex: 1; padding: 0 20px; }}
+        .footer-col {{
+            flex: 1;
+            min-width: 300px;
+            padding: 0 25px;
+            border-right: 1px solid {col_border};
+        }}
+        .footer-col:last-child {{
+            border-right: none;
+        }}
+        .logo-col {{
+            text-align: center;
+        }}
+        .footer-logo-img {{
+            width: 100px;
+            margin-bottom: 15px;
+            filter: drop-shadow(0 0 8px rgba(0, 123, 255, 0.4));
+        }}
         .footer-title {{
             color: {title_color};
             font-weight: bold;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             font-size: 1.2rem;
             text-transform: uppercase;
+            letter-spacing: 1px;
         }}
-        .info-row {{ margin-bottom: 10px; font-size: 1rem; line-height: 1.4; }}
+        .info-row {{
+            margin-bottom: 10px;
+            font-size: 1rem;
+            line-height: 1.4;
+        }}
+        .info-label {{
+            font-weight: bold;
+            color: {label_color};
+        }}
+        .school-name {{
+            font-weight: bold; 
+            color: {school_name_color}; 
+            font-size: 1.1rem;
+            margin-bottom: 5px;
+        }}
         .footer-bottom {{
             padding-top: 20px;
             margin-top: 30px;
@@ -244,29 +289,60 @@ def hien_thi_footer_chung():
             color: #777;
             text-align: center;
         }}
-        .school-name {{ font-weight: bold; color: {school_name_color}; font-size: 1.1rem; margin-bottom: 5px; }}
+        .project-name-vi {{
+            color: #ffd700;
+            font-weight: bold;
+            font-style: italic;
+            margin-bottom: 8px;
+        }}
+        .project-name-en {{
+            font-size: 0.9rem;
+            opacity: 0.8;
+            line-height: 1.3;
+        }}
     </style>
     <div class="main-footer">
         <div class="footer-container">
-            <div class="footer-col">
-                <div class="school-name">DỰ ÁN VACCINENLP</div>
+            <!-- CỘT 1: ĐƠN VỊ CÔNG TÁC -->
+            <div class="footer-col logo-col">
+                <img src="{logo_src}" class="footer-logo-img" alt="HUPH Logo">
+                <div class="school-name">TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG</div>
                 <div style="font-size: 0.9rem; opacity: 0.8;">
-                    <p>Phân tích tin giả vắc-xin bằng trí tuệ nhân tạo đa nhiệm và giải thích được (XAI).</p>
+                    <p>📍 Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</p>
+                    <p>🌐 <a href="https://huph.edu.vn/" target="_blank" style="color:{title_color};">huph.edu.vn</a></p>
                 </div>
             </div>
+
+            <!-- CỘT 2: GIỚI THIỆU DỰ ÁN -->
             <div class="footer-col">
-                <div class="footer-title">👤 NGHIÊN CỨU VIÊN</div>
-                <div class="info-row">Đinh Lê Quỳnh Phương</div>
-                <div class="info-row">Email: quynhphuong@studenthuph.edu.vn</div>
+                <div class="footer-title">🔬 ĐỀ TÀI ĐỒ ÁN</div>
+                <div class="project-name-vi">
+                    Ứng dụng Xử lý Ngôn ngữ Tự nhiên trong phát hiện thông tin sai lệch về vaccine và phân tích thái độ cộng đồng trên môi trường số tại Việt Nam
+                </div>
+                <div class="project-name-en">
+                    (Applying NLP for Vaccine Misinformation Detection and Community Attitude Analysis in Vietnamese Digital Environments)
+                </div>
             </div>
+
+            <!-- CỘT 3: THÀNH VIÊN THỰC HIỆN -->
             <div class="footer-col">
-                <div class="footer-title">🏫 ĐƠN VỊ CÔNG TÁC</div>
-                <div class="info-row">Trường Đại học Y tế Công cộng</div>
-                <div class="info-row">MSSV: 2211090016</div>
+                <div class="footer-title">👥 NHÓM THỰC HIỆN</div>
+                <div class="info-row">
+                    <b>1. Kim Mạnh Hưng</b><br>
+                    <span style="font-size:0.9rem; opacity:0.8;">MSSV: 2211090016 | 📧 <a href="mailto:2211090016@studenthuph.edu.vn" style="color:#777;">2211090016@studenthuph.edu.vn</a></span>
+                </div>
+                <div class="info-row" style="margin-top:15px;">
+                    <b>2. Đinh Lê Quỳnh Phương</b><br>
+                    <span style="font-size:0.9rem; opacity:0.8;">MSSV: 2211090031 | Lớp: CNCQ KHDL1-1A<br>📧 <a href="mailto:2211090031@studenthuph.edu.vn" style="color:#777;">2211090031@studenthuph.edu.vn</a></span>
+                </div>
+                <div class="info-row" style="margin-top:20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top:10px;">
+                    <span class="info-label">👨‍🏫 Giảng viên hướng dẫn:</span><br>
+                    <span>ThS. Trần Lâm Quân</span>
+                </div>
             </div>
         </div>
         <div class="footer-bottom">
-            © 2026 VaccineNLP Project | Phát triển bởi Nhóm Nghiên cứu viên HUPH
+            © 2026 VaccineNLP Project | Đồ án tốt nghiệp chuyên ngành Khoa học Dữ liệu - HUPH
         </div>
     </div>
     """
