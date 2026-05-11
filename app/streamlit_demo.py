@@ -115,8 +115,8 @@ class VaccineMultitaskModel(nn.Module):
     def __init__(self, model_name="vinai/phobert-base-v2",
                  num_misinfo=3, num_stance=4, num_sentiment=3, token=None):
         super(VaccineMultitaskModel, self).__init__()
-        self.config = AutoConfig.from_pretrained(model_name, token=token)
-        self.encoder = AutoModel.from_pretrained(model_name, token=token)
+        self.config = AutoConfig.from_pretrained(model_name, token=token, trust_remote_code=True)
+        self.encoder = AutoModel.from_pretrained(model_name, token=token, trust_remote_code=True)
 
         hidden_size = self.config.hidden_size
         self.head_misinfo = nn.Linear(hidden_size, num_misinfo)
@@ -165,7 +165,7 @@ def load_model(model_key="PhoBERT-v2"):
     
     try:
         model = VaccineMultitaskModel(model_name=cfg["repo_id"], token=hf_token)
-        tokenizer = AutoTokenizer.from_pretrained(cfg["repo_id"], token=hf_token)
+        tokenizer = AutoTokenizer.from_pretrained(cfg["repo_id"], token=hf_token, trust_remote_code=True)
         
         if cfg["path"].exists():
             state = torch.load(str(cfg["path"]), map_location="cpu", weights_only=False)
