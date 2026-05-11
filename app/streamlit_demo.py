@@ -176,8 +176,14 @@ def load_xai_cache():
 # ─────────────────────────────────────────────────────────────
 # INFERENCE & XAI FUNCTIONS
 # ─────────────────────────────────────────────────────────────
-def predict(text: str, model, tokenizer) -> dict:
-    """Run multitask inference with word segmentation + softmax."""
+@st.cache_data(show_spinner=False)
+def predict_cached(text: str, model_key: str) -> dict:
+    """Phiên bản cache của hàm predict để tăng tốc độ phân tích văn bản lặp lại."""
+    # Chúng ta lấy model/tokenizer từ cache resource bên trong hàm này
+    model, tokenizer, _ = load_model(model_key)
+    if model is None:
+        return None
+        
     segmented = word_tokenize(text, format="text")
     enc = tokenizer(segmented, truncation=True, max_length=256, return_tensors="pt", padding=True)
 
@@ -671,8 +677,7 @@ def main():
 
         if analyze_btn and user_text.strip():
             with st.spinner(f"🧠 {model_selection} đang xử lý..."):
-                time.sleep(0.5)
-                result = predict(user_text.strip(), model, tokenizer)
+                result = predict_cached(user_text.strip(), model_selection)
                 reasoning = find_xai_reasoning(user_text.strip(), xai_cache)
                 # Lưu vào session state
                 st.session_state.last_result = {
