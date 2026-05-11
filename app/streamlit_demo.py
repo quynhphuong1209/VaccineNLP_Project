@@ -463,11 +463,25 @@ def main():
             font-weight: 600 !important;
         }}
         
-        /* Expander styling */
+        /* Expander styling - Fix Header color */
         [data-testid="stExpander"] {{
             background-color: {card_bg} !important;
             border: 1px solid {border_color} !important;
             border-radius: 12px !important;
+            overflow: hidden !important;
+        }}
+        [data-testid="stExpander"] summary {{
+            background-color: {card_bg} !important;
+            color: {text_color} !important;
+            transition: all 0.2s ease !important;
+        }}
+        [data-testid="stExpander"] summary:hover {{
+            background-color: {"rgba(255,255,255,0.05)" if is_dark else "rgba(0,0,0,0.02)"} !important;
+            color: #007bff !important;
+        }}
+        /* Fix icon trong expander */
+        [data-testid="stExpander"] summary svg {{
+            fill: {text_color} !important;
         }}
 
         /* Fix Button colors (Phân tích, Reset, etc.) */
