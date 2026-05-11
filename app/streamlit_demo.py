@@ -43,7 +43,8 @@ MODEL_CONFIGS = {
         "type": "xlm-roberta"
     },
     "Gemma-4-4B": {
-        "repo_id": str(PROJECT_ROOT / "experiments" / "results" / "gemma" / "gemma_qlora_xai" / "final_model"),
+        "repo_id": "google/gemma-2b-it", # Mặc định dùng bản Cloud
+        "local_repo": str(PROJECT_ROOT / "experiments" / "results" / "gemma" / "gemma_qlora_xai" / "final_model"),
         "path": PROJECT_ROOT / "experiments" / "results" / "gemma" / "gemma_qlora_xai" / "final_model" / "adapter_model.safetensors",
         "type": "gemma"
     }
@@ -147,6 +148,16 @@ def load_model(model_key="PhoBERT-v2"):
     cfg = MODEL_CONFIGS[model_key]
     checkpoint_loaded = False
     
+    # Tự động chọn repo_id: Ưu tiên local nếu có, nếu không dùng Cloud
+    repo_id = cfg["repo_id"]
+    if "local_repo" in cfg:
+        local_path = Path(cfg["local_repo"])
+        if local_path.exists():
+            repo_id = str(local_path)
+            print(f">>> [DEBUG] Đang dùng mô hình Local: {repo_id}")
+        else:
+            print(f">>> [DEBUG] Không tìm thấy local_repo, chuyển sang dùng Cloud: {repo_id}")
+    
     # Lấy token từ Secrets của Streamlit hoặc Environment (Để bảo mật, không hardcode)
     hf_token = None
     
@@ -164,8 +175,8 @@ def load_model(model_key="PhoBERT-v2"):
         print(">>> [DEBUG] Cảnh báo: Không tìm thấy HF Token!")
     
     try:
-        model = VaccineMultitaskModel(model_name=cfg["repo_id"], token=hf_token)
-        tokenizer = AutoTokenizer.from_pretrained(cfg["repo_id"], token=hf_token, trust_remote_code=True)
+        model = VaccineMultitaskModel(model_name=repo_id, token=hf_token, trust_remote_code=True)
+        tokenizer = AutoTokenizer.from_pretrained(repo_id, token=hf_token, trust_remote_code=True)
         
         if cfg["path"].exists():
             state = torch.load(str(cfg["path"]), map_location="cpu", weights_only=False)
@@ -826,10 +837,13 @@ def main():
                 reasoning = saved["reasoning"]
 
                 st.markdown("---")
-                col1, col2, col3 = st.columns(3)
-                with col1: render_result_card("Tin giả", "misinfo", result["misinfo"])
-                with col2: render_result_card("Quan điểm", "stance", result["stance"])
-                with col3: render_result_card("Cảm xúc", "sentiment", result["sentiment"])
+                if result:
+                    col1, col2, col3 = st.columns(3)
+                    with col1: render_result_card("Tin giả", "misinfo", result["misinfo"])
+                    with col2: render_result_card("Quan điểm", "stance", result["stance"])
+                    with col3: render_result_card("Cảm xúc", "sentiment", result["sentiment"])
+                else:
+                    st.error("❌ Không thể phân tích văn bản này. Vui lòng kiểm tra lại mô hình đã chọn.")
 
                 if reasoning:
                     st.markdown("<br>", unsafe_allow_html=True)
