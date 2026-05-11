@@ -283,7 +283,7 @@ def render_result_card(task_name: str, task_key: str, result: dict):
             class_color = LABEL_COLORS[task_key][idx]
             pct = prob * 100
             bar_bg = "#262730" if is_dark else "#e6eaf1"
-            label_text_color = "#a0a5b0" if is_dark else "#555"
+            label_text_color = "#a0a5b0" if is_dark else "#000"
             st.markdown(f"""
             <div style="margin-bottom: 8px;">
                 <div style="display: flex; justify-content: space-between; font-size: 13px; color: {label_text_color};">
@@ -512,21 +512,18 @@ def main():
             box-shadow: 0 4px 12px rgba(0,123,255,0.2) !important;
         }}
 
-        /* Fix Selectbox (Dropdown) colors - Ép màu toàn diện */
-        [data-testid="stSelectbox"] div[data-baseweb="select"], 
-        [data-testid="stSelectbox"] button,
-        [data-testid="stSelectbox"] div[data-baseweb="select"] > div,
-        [data-testid="stSidebar"] [data-testid="stSelectbox"] div[data-baseweb="select"] {{
+        /* Fix Selectbox (Dropdown) colors - SIÊU ÉP BUỘC */
+        [data-testid="stSidebar"] [data-testid="stSelectbox"] div[data-baseweb="select"],
+        [data-testid="stSidebar"] [data-testid="stSelectbox"] button,
+        [data-testid="stSidebar"] [data-testid="stSelectbox"] div[data-baseweb="select"] * {{
             background-color: {input_bg} !important;
             color: {text_color} !important;
             border: 1px solid {input_border} !important;
-            border-radius: 8px !important;
         }}
-        [data-testid="stSelectbox"] span, [data-testid="stSelectbox"] p {{
+        
+        [data-testid="stSidebar"] [data-testid="stSelectbox"] p,
+        [data-testid="stSidebar"] [data-testid="stSelectbox"] span {{
             color: {text_color} !important;
-        }}
-        [data-testid="stSelectbox"] svg {{
-            fill: {text_color} !important;
         }}
         
         /* Cực kỳ quan trọng: Fix phần danh sách thả xuống (Popover) */
