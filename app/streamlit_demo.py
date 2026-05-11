@@ -43,8 +43,8 @@ MODEL_CONFIGS = {
         "type": "xlm-roberta"
     },
     "Gemma-4-4B": {
-        "repo_id": "google/gemma-2b-it",
-        "path": PROJECT_ROOT / "experiments" / "models" / "gemma-4-4B" / "pytorch_model.bin",
+        "repo_id": str(PROJECT_ROOT / "experiments" / "results" / "gemma" / "gemma_qlora_xai" / "final_model"),
+        "path": PROJECT_ROOT / "experiments" / "results" / "gemma" / "gemma_qlora_xai" / "final_model" / "adapter_model.safetensors",
         "type": "gemma"
     }
 }
