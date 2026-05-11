@@ -287,8 +287,8 @@ MSSV: 2211090031 | Lớp: KHDL1<br>
 <div class="info-row">
 <b style="font-size:1.1rem;">TS. Trần Lâm Quân</b><br>
 <div style="margin-top:10px; font-size:0.9rem; opacity:0.8;">
-Viện Đào tạo bồi dưỡng cán bộ quản lý y tế<br>
-Trường Đại học Y tế công cộng
+Giảng viên Khoa học dữ liệu<br>
+Trường Đại học Y tế Công Cộng
 </div>
 </div>
 </div>
