@@ -343,6 +343,11 @@ def main():
         span:not([data-testid="stIcon"]):not(.st-ae):not(.st-af) {
             font-family: 'Times New Roman', Times, serif !important;
         }
+
+        /* KHẮC PHỤC LỖI ĐÈ CHỮ (MATERIAL ICONS BỊ BIẾN THÀNH TEXT) */
+        .stIconMaterial, [data-testid="stIconMaterial"], .st-emotion-cache-1vt4ygl {
+            font-family: 'Material Symbols Rounded' !important;
+        }
         
         .stApp { background-color: #0d0f12; }
         
