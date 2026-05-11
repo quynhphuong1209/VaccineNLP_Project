@@ -470,8 +470,23 @@ def main():
             border-radius: 12px !important;
         }}
 
-        /* Fix Selectbox (Dropdown) colors in Light Mode */
-        div[data-baseweb="select"] > div {{
+        /* Fix Button colors (Phân tích, Reset, etc.) */
+        .stButton > button {{ 
+            background-color: {input_bg} !important;
+            color: {text_color} !important;
+            border: 1px solid {input_border} !important;
+            border-radius: 12px !important;
+            transition: all 0.3s ease !important;
+        }}
+        .stButton > button:hover {{
+            border-color: #007bff !important;
+            color: #007bff !important;
+            background-color: {"#1a1e2e" if is_dark else "#f0f7ff"} !important;
+            box-shadow: 0 4px 12px rgba(0,123,255,0.2) !important;
+        }}
+
+        /* Fix Selectbox (Dropdown) colors */
+        div[data-baseweb="select"] > div, div[data-baseweb="select"] button {{
             background-color: {input_bg} !important;
             color: {text_color} !important;
             border: 1px solid {input_border} !important;
@@ -479,13 +494,34 @@ def main():
         div[role="listbox"] {{
             background-color: {sidebar_bg} !important;
             color: {text_color} !important;
+            border: 1px solid {input_border} !important;
         }}
         div[role="option"] {{
-            background-color: transparent !important;
             color: {text_color} !important;
         }}
-        div[role="option"]:hover {{
-            background-color: #007bff20 !important;
+
+        /* Fix Radio Button styling (Mẫu thử nghiệm) */
+        div[data-testid="stRadio"] {{
+            background-color: transparent !important;
+        }}
+        div[data-testid="stRadio"] label {{
+            color: {text_color} !important;
+        }}
+        /* Style các lựa chọn trong radio */
+        div[data-testid="stRadio"] div[role="radiogroup"] > label {{
+            background-color: {card_bg} !important;
+            border: 1px solid {border_color} !important;
+            padding: 8px 15px !important;
+            border-radius: 10px !important;
+            margin-bottom: 5px !important;
+            width: 100% !important;
+        }}
+
+        /* Fix Info/Warning/Success boxes */
+        div[data-testid="stNotification"] {{
+            background-color: {card_bg} !important;
+            color: {text_color} !important;
+            border: 1px solid {border_color} !important;
         }}
 
         /* Table styling - Thêm viền đen cho bảng Benchmark */
