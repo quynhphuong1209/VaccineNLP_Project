@@ -315,15 +315,28 @@ def render_benchmark_tab():
     tasks = ["Misinfo", "Stance", "Sentiment"]
     colors = ["#3db882", "#4a9eed", "#e8504a"]
     for i, task in enumerate(tasks):
-        fig.add_trace(go.Bar(x=df["Model"], y=df[task], name=task, marker_color=colors[i]))
+        fig.add_trace(go.Bar(
+            x=df["Model"], 
+            y=df[task], 
+            name=task, 
+            marker_color=colors[i],
+            text=df[task],
+            texttemplate='%{text:.4f}',
+            textposition='outside',
+            cliponaxis=False
+        ))
     
     fig.update_layout(
         barmode='group', 
         paper_bgcolor='rgba(0,0,0,0)', 
         plot_bgcolor='rgba(0,0,0,0)', 
-        font_color=chart_font_color,
-        legend_font_color=chart_font_color,
-        margin=dict(l=20, r=20, t=40, b=20)
+        font=dict(family='Times New Roman', color=chart_font_color, size=14),
+        legend=dict(font=dict(color=chart_font_color)),
+        xaxis=dict(tickfont=dict(color=chart_font_color, size=12)),
+        yaxis=dict(tickfont=dict(color=chart_font_color, size=12), range=[0, 1.0]),
+        margin=dict(l=20, r=20, t=60, b=40),
+        uniformtext_minsize=8, 
+        uniformtext_mode='hide'
     )
     st.plotly_chart(fig, use_container_width=True)
 
