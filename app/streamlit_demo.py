@@ -32,10 +32,15 @@ MODEL_CONFIGS = {
         "path": PROJECT_ROOT / "experiments" / "models" / "phobert-multitask-v2" / "pytorch_model.bin",
         "type": "phobert"
     },
-    "PhoBERT-v1": {
-        "repo_id": "vinai/phobert-base",
-        "path": PROJECT_ROOT / "experiments" / "models" / "phobert-v1" / "phobert-multitask-v1" / "pytorch_model.bin",
-        "type": "phobert"
+    "XLM-R-v1": {
+        "repo_id": "xlm-roberta-base",
+        "path": PROJECT_ROOT / "experiments" / "models" / "xlm-r-multitask-v1" / "pytorch_model.bin",
+        "type": "xlm-roberta"
+    },
+    "Gemma-4-4B": {
+        "repo_id": "google/gemma-2b-it",
+        "path": PROJECT_ROOT / "experiments" / "models" / "gemma-4-4B" / "pytorch_model.bin",
+        "type": "gemma"
     }
 }
 
