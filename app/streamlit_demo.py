@@ -329,29 +329,17 @@ def main():
 
     st.markdown("""
     <style>
-        /* Global font override - excluding elements that might be icons */
+        /* Cập nhật Font chữ toàn cục an toàn (không ghi đè lên các Icon) */
         html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"], .stMarkdown, p, label, h1, h2, h3, h4, h5, h6, button, input, select, textarea {
             font-family: 'Times New Roman', Times, serif !important;
         }
         
-        /* Fix for Streamlit Icons - prevent them from turning into text */
-        [data-testid="stIcon"], [data-testid="stIcon"] *, .st-ae, .st-af, .st-ag, svg {
-            font-family: inherit !important;
-        }
-        
-        /* Specific override for spans, excluding icons */
-        span:not([data-testid="stIcon"]):not(.st-ae):not(.st-af) {
-            font-family: 'Times New Roman', Times, serif !important;
-        }
-
-        /* KHẮC PHỤC LỖI ĐÈ CHỮ (MATERIAL ICONS BỊ BIẾN THÀNH TEXT) */
-        .stIconMaterial, [data-testid="stIconMaterial"], .st-emotion-cache-1vt4ygl {
+        /* BẢO VỆ CÁC ICON KHÔNG BỊ BIẾN THÀNH TEXT */
+        .stIconMaterial, [data-testid="stIconMaterial"], span[data-baseweb="icon"], svg, .st-emotion-cache-1vt4ygl {
             font-family: 'Material Symbols Rounded' !important;
         }
         
-        .stApp { background-color: #0d0f12; }
-        
-        /* Fix expander icons and labels overlapping */
+        /* Chỉnh style riêng cho Expander để không bị lỗi chữ đè */
         [data-testid="stExpander"] details summary p {
             font-family: 'Times New Roman', Times, serif !important;
             font-size: 1.1rem !important;
@@ -359,17 +347,20 @@ def main():
             padding-left: 10px !important;
         }
         
-        /* Hide the literal text like 'arrow_down' that might show up */
-        [data-testid="stExpander"] summary span[aria-hidden="true"] {
+        /* Giấu đi các chữ rác phát sinh từ Icon nếu có */
+        [data-testid="stExpander"] summary svg text, 
+        [data-testid="stExpander"] summary span.stIconMaterial text {
             display: none !important;
         }
-        
+
         /* Ensure the XAI explanation area also uses Times New Roman */
         [data-testid="stExpander"] .stMarkdown p {
             font-family: 'Times New Roman', Times, serif !important;
             font-size: 1.1rem !important;
             line-height: 1.6;
         }
+        
+        .stApp { background-color: #0d0f12; }
         
         .stTabs [data-baseweb="tab"] {
             height: 48px !important;
