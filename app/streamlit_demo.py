@@ -173,8 +173,8 @@ def load_model(model_key="PhoBERT-v2"):
             checkpoint_loaded = True
             
     except Exception as e:
-        st.error(f"❌ Lỗi nạp mô hình: {str(e)}")
-        # Trả về None để hiển thị lỗi minh bạch trên UI
+        # In lỗi ra console để debug, không hiện bảng đỏ lớn trên UI
+        print(f">>> [ERROR] Lỗi nạp mô hình {model_key}: {str(e)}")
         return None, None, False
         
     model.eval()
@@ -767,10 +767,9 @@ def main():
     xai_cache = load_xai_cache()
 
     if model is None:
-        st.error(f"❌ Không thể tải mã nguồn gốc của `{model_selection}` từ Hugging Face.")
-        st.info("💡 **Lý do phổ biến:** Mô hình này (như Gemma) yêu cầu quyền truy cập (Gated Model). \n\n**Cách khắc phục trên Streamlit Cloud:** Hãy vào phần Settings > Secrets và thêm dòng: `HF_TOKEN = 'your_huggingface_token'`")
-        st.stop()
-
+        st.warning(f"⚠️ Mô hình `{model_selection}` chưa sẵn sàng. Vui lòng chọn mô hình khác hoặc kiểm tra lại Token/Mạng.")
+        # Không dùng st.stop() để người dùng vẫn có thể chọn model khác ở sidebar
+    
     # Ẩn đi cảnh báo không tìm thấy checkpoint theo yêu cầu
     # if not checkpoint_loaded:
     #     st.warning(f"⚠️ Không tìm thấy checkpoint cho `{model_selection}`. Chế độ chưa fine-tune.")
