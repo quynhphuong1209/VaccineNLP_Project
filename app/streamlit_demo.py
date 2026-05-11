@@ -339,6 +339,14 @@ def main():
     if "last_result" not in st.session_state:
         st.session_state.last_result = None
 
+    # Hàm callback để cập nhật văn bản khi chọn mẫu
+    def on_sample_change():
+        selected = st.session_state.sidebar_sample_selector
+        if selected != "Tự nhập":
+            st.session_state.user_text_area = SAMPLE_TEXTS[selected]
+        else:
+            st.session_state.user_text_area = ""
+
     with st.sidebar:
         st.markdown("<h2 style='text-align: center;'>🔬 VaccineNLP</h2>", unsafe_allow_html=True)
         st.divider()
@@ -356,7 +364,13 @@ def main():
         
         st.divider()
         st.markdown("##### 📋 Mẫu thử nghiệm")
-        selected_sample = st.radio("Chọn mẫu:", options=["Tự nhập"] + list(SAMPLE_TEXTS.keys()), index=0, key="sidebar_sample_selector")
+        selected_sample = st.radio(
+            "Chọn mẫu:", 
+            options=["Tự nhập"] + list(SAMPLE_TEXTS.keys()), 
+            index=0, 
+            key="sidebar_sample_selector",
+            on_change=on_sample_change
+        )
         st.divider()
         st.markdown("##### 🤖 Mô hình Phân loại")
         st.info("Mô hình này đảm nhiệm việc phân loại nhãn (Tin giả, Quan điểm, Cảm xúc).")
