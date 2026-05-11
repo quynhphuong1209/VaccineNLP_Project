@@ -2,6 +2,9 @@
 
 Chào mừng bạn đến với thư viện tài liệu của VaccineNLP. Dưới đây là mục lục để bạn dễ dàng tra cứu:
 
+## 🌐 Live Application
+- **[VaccineNLP Dashboard](https://vaccine-nlp-project.streamlit.app/)**: Trải nghiệm thực tế hệ thống phân tích và giải thích AI.
+
 ## 📂 Tài liệu chung (Root)
 - [README.md](./README.md): Hướng dẫn cài đặt và sử dụng nhanh.
 - [FOLDER_STRUCTURE.md](./FOLDER_STRUCTURE.md): Chi tiết cấu trúc thư mục dự án.

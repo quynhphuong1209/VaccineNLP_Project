@@ -1,6 +1,7 @@
 # 💉 VaccineNLP: Dual-Student Hybrid Architecture for Vietnamese Vaccine Misinformation
 
 [![Project Status: Active](https://img.shields.io/badge/Project%20Status-Active-brightgreen.svg)](https://github.com/quynhphuong1209/VaccineNLP_Project)
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://vaccine-nlp-project.streamlit.app/)
 [![Python Version](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -13,6 +14,9 @@
 - **Explainable AI (XAI)**: Generates reasoning chains for every classification using fine-tuned QLoRA models.
 - **Medallion Data Architecture**: Robust pipeline from raw social media crawls to gold-standard benchmark sets.
 - **Vietnamese Optimized**: Specifically tuned for the nuances of the Vietnamese language using `vinai/phobert-base-v2`.
+
+### 🌐 Live Demo
+Experience the dashboard live: **[vaccine-nlp-project.streamlit.app](https://vaccine-nlp-project.streamlit.app/)**
 
 ---
 
