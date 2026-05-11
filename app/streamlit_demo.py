@@ -334,6 +334,11 @@ def main():
             font-family: 'Times New Roman', Times, serif !important;
         }
         
+        /* Fix for Streamlit Icons - prevent them from turning into text */
+        [data-testid="stIcon"], [data-testid="stIcon"] *, .st-ae, .st-af, .st-ag, svg {
+            font-family: inherit !important;
+        }
+        
         /* Specific override for spans, excluding icons */
         span:not([data-testid="stIcon"]):not(.st-ae):not(.st-af) {
             font-family: 'Times New Roman', Times, serif !important;
@@ -341,10 +346,17 @@ def main():
         
         .stApp { background-color: #0d0f12; }
         
-        /* Fix expander icons and labels */
+        /* Fix expander icons and labels overlapping */
         [data-testid="stExpander"] details summary p {
             font-family: 'Times New Roman', Times, serif !important;
             font-size: 1.1rem !important;
+            margin: 0 !important;
+            padding-left: 10px !important;
+        }
+        
+        /* Hide the literal text like 'arrow_down' that might show up */
+        [data-testid="stExpander"] summary span[aria-hidden="true"] {
+            display: none !important;
         }
         
         /* Ensure the XAI explanation area also uses Times New Roman */
