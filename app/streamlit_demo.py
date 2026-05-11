@@ -341,11 +341,8 @@ def main():
 
     # Hàm callback để cập nhật văn bản khi chọn mẫu
     def on_sample_change():
-        selected = st.session_state.sidebar_sample_selector
-        if selected != "Tự nhập":
-            st.session_state.user_text_area = SAMPLE_TEXTS[selected]
-        else:
-            st.session_state.user_text_area = ""
+        # Chỉ xóa kết quả cũ khi người dùng chủ động chọn mẫu khác
+        st.session_state.last_result = None
 
     with st.sidebar:
         st.markdown("<h2 style='text-align: center;'>🔬 VaccineNLP</h2>", unsafe_allow_html=True)
@@ -615,14 +612,11 @@ def main():
 
     with tabs[0]:
         input_text = SAMPLE_TEXTS[selected_sample] if selected_sample != "Tự nhập" else ""
-        
-        # Đảm bảo văn bản luôn được lấy từ session state để đồng bộ 100%
         user_text = st.text_area(
             "Nhập văn bản cần phân tích:", 
             value=input_text, 
             height=140, 
-            placeholder="Dán nội dung bài viết về vắc-xin...", 
-            key="user_text_area"
+            placeholder="Dán nội dung bài viết về vắc-xin..."
         )
         
         col_btn1, col_btn2, _ = st.columns([1, 1, 4])
