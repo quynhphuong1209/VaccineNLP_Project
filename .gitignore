@@ -26,17 +26,22 @@ Thumbs.db
 .vscode/
 .idea/
 
-# --- LFS Note ---
-# Large files (*.bin, *.pt, etc.) are NOT ignored.
-# They are tracked by Git LFS via .gitattributes.
+# --- Machine Learning Models & Weights (IMPORTANT: Ignoring these to save bandwidth) ---
+# We load these from Hugging Face instead of Git LFS
+experiments/models/
+*.bin
+*.pt
+*.pth
+*.ckpt
+*.h5
+*.onnx
 
-# --- Specific Ignores ---
-# You can still ignore temporary logs or very specific folders
+# --- Logs & Temp ---
 experiments/*/logs/
 datasets/temp/*
 !datasets/temp/README.md
 
-# Allow all code and docs
+# --- Allow all code and docs ---
 !.gitignore
 !.gitattributes
 !README.md
