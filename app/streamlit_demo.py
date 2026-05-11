@@ -142,12 +142,15 @@ def load_model(model_key="PhoBERT-v2"):
     cfg = MODEL_CONFIGS[model_key]
     checkpoint_loaded = False
     
-    # Lấy token từ Secrets của Streamlit (nếu có)
+    # Lấy token từ Secrets của Streamlit hoặc Environment (Để bảo mật, không hardcode)
     hf_token = None
+    
     if "HF_TOKEN" in st.secrets:
         hf_token = st.secrets["HF_TOKEN"]
     elif "HF_TOKEN" in os.environ:
         hf_token = os.environ["HF_TOKEN"]
+    elif "VaccineNLP_TOKEN" in st.secrets:
+        hf_token = st.secrets["VaccineNLP_TOKEN"]
     
     try:
         model = VaccineMultitaskModel(model_name=cfg["repo_id"], token=hf_token)
@@ -159,6 +162,7 @@ def load_model(model_key="PhoBERT-v2"):
             checkpoint_loaded = True
             
     except Exception as e:
+        st.error(f"❌ Lỗi nạp mô hình: {str(e)}")
         # Trả về None để hiển thị lỗi minh bạch trên UI
         return None, None, False
         
