@@ -336,6 +336,10 @@ def main():
     # ─────────────────────────────────────────────────────────────
     if "theme" not in st.session_state:
         st.session_state.theme = "Dark"
+    if "last_result" not in st.session_state:
+        st.session_state.last_result = None
+    if "last_result" not in st.session_state:
+        st.session_state.last_result = None
 
     with st.sidebar:
         st.markdown("<h2 style='text-align: center;'>🔬 VaccineNLP</h2>", unsafe_allow_html=True)
@@ -611,6 +615,19 @@ def main():
             with st.spinner(f"🧠 {model_selection} đang xử lý..."):
                 time.sleep(0.5)
                 result = predict(user_text.strip(), model, tokenizer)
+                reasoning = find_xai_reasoning(user_text.strip(), xai_cache)
+                # Lưu vào session state để giữ kết quả khi đổi theme
+                st.session_state.last_result = {
+                    "text": user_text.strip(),
+                    "result": result,
+                    "reasoning": reasoning
+                }
+
+        # Hiển thị kết quả từ session state (nếu có và khớp với text hiện tại)
+        if st.session_state.last_result and st.session_state.last_result["text"] == user_text.strip():
+            saved = st.session_state.last_result
+            result = saved["result"]
+            reasoning = saved["reasoning"]
 
             st.markdown("---")
             col1, col2, col3 = st.columns(3)
@@ -618,7 +635,6 @@ def main():
             with col2: render_result_card("Quan điểm", "stance", result["stance"])
             with col3: render_result_card("Cảm xúc", "sentiment", result["sentiment"])
 
-            reasoning = find_xai_reasoning(user_text.strip(), xai_cache)
             if reasoning:
                 st.markdown("<br>", unsafe_allow_html=True)
                 st.markdown("##### 🧠 Hệ thống Giải thích (XAI Engine)")
