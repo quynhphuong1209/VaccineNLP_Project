@@ -329,10 +329,21 @@ def main():
 
     st.markdown("""
     <style>
-        html, body, [data-testid="stAppViewContainer"], .stMarkdown, p, span, label, h1, h2, h3, h4, h5, h6, button {
+        /* Global font override */
+        html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"], .stMarkdown, p, span, label, h1, h2, h3, h4, h5, h6, button, input, select, textarea {
             font-family: 'Times New Roman', Times, serif !important;
         }
+        
         .stApp { background-color: #0d0f12; }
+        
+        /* Fix overlapping arrow in expanders */
+        [data-testid="stExpander"] summary span p {
+            font-family: 'Times New Roman', Times, serif !important;
+        }
+        [data-testid="stExpander"] summary svg {
+            margin-right: 10px !important;
+        }
+        
         .stTabs [data-baseweb="tab"] {
             height: 48px !important;
             background-color: #1a1a2e !important;
@@ -340,14 +351,27 @@ def main():
             color: white !important;
             border: 1px solid rgba(255,255,255,0.1);
             padding: 0 25px !important;
+            font-family: 'Times New Roman', Times, serif !important;
         }
         .stTabs [aria-selected="true"] {
             background-color: #007bff !important;
             border: 1px solid #007bff !important;
             font-weight: bold !important;
         }
-        .stTextArea textarea { background: #13161b !important; color: #e2e4e9 !important; border-radius: 12px !important; border: 1px solid #2a5298 !important; }
-        .stButton > button { background: linear-gradient(135deg, #007bff, #00c6ff) !important; color: white !important; border-radius: 12px !important; font-weight: 600 !important; }
+        .stTextArea textarea { 
+            background: #13161b !important; 
+            color: #e2e4e9 !important; 
+            border-radius: 12px !important; 
+            border: 1px solid #2a5298 !important; 
+            font-family: 'Times New Roman', Times, serif !important;
+        }
+        .stButton > button { 
+            background: linear-gradient(135deg, #007bff, #00c6ff) !important; 
+            color: white !important; 
+            border-radius: 12px !important; 
+            font-weight: 600 !important;
+            font-family: 'Times New Roman', Times, serif !important;
+        }
     </style>
     """, unsafe_allow_html=True)
 
