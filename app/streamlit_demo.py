@@ -428,8 +428,9 @@ def main():
         st.info("💡 **Lý do phổ biến:** Mô hình này (như Gemma) yêu cầu quyền truy cập (Gated Model). \n\n**Cách khắc phục trên Streamlit Cloud:** Hãy vào phần Settings > Secrets và thêm dòng: `HF_TOKEN = 'your_huggingface_token'`")
         st.stop()
 
-    if not checkpoint_loaded:
-        st.warning(f"⚠️ Không tìm thấy checkpoint cho `{model_selection}`. Chế độ chưa fine-tune.")
+    # Ẩn đi cảnh báo không tìm thấy checkpoint theo yêu cầu
+    # if not checkpoint_loaded:
+    #     st.warning(f"⚠️ Không tìm thấy checkpoint cho `{model_selection}`. Chế độ chưa fine-tune.")
 
     st.markdown("""
     <div style="text-align: center; margin-bottom: 2.5rem; padding: 2rem; background: rgba(255,255,255,0.02); border-radius: 20px; border: 1px solid rgba(255,255,255,0.05);">
