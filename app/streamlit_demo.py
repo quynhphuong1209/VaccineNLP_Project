@@ -316,7 +316,6 @@ def hien_thi_footer_chung():
         </style>
         <div class="main-footer">
             <div class="footer-container">
-                <!-- CỘT 1: ĐƠN VỊ CÔNG TÁC -->
                 <div class="footer-col logo-col">
                     <img src="{logo_src}" class="footer-logo-img" alt="HUPH Logo">
                     <div class="school-name">TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG</div>
@@ -326,7 +325,6 @@ def hien_thi_footer_chung():
                     </div>
                 </div>
 
-                <!-- CỘT 2: GIỚI THIỆU DỰ ÁN -->
                 <div class="footer-col">
                     <div class="footer-title">🔬 ĐỀ TÀI ĐỒ ÁN</div>
                     <div class="project-name-vi">
@@ -337,7 +335,6 @@ def hien_thi_footer_chung():
                     </div>
                 </div>
 
-                <!-- CỘT 3: THÀNH VIÊN THỰC HIỆN -->
                 <div class="footer-col">
                     <div class="footer-title">👥 NHÓM THỰC HIỆN</div>
                     <div class="info-row">
@@ -358,7 +355,7 @@ def hien_thi_footer_chung():
                 © 2026 VaccineNLP Project | Đồ án tốt nghiệp chuyên ngành Khoa học Dữ liệu - HUPH
             </div>
         </div>
-    """)
+    """).strip()
     st.markdown(footer_html, unsafe_allow_html=True)
 
 def render_result_card(task_name: str, task_key: str, result: dict):
