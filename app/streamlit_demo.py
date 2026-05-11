@@ -159,7 +159,7 @@ def load_model(model_key="PhoBERT-v2"):
         
     # Debug token (chỉ hiện trong log console để tránh làm xấu giao diện)
     if hf_token:
-        print(">>> [DEBUG] Đã tìm thấy HF Token từ secrets/env.")
+        print(f">>> [DEBUG] Đã tìm thấy HF Token: {hf_token[:5]}...")
     else:
         print(">>> [DEBUG] Cảnh báo: Không tìm thấy HF Token!")
     
