@@ -362,24 +362,35 @@ def main():
 
     st.markdown(f"""
     <style>
-        /* PHÁ BỎ MỌI GIỚI HẠN CHIỀU RỘNG (UNIVERSAL FULL-WIDTH) */
-        .main .block-container {{
-            max-width: 100% !important;
-            width: 100% !important;
-            padding-left: 2rem !important;
-            padding-right: 2rem !important;
-            padding-top: 1rem !important;
-        }}
+        /* PHÁ BỎ MỌI GIỚI HẠN CHIỀU RỘNG (NUCLEAR FULL-WIDTH) */
         
-        /* Cưỡng ép tất cả các container con phải chiếm 100% */
-        [data-testid="stVerticalBlock"] > div,
-        [data-testid="stAppViewBlockContainer"] {{
+        /* 1. Target toàn bộ container chính */
+        [data-testid="stAppViewContainer"], 
+        [data-testid="stAppViewBlockContainer"],
+        .main, .block-container {{
+            max-width: none !important;
             width: 100% !important;
-            max-width: 100% !important;
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
         }}
 
-        /* Loại bỏ khoảng trắng thừa của Streamlit trên màn hình lớn */
-        [data-testid="stAppViewContainer"] {{
+        /* 2. Target các lớp cache động của Streamlit (thường gây bó hẹp 46rem/60rem) */
+        div[class^="st-emotion-cache-"] {{
+            max-width: none !important;
+        }}
+
+        /* 3. Đảm bảo sidebar không bị ảnh hưởng quá mức (giữ nguyên độ rộng sidebar) */
+        [data-testid="stSidebar"] div[class^="st-emotion-cache-"] {{
+            max-width: 20rem !important;
+        }}
+
+        /* 4. Ép các khối nội dung bên trong dãn 100% */
+        .element-container, .stMarkdown, .stVerticalBlock, div[data-testid="stVerticalBlock"] > div {{
+            width: 100% !important;
+        }}
+
+        /* 5. Loại bỏ nền đen thừa nếu có ở hai bên */
+        .stApp {{
             background-color: {bg_color} !important;
         }}
         
