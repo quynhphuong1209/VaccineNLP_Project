@@ -767,8 +767,8 @@ def main():
 
     st.markdown(f"""
     <div style="width: 100%; text-align: center; margin-bottom: 2.5rem; padding: 2.5rem; background: {banner_bg}; border-radius: 20px; border: 1px solid {banner_border}; box-sizing: border-box;">
-        <h1 style="color: #FFD700; font-family: 'Times New Roman', Times, serif; font-weight: bold; font-size: 3.5rem; margin-bottom: 0.5rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">🔬 VaccineNLP · Dashboard</h1>
-        <p style="color: {banner_p_color}; font-family: 'Times New Roman', Times, serif; font-style: italic; font-size: 1.5rem; opacity: {banner_p_opacity};">Hệ thống AI giải thích được — Phân loại đa chiều thông tin vắc-xin trên mạng xã hội</p>
+        <h1 style="color: #FFD700; font-family: 'Times New Roman', Times, serif; font-weight: bold; font-size: 2.2rem; margin-bottom: 0.8rem; line-height: 1.3; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">ỨNG DỤNG XỬ LÝ NGÔN NGỮ TỰ NHIÊN TRONG PHÁT HIỆN THÔNG TIN SAI LỆCH VỀ VACCINE VÀ PHÂN TÍCH THÁI ĐỘ CỘNG ĐỒNG TRÊN MÔI TRƯỜNG SỐ TẠI VIỆT NAM</h1>
+        <p style="color: {banner_p_color}; font-family: 'Times New Roman', Times, serif; font-style: italic; font-size: 1.1rem; opacity: {banner_p_opacity}; line-height: 1.4;">(Applying NLP for Vaccine Misinformation Detection and Community Attitude Analysis in Vietnamese Digital Environments)</p>
     </div>
     """, unsafe_allow_html=True)
 
