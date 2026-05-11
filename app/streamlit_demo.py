@@ -282,14 +282,16 @@ def render_result_card(task_name: str, task_key: str, result: dict):
             class_label = LABEL_MAPS[task_key][idx]
             class_color = LABEL_COLORS[task_key][idx]
             pct = prob * 100
+            bar_bg = "#262730" if is_dark else "#e6eaf1"
+            label_text_color = "#a0a5b0" if is_dark else "#555"
             st.markdown(f"""
-            <div style="margin-bottom: 6px;">
-                <div style="display: flex; justify-content: space-between; font-size: 12px; color: #a0a5b0;">
+            <div style="margin-bottom: 8px;">
+                <div style="display: flex; justify-content: space-between; font-size: 13px; color: {label_text_color};">
                     <span>{class_label}</span>
-                    <span style="color: {class_color};">{pct:.1f}%</span>
+                    <span style="color: {class_color}; font-weight: bold;">{pct:.1f}%</span>
                 </div>
-                <div style="background: #1a1e25; border-radius: 4px; height: 6px;">
-                    <div style="background: {class_color}; width: {pct}%; height: 6px; border-radius: 4px;"></div>
+                <div style="background: {bar_bg}; border-radius: 10px; height: 8px; margin-top: 4px;">
+                    <div style="background: {class_color}; width: {pct}%; height: 8px; border-radius: 10px; box-shadow: 0 0 10px {class_color}40;"></div>
                 </div>
             </div>
             """, unsafe_allow_html=True)
@@ -306,12 +308,23 @@ def render_benchmark_tab():
     df = pd.DataFrame(data)
     st.table(df)
 
+    is_dark = st.session_state.get("theme", "Dark") == "Dark"
+    chart_font_color = "#e2e4e9" if is_dark else "#111111"
+    
     fig = go.Figure()
     tasks = ["Misinfo", "Stance", "Sentiment"]
     colors = ["#3db882", "#4a9eed", "#e8504a"]
     for i, task in enumerate(tasks):
         fig.add_trace(go.Bar(x=df["Model"], y=df[task], name=task, marker_color=colors[i]))
-    fig.update_layout(barmode='group', paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font_color="#e2e4e9")
+    
+    fig.update_layout(
+        barmode='group', 
+        paper_bgcolor='rgba(0,0,0,0)', 
+        plot_bgcolor='rgba(0,0,0,0)', 
+        font_color=chart_font_color,
+        legend_font_color=chart_font_color,
+        margin=dict(l=20, r=20, t=40, b=20)
+    )
     st.plotly_chart(fig, use_container_width=True)
 
 # ─────────────────────────────────────────────────────────────
@@ -471,10 +484,16 @@ def main():
     # if not checkpoint_loaded:
     #     st.warning(f"⚠️ Không tìm thấy checkpoint cho `{model_selection}`. Chế độ chưa fine-tune.")
 
-    st.markdown("""
-    <div style="width: 100%; text-align: center; margin-bottom: 2.5rem; padding: 2.5rem; background: rgba(255,255,255,0.02); border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); box-sizing: border-box;">
-        <h1 style="color: #FFD700; font-family: 'Times New Roman', Times, serif; font-weight: bold; font-size: 3.5rem; margin-bottom: 0.5rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">🔬 VaccineNLP · Dashboard</h1>
-        <p style="color: white; font-family: 'Times New Roman', Times, serif; font-style: italic; font-size: 1.5rem; opacity: 0.9;">Hệ thống AI giải thích được — Phân loại đa chiều thông tin vắc-xin trên mạng xã hội</p>
+    is_dark = st.session_state.get("theme", "Dark") == "Dark"
+    banner_bg = "rgba(255,255,255,0.02)" if is_dark else "rgba(0,0,0,0.02)"
+    banner_border = "rgba(255,255,255,0.05)" if is_dark else "rgba(0,0,0,0.05)"
+    banner_p_color = "white" if is_dark else "#333"
+    banner_p_opacity = "0.9" if is_dark else "1.0"
+
+    st.markdown(f"""
+    <div style="width: 100%; text-align: center; margin-bottom: 2.5rem; padding: 2.5rem; background: {banner_bg}; border-radius: 20px; border: 1px solid {banner_border}; box-sizing: border-box;">
+        <h1 style="color: #FFD700; font-family: 'Times New Roman', Times, serif; font-weight: bold; font-size: 3.5rem; margin-bottom: 0.5rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">🔬 VaccineNLP · Dashboard</h1>
+        <p style="color: {banner_p_color}; font-family: 'Times New Roman', Times, serif; font-style: italic; font-size: 1.5rem; opacity: {banner_p_opacity};">Hệ thống AI giải thích được — Phân loại đa chiều thông tin vắc-xin trên mạng xã hội</p>
     </div>
     """, unsafe_allow_html=True)
 
