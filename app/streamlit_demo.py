@@ -512,19 +512,36 @@ def main():
             box-shadow: 0 4px 12px rgba(0,123,255,0.2) !important;
         }}
 
-        /* Fix Selectbox (Dropdown) colors */
-        div[data-baseweb="select"] > div, div[data-baseweb="select"] button {{
+        /* Fix Selectbox (Dropdown) colors - Ép màu toàn diện */
+        [data-testid="stSelectbox"] div[data-baseweb="select"], 
+        [data-testid="stSelectbox"] button,
+        [data-testid="stSelectbox"] div[data-baseweb="select"] > div {{
             background-color: {input_bg} !important;
             color: {text_color} !important;
             border: 1px solid {input_border} !important;
+            border-radius: 8px !important;
         }}
-        div[role="listbox"] {{
+        [data-testid="stSelectbox"] span, [data-testid="stSelectbox"] p {{
+            color: {text_color} !important;
+        }}
+        [data-testid="stSelectbox"] svg {{
+            fill: {text_color} !important;
+        }}
+        
+        /* Cực kỳ quan trọng: Fix phần danh sách thả xuống (Popover) */
+        [data-baseweb="popover"], [data-baseweb="listbox"], ul[role="listbox"] {{
             background-color: {sidebar_bg} !important;
             color: {text_color} !important;
             border: 1px solid {input_border} !important;
         }}
-        div[role="option"] {{
+            border: 1px solid {input_border} !important;
+        }}
+        [data-baseweb="popover"] li, [role="option"] {{
+            background-color: transparent !important;
             color: {text_color} !important;
+        }}
+        [data-baseweb="popover"] li:hover, [role="option"]:hover {{
+            background-color: {"rgba(255,255,255,0.1)" if is_dark else "rgba(0,0,0,0.05)"} !important;
         }}
 
         /* Fix Radio Button styling (Mẫu thử nghiệm) */
