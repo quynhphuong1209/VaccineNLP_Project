@@ -27,18 +27,19 @@ Thumbs.db
 .idea/
 
 # --- Machine Learning Models & Weights (IMPORTANT: Ignoring these to save bandwidth) ---
-# We load these from Hugging Face instead of Git LFS
-experiments/models/
+# We load these# Model weights and large binary files (Exclude from Git LFS to save budget)
 *.bin
 *.pt
+*.h5
 *.pth
 *.ckpt
-*.h5
+*.joblib
 *.onnx
-
-# --- Logs & Temp ---
-experiments/*/logs/
-datasets/temp/*
+*.safetensors
+experiments/models/
+experiments/results/
+**/checkpoint-*/
+temp/*
 !datasets/temp/README.md
 
 # --- Allow all code and docs ---
