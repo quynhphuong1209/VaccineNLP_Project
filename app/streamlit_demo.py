@@ -329,19 +329,29 @@ def main():
 
     st.markdown("""
     <style>
-        /* Global font override */
-        html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"], .stMarkdown, p, span, label, h1, h2, h3, h4, h5, h6, button, input, select, textarea {
+        /* Global font override - excluding elements that might be icons */
+        html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"], .stMarkdown, p, label, h1, h2, h3, h4, h5, h6, button, input, select, textarea {
+            font-family: 'Times New Roman', Times, serif !important;
+        }
+        
+        /* Specific override for spans, excluding icons */
+        span:not([data-testid="stIcon"]):not(.st-ae):not(.st-af) {
             font-family: 'Times New Roman', Times, serif !important;
         }
         
         .stApp { background-color: #0d0f12; }
         
-        /* Fix overlapping arrow in expanders */
-        [data-testid="stExpander"] summary span p {
+        /* Fix expander icons and labels */
+        [data-testid="stExpander"] details summary p {
             font-family: 'Times New Roman', Times, serif !important;
+            font-size: 1.1rem !important;
         }
-        [data-testid="stExpander"] summary svg {
-            margin-right: 10px !important;
+        
+        /* Ensure the XAI explanation area also uses Times New Roman */
+        [data-testid="stExpander"] .stMarkdown p {
+            font-family: 'Times New Roman', Times, serif !important;
+            font-size: 1.1rem !important;
+            line-height: 1.6;
         }
         
         .stTabs [data-baseweb="tab"] {
