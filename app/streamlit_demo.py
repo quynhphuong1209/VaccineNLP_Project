@@ -269,14 +269,14 @@ def hien_thi_footer_chung(is_dark=True):
 <div class="info-row">
 <b>1. Kim Mạnh Hưng</b><br>
 <span style="font-size:0.9rem; opacity:0.8;">
-MSSV: 2211090016 | Lớp: KHDL1<br>
+MSSV: 2211090016 | Lớp: CNCQ KHDL1-1A<br>
 📧 <a href="mailto:2211090016@studenthuph.edu.vn" class="footer-link">2211090016@studenthuph.edu.vn</a>
 </span>
 </div>
 <div class="info-row" style="margin-top:15px;">
 <b>2. Đinh Lê Quỳnh Phương</b><br>
 <span style="font-size:0.9rem; opacity:0.8;">
-MSSV: 2211090031 | Lớp: KHDL1<br>
+MSSV: 2211090031 | Lớp: CNCQ KHDL1-1A<br>
 📧 <a href="mailto:2211090031@studenthuph.edu.vn" class="footer-link">2211090031@studenthuph.edu.vn</a>
 </span>
 </div>
