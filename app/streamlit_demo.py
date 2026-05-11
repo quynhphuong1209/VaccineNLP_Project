@@ -634,6 +634,7 @@ def main():
             background: {"linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%)" if is_dark else "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)"};
             padding: 50px 20px;
             color: {"#ccc" if is_dark else "#444"};
+            font-family: 'Times New Roman', Times, serif !important;
             border-top: 4px solid #007bff;
             box-shadow: 0 -10px 25px rgba(0,123,255,0.1);
             margin-top: 60px;
@@ -645,6 +646,7 @@ def main():
             max-width: none !important;
             margin: 0 auto;
             gap: 20px;
+            font-family: 'Times New Roman', Times, serif !important;
         }}
         .footer-col {{
             flex: 1;
@@ -653,6 +655,14 @@ def main():
             border-right: 1px solid {"rgba(255,255,255,0.1)" if is_dark else "rgba(0,0,0,0.1)"};
         }}
         .footer-col:last-child {{ border-right: none; }}
+        .logo-col {{
+            text-align: center;
+        }}
+        .footer-logo-img {{
+            width: 100px;
+            margin-bottom: 15px;
+            filter: drop-shadow(0 0 8px rgba(0,123,255,0.2));
+        }}
         .footer-title {{
             color: {"#007bff" if is_dark else "#0056b3"};
             font-weight: bold;
