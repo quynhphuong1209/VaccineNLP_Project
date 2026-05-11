@@ -616,8 +616,14 @@ def main():
     with tabs[0]:
         input_text = SAMPLE_TEXTS[selected_sample] if selected_sample != "Tự nhập" else ""
         
-        # Sử dụng key để Streamlit tự động quản lý trạng thái văn bản
-        user_text = st.text_area("Nhập văn bản cần phân tích:", value=input_text, height=140, placeholder="Dán nội dung bài viết về vắc-xin...", key="user_text_area")
+        # Đảm bảo văn bản luôn được lấy từ session state để đồng bộ 100%
+        user_text = st.text_area(
+            "Nhập văn bản cần phân tích:", 
+            value=input_text, 
+            height=140, 
+            placeholder="Dán nội dung bài viết về vắc-xin...", 
+            key="user_text_area"
+        )
         
         col_btn1, col_btn2, _ = st.columns([1, 1, 4])
         with col_btn1:
@@ -632,33 +638,35 @@ def main():
                 time.sleep(0.5)
                 result = predict(user_text.strip(), model, tokenizer)
                 reasoning = find_xai_reasoning(user_text.strip(), xai_cache)
-                # Lưu vào session state để giữ kết quả khi đổi theme
+                # Lưu vào session state
                 st.session_state.last_result = {
                     "text": user_text.strip(),
                     "result": result,
                     "reasoning": reasoning
                 }
 
-        # Hiển thị kết quả từ session state (nếu có và khớp với text hiện tại)
-        if st.session_state.last_result and st.session_state.last_result["text"] == user_text.strip():
-            saved = st.session_state.last_result
-            result = saved["result"]
-            reasoning = saved["reasoning"]
+        # Hiển thị kết quả: Chỉ cần có kết quả trong bộ nhớ và văn bản hiện tại KHÔNG rỗng
+        if st.session_state.last_result and user_text.strip():
+            # Nếu văn bản trong ô nhập liệu khớp với kết quả đã lưu, hiển thị nó
+            if st.session_state.last_result["text"] == user_text.strip():
+                saved = st.session_state.last_result
+                result = saved["result"]
+                reasoning = saved["reasoning"]
 
-            st.markdown("---")
-            col1, col2, col3 = st.columns(3)
-            with col1: render_result_card("Tin giả", "misinfo", result["misinfo"])
-            with col2: render_result_card("Quan điểm", "stance", result["stance"])
-            with col3: render_result_card("Cảm xúc", "sentiment", result["sentiment"])
+                st.markdown("---")
+                col1, col2, col3 = st.columns(3)
+                with col1: render_result_card("Tin giả", "misinfo", result["misinfo"])
+                with col2: render_result_card("Quan điểm", "stance", result["stance"])
+                with col3: render_result_card("Cảm xúc", "sentiment", result["sentiment"])
 
-            if reasoning:
-                st.markdown("<br>", unsafe_allow_html=True)
-                st.markdown("##### 🧠 Hệ thống Giải thích (XAI Engine)")
-                with st.expander("📖 Xem giải thích chi tiết từ Gemma-4", expanded=True):
-                    st.markdown(f"<div style='border-left: 3px solid #007bff; padding-left: 20px; color: {text_color}; opacity: 0.9;'>{reasoning}</div>", unsafe_allow_html=True)
-                    st.caption("💡 Đây là mô hình Reasoning Engine (Gemma-4) giải thích lý do cho kết quả phân loại ở trên.")
-            else:
-                st.info("💡 Lý luận XAI không khả dụng cho văn bản này. Hãy chọn mẫu từ thanh bên.")
+                if reasoning:
+                    st.markdown("<br>", unsafe_allow_html=True)
+                    st.markdown("##### 🧠 Hệ thống Giải thích (XAI Engine)")
+                    with st.expander("📖 Xem giải thích chi tiết từ Gemma-4", expanded=True):
+                        st.markdown(f"<div style='border-left: 3px solid #007bff; padding-left: 20px; color: {text_color}; opacity: 0.9;'>{reasoning}</div>", unsafe_allow_html=True)
+                        st.caption("💡 Đây là mô hình Reasoning Engine (Gemma-4) giải thích lý do cho kết quả phân loại ở trên.")
+                else:
+                    st.info("💡 Lý luận XAI không khả dụng cho văn bản này. Hãy chọn mẫu từ thanh bên.")
         elif analyze_btn:
             st.warning("⚠️ Vui lòng nhập văn bản.")
 
