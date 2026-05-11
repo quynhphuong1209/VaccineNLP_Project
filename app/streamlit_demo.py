@@ -238,22 +238,28 @@ def render_result_card(task_name: str, task_key: str, result: dict):
     icon = LABEL_ICONS[task_key][pred_id]
     confidence = max(conf_list) * 100
 
+    is_dark = st.session_state.get("theme", "Dark") == "Dark"
+    card_bg = "rgba(255, 255, 255, 0.03)" if is_dark else "#ffffff"
+    text_color = "#e2e4e9" if is_dark else "#1a1e2e"
+    secondary_text = "#888" if is_dark else "#666"
+    shadow = "0 10px 20px rgba(0,0,0,0.3)" if is_dark else "0 10px 20px rgba(0,0,0,0.1)"
+
     st.markdown(f"""
     <div style="
-        background: rgba(255, 255, 255, 0.03);
+        background: {card_bg};
         border: 1px solid {color}80;
         border-radius: 16px;
         padding: 25px;
         text-align: center;
-        box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        box-shadow: {shadow};
         font-family: 'Times New Roman', Times, serif !important;
     ">
         <div style="font-size: 40px; margin-bottom: 12px;">{icon}</div>
-        <div style="font-size: 0.85rem; color: #888; text-transform: uppercase;
+        <div style="font-size: 0.85rem; color: {secondary_text}; text-transform: uppercase;
                     letter-spacing: 0.15em; margin-bottom: 8px;">{task_name}</div>
         <div style="font-size: 1.6rem; font-weight: 700; color: {color};
                     margin-bottom: 10px;">{label}</div>
-        <div style="font-size: 1rem; color: #a0a5b0;">
+        <div style="font-size: 1rem; color: {secondary_text};">
             Độ tin cậy: <strong style="color: {color};">{confidence:.1f}%</strong>
         </div>
     </div>
@@ -300,82 +306,99 @@ def render_benchmark_tab():
 # MAIN APP
 # ─────────────────────────────────────────────────────────────
 def main():
-    st.set_page_config(page_title="VaccineNLP · XAI Dashboard", page_icon="🔬", layout="wide")
-
-    st.markdown("""
-    <style>
-        /* Cập nhật Font chữ toàn cục an toàn (không ghi đè lên các Icon) */
-        html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"], .stMarkdown, p, label, h1, h2, h3, h4, h5, h6, button, input, select, textarea {
-            font-family: 'Times New Roman', Times, serif !important;
-        }
-        
-        /* BẢO VỆ CÁC ICON KHÔNG BỊ BIẾN THÀNH TEXT */
-        .stIconMaterial, [data-testid="stIconMaterial"], span[data-baseweb="icon"], svg, .st-emotion-cache-1vt4ygl {
-            font-family: 'Material Symbols Rounded' !important;
-        }
-        
-        /* Chỉnh style riêng cho Expander để không bị lỗi chữ đè */
-        [data-testid="stExpander"] details summary p {
-            font-family: 'Times New Roman', Times, serif !important;
-            font-size: 1.1rem !important;
-            margin: 0 !important;
-            padding-left: 10px !important;
-        }
-        
-        /* Giấu đi các chữ rác phát sinh từ Icon nếu có */
-        [data-testid="stExpander"] summary svg text, 
-        [data-testid="stExpander"] summary span.stIconMaterial text {
-            display: none !important;
-        }
-
-        /* Ensure the XAI explanation area also uses Times New Roman */
-        [data-testid="stExpander"] .stMarkdown p {
-            font-family: 'Times New Roman', Times, serif !important;
-            font-size: 1.1rem !important;
-            line-height: 1.6;
-        }
-        
-        .stApp { background-color: #0d0f12; }
-        
-        .stTabs [data-baseweb="tab"] {
-            height: 48px !important;
-            background-color: #1a1a2e !important;
-            border-radius: 10px 10px 0 0;
-            color: white !important;
-            border: 1px solid rgba(255,255,255,0.1);
-            padding: 0 25px !important;
-            font-family: 'Times New Roman', Times, serif !important;
-        }
-        .stTabs [aria-selected="true"] {
-            background-color: #007bff !important;
-            border: 1px solid #007bff !important;
-            font-weight: bold !important;
-        }
-        .stTextArea textarea { 
-            background: #13161b !important; 
-            color: #e2e4e9 !important; 
-            border-radius: 12px !important; 
-            border: 1px solid #2a5298 !important; 
-            font-family: 'Times New Roman', Times, serif !important;
-        }
-        .stButton > button { 
-            background: linear-gradient(135deg, #007bff, #00c6ff) !important; 
-            color: white !important; 
-            border-radius: 12px !important; 
-            font-weight: 600 !important;
-            font-family: 'Times New Roman', Times, serif !important;
-        }
-    </style>
-    """, unsafe_allow_html=True)
+    # ─────────────────────────────────────────────────────────────
+    # THEME STATE & TOGGLE
+    # ─────────────────────────────────────────────────────────────
+    if "theme" not in st.session_state:
+        st.session_state.theme = "Dark"
 
     with st.sidebar:
         st.markdown("<h2 style='text-align: center;'>🔬 VaccineNLP</h2>", unsafe_allow_html=True)
+        st.divider()
+        
+        st.markdown("##### 🎨 Giao diện")
+        theme_col1, theme_col2 = st.columns(2)
+        with theme_col1:
+            if st.button("🌙 Tối", use_container_width=True, type="primary" if st.session_state.theme == "Dark" else "secondary"):
+                st.session_state.theme = "Dark"
+                st.rerun()
+        with theme_col2:
+            if st.button("☀️ Sáng", use_container_width=True, type="primary" if st.session_state.theme == "Light" else "secondary"):
+                st.session_state.theme = "Light"
+                st.rerun()
+        
         st.divider()
         st.markdown("##### 📋 Mẫu thử nghiệm")
         selected_sample = st.radio("Chọn mẫu:", options=["Tự nhập"] + list(SAMPLE_TEXTS.keys()), index=0)
         st.divider()
         st.markdown("##### 🤖 Mô hình Phân loại")
+        st.info("Mô hình này đảm nhiệm việc phân loại nhãn (Tin giả, Quan điểm, Cảm xúc).")
         model_selection = st.selectbox("Chọn model:", options=list(MODEL_CONFIGS.keys()), index=0)
+
+    # ─────────────────────────────────────────────────────────────
+    # DYNAMIC CSS BASED ON THEME
+    # ─────────────────────────────────────────────────────────────
+    is_dark = st.session_state.theme == "Dark"
+    bg_color = "#0d0f12" if is_dark else "#f5f7f9"
+    card_bg = "rgba(255, 255, 255, 0.03)" if is_dark else "#ffffff"
+    text_color = "#e2e4e9" if is_dark else "#1a1e2e"
+    secondary_text = "#888" if is_dark else "#666"
+    border_color = "rgba(255,255,255,0.05)" if is_dark else "rgba(0,0,0,0.05)"
+    sidebar_bg = "#111" if is_dark else "#fff"
+
+    st.markdown(f"""
+    <style>
+        /* Toàn bộ giao diện chính */
+        .stApp {{
+            background-color: {bg_color} !important;
+            color: {text_color} !important;
+        }}
+        
+        /* Font chữ toàn cục */
+        html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"], .stMarkdown, p, label, h1, h2, h3, h4, h5, h6, button, input, select, textarea {{
+            font-family: 'Times New Roman', Times, serif !important;
+        }}
+
+        /* Sidebar styling */
+        [data-testid="stSidebar"] {{
+            background-color: {sidebar_bg} !important;
+        }}
+        
+        /* BẢO VỆ CÁC ICON */
+        .stIconMaterial, [data-testid="stIconMaterial"], span[data-baseweb="icon"], svg, .st-emotion-cache-1vt4ygl {{
+            font-family: 'Material Symbols Rounded' !important;
+        }}
+        
+        /* Tabs styling */
+        .stTabs [data-baseweb="tab"] {{
+            height: 48px !important;
+            background-color: {"#1a1a2e" if is_dark else "#e9ecef"} !important;
+            border-radius: 10px 10px 0 0;
+            color: {text_color} !important;
+            border: 1px solid {border_color};
+            padding: 0 25px !important;
+        }}
+        .stTabs [aria-selected="true"] {{
+            background-color: #007bff !important;
+            color: white !important;
+            font-weight: bold !important;
+        }}
+
+        /* Input area styling */
+        .stTextArea textarea {{ 
+            background: {"#13161b" if is_dark else "#ffffff"} !important; 
+            color: {text_color} !important; 
+            border-radius: 12px !important; 
+            border: 1px solid {"#2a5298" if is_dark else "#ccd0d5"} !important; 
+        }}
+
+        /* Button styling */
+        .stButton > button {{ 
+            border-radius: 12px !important; 
+            font-weight: 600 !important;
+        }}
+    </style>
+    """, unsafe_allow_html=True)
 
     model, tokenizer, checkpoint_loaded = load_model(model_selection)
     xai_cache = load_xai_cache()
@@ -422,9 +445,10 @@ def main():
             reasoning = find_xai_reasoning(user_text.strip(), xai_cache)
             if reasoning:
                 st.markdown("<br>", unsafe_allow_html=True)
-                with st.expander("📖 Xem giải thích chi tiết từ Gemma-4 (XAI)", expanded=True):
-                    st.markdown(f"<div style='border-left: 3px solid #007bff; padding-left: 20px; color: #c8cad0;'>{reasoning}</div>", unsafe_allow_html=True)
-                    st.caption("💡 Lý luận được sinh bởi Gemma-4 4B qua cơ chế Knowledge Distillation.")
+                st.markdown("##### 🧠 Hệ thống Giải thích (XAI Engine)")
+                with st.expander("📖 Xem giải thích chi tiết từ Gemma-4", expanded=True):
+                    st.markdown(f"<div style='border-left: 3px solid #007bff; padding-left: 20px; color: {text_color}; opacity: 0.9;'>{reasoning}</div>", unsafe_allow_html=True)
+                    st.caption("💡 Đây là mô hình Reasoning Engine (Gemma-4) giải thích lý do cho kết quả phân loại ở trên.")
             else:
                 st.info("💡 Lý luận XAI không khả dụng cho văn bản này. Hãy chọn mẫu từ thanh bên.")
         elif analyze_btn:
