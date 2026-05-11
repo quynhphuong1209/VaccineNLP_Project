@@ -244,7 +244,7 @@ def hien_thi_footer_chung(is_dark=True):
 
     border_color = "#007bff"
 
-    footer_html = f"""<style>.main-footer{{background:{footer_bg};padding:50px 20px;color:{footer_text};font-family:'Times New Roman',Times,serif!important;border-top:4px solid {border_color};box-shadow:0 -10px 25px rgba(0,123,255,0.1);margin-top:60px}}.footer-container{{display:flex;flex-wrap:wrap;justify-content:space-between;max-width:none!important;margin:0 auto;gap:20px}}.footer-col{{flex:1;min-width:300px;padding:0 25px;border-right:1px solid {col_border}}}.footer-col:last-child{{border-right:none}}.logo-col{{text-align:center}}.footer-logo-img{{width:100px;margin-bottom:15px;filter:drop-shadow(0 0 8px rgba(0,123,255,0.2))}}.footer-title{{color:{title_color};font-weight:bold;margin-bottom:15px;font-size:1.2rem;text-transform:uppercase;letter-spacing:1px}}.info-row{{margin-bottom:10px;font-size:1rem;line-height:1.4}}.info-label{{font-weight:bold;color:{label_color}}}.school-name{{font-weight:bold;color:{school_name_color};font-size:1.1rem;margin-bottom:5px}}.footer-bottom{{padding-top:20px;margin-top:30px;border-top:1px solid rgba(0,0,0,0.05);font-size:0.9rem;color:{bottom_text};text-align:center}}.project-name-vi{{color:{project_vi};font-weight:bold;font-style:italic;margin-bottom:8px}}.project-name-en{{font-size:0.9rem;opacity:0.8;line-height:1.3}}.footer-link{{color:{title_color}!important;text-decoration:none;transition:opacity 0.2s}}.footer-link:hover{{opacity:0.8;text-decoration:underline}}</style><div class="main-footer"><div class="footer-container"><div class="footer-col logo-col"><img src="{logo_src}" class="footer-logo-img" alt="HUPH Logo"><div class="school-name">TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG</div><div style="font-size:0.9rem;opacity:0.8;"><p>📍 Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</p><p>🌐 <a href="https://huph.edu.vn/" target="_blank" class="footer-link">huph.edu.vn</a></p></div></div><div class="footer-col"><div class="footer-title">🔬 ĐỀ TÀI ĐỒ ÁN</div><div class="project-name-vi">Ứng dụng Xử lý Ngôn ngữ Tự nhiên trong phát hiện thông tin sai lệch về vaccine và phân tích thái độ cộng đồng trên môi trường số tại Việt Nam</div><div class="project-name-en">(Applying NLP for Vaccine Misinformation Detection and Community Attitude Analysis in Vietnamese Digital Environments)</div></div><div class="footer-col"><div class="footer-title">👥 NHÓM THỰC HIỆN</div><div class="info-row"><b>1. Kim Mạnh Hưng</b><br><span style="font-size:0.9rem;opacity:0.8;">MSSV: 2211090016 | Lớp: CNCQ KHDL1-1A<br>📧 <a href="mailto:2211090016@studenthuph.edu.vn" class="footer-link">2211090016@studenthuph.edu.vn</a></span></div><div class="info-row" style="margin-top:15px;"><b>2. Đinh Lê Quỳnh Phương</b><br><span style="font-size:0.9rem;opacity:0.8;">MSSV: 2211090031 | Lớp: CNCQ KHDL1-1A<br>📧 <a href="mailto:2211090031@studenthuph.edu.vn" class="footer-link">2211090031@studenthuph.edu.vn</a></span></div><div class="info-row" style="margin-top:20px;border-top:1px solid {col_border};padding-top:10px;"><span class="info-label">👨‍🏫 Giảng viên hướng dẫn:</span><br><span>TS. Trần Lâm Quân</span></div></div></div><div class="footer-bottom">© 2026 VaccineNLP Project | Đồ án tốt nghiệp chuyên ngành Khoa học Dữ liệu - HUPH</div></div>"""
+    footer_html = f"""<div class="main-footer"><div class="footer-container"><div class="footer-col logo-col"><img src="{logo_src}" class="footer-logo-img" alt="HUPH Logo"><div class="school-name">TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG</div><div style="font-size:0.9rem;opacity:0.8;"><p>📍 Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</p><p>🌐 <a href="https://huph.edu.vn/" target="_blank" class="footer-link">huph.edu.vn</a></p></div></div><div class="footer-col"><div class="footer-title">🔬 ĐỀ TÀI ĐỒ ÁN</div><div class="project-name-vi">Ứng dụng Xử lý Ngôn ngữ Tự nhiên trong phát hiện thông tin sai lệch về vaccine và phân tích thái độ cộng đồng trên môi trường số tại Việt Nam</div><div class="project-name-en">(Applying NLP for Vaccine Misinformation Detection and Community Attitude Analysis in Vietnamese Digital Environments)</div></div><div class="footer-col"><div class="footer-title">👥 NHÓM THỰC HIỆN</div><div class="info-row"><b>1. Kim Mạnh Hưng</b><br><span style="font-size:0.9rem;opacity:0.8;">MSSV: 2211090016 | Lớp: CNCQ KHDL1-1A<br>📧 <a href="mailto:2211090016@studenthuph.edu.vn" class="footer-link">2211090016@studenthuph.edu.vn</a></span></div><div class="info-row" style="margin-top:15px;"><b>2. Đinh Lê Quỳnh Phương</b><br><span style="font-size:0.9rem;opacity:0.8;">MSSV: 2211090031 | Lớp: CNCQ KHDL1-1A<br>📧 <a href="mailto:2211090031@studenthuph.edu.vn" class="footer-link">2211090031@studenthuph.edu.vn</a></span></div><div class="info-row" style="margin-top:20px;border-top:1px solid {col_border};padding-top:10px;"><span class="info-label">👨‍🏫 Giảng viên hướng dẫn:</span><br><span>TS. Trần Lâm Quân</span></div></div></div><div class="footer-bottom">© 2026 VaccineNLP Project | Đồ án tốt nghiệp chuyên ngành Khoa học Dữ liệu - HUPH</div></div>"""
     st.markdown(footer_html, unsafe_allow_html=True)
 
 def render_result_card(task_name: str, task_key: str, result: dict):
@@ -627,6 +627,60 @@ def main():
         th {{
             background-color: {"#1a1a2e" if is_dark else "#f0f2f6"} !important;
             font-weight: bold !important;
+        }}
+
+        /* Footer Unified Styling */
+        .main-footer {{
+            background: {"linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%)" if is_dark else "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)"};
+            padding: 50px 20px;
+            color: {"#ccc" if is_dark else "#444"};
+            border-top: 4px solid #007bff;
+            box-shadow: 0 -10px 25px rgba(0,123,255,0.1);
+            margin-top: 60px;
+        }}
+        .footer-container {{
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            max-width: none !important;
+            margin: 0 auto;
+            gap: 20px;
+        }}
+        .footer-col {{
+            flex: 1;
+            min-width: 300px;
+            padding: 0 25px;
+            border-right: 1px solid {"rgba(255,255,255,0.1)" if is_dark else "rgba(0,0,0,0.1)"};
+        }}
+        .footer-col:last-child {{ border-right: none; }}
+        .footer-title {{
+            color: {"#007bff" if is_dark else "#0056b3"};
+            font-weight: bold;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+            text-transform: uppercase;
+        }}
+        .school-name {{
+            font-weight: bold;
+            color: {"#fff" if is_dark else "#000"};
+            font-size: 1.1rem;
+        }}
+        .project-name-vi {{
+            color: {"#ffd700" if is_dark else "#b8860b"};
+            font-weight: bold;
+            font-style: italic;
+        }}
+        .footer-bottom {{
+            padding-top: 20px;
+            margin-top: 30px;
+            border-top: 1px solid rgba(0,0,0,0.05);
+            font-size: 0.9rem;
+            color: {"#777" if is_dark else "#666"};
+            text-align: center;
+        }}
+        .footer-link {{
+            color: #007bff !important;
+            text-decoration: none;
         }}
     </style>
     """, unsafe_allow_html=True)
