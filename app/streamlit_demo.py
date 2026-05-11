@@ -203,15 +203,19 @@ def find_xai_reasoning(text: str, cache: dict) -> str | None:
 def hien_thi_footer_chung():
     """Hiển thị chân trang (footer) 3 cột chuyên nghiệp cho đồ án VaccineNLP"""
     import base64
+    import textwrap
+    
+    # Xác định đường dẫn logo an toàn (dùng PROJECT_ROOT để đảm bảo tìm thấy file bất kể chạy từ đâu)
+    logo_path_local = PROJECT_ROOT / "abc1.png"
+    logo_src = "https://huph.edu.vn/uploads/logo/logo-huph.png" # Link dự phòng
+    
     try:
-        if os.path.exists("abc1.png"):
-            with open("abc1.png", "rb") as img_file:
+        if logo_path_local.exists():
+            with open(logo_path_local, "rb") as img_file:
                 logo_b64 = base64.b64encode(img_file.read()).decode()
                 logo_src = f"data:image/png;base64,{logo_b64}"
-        else:
-            logo_src = "https://huph.edu.vn/uploads/logo/logo-huph.png"
-    except:
-        logo_src = "https://huph.edu.vn/uploads/logo/logo-huph.png"
+    except Exception:
+        pass
 
     # Cấu hình màu sắc theo giao diện Dark Mode của App
     footer_bg = "linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%)"
@@ -222,7 +226,6 @@ def hien_thi_footer_chung():
     school_name_color = "#fff"
     col_border = "rgba(255,255,255,0.1)"
 
-    import textwrap
     footer_html = textwrap.dedent(f"""
         <style>
             .main-footer {{
@@ -301,6 +304,15 @@ def hien_thi_footer_chung():
                 opacity: 0.8;
                 line-height: 1.3;
             }}
+            .footer-link {{
+                color: {title_color} !important;
+                text-decoration: none;
+                transition: opacity 0.2s;
+            }}
+            .footer-link:hover {{
+                opacity: 0.8;
+                text-decoration: underline;
+            }}
         </style>
         <div class="main-footer">
             <div class="footer-container">
@@ -310,7 +322,7 @@ def hien_thi_footer_chung():
                     <div class="school-name">TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG</div>
                     <div style="font-size: 0.9rem; opacity: 0.8;">
                         <p>📍 Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</p>
-                        <p>🌐 <a href="https://huph.edu.vn/" target="_blank" style="color:{title_color};">huph.edu.vn</a></p>
+                        <p>🌐 <a href="https://huph.edu.vn/" target="_blank" class="footer-link">huph.edu.vn</a></p>
                     </div>
                 </div>
 
@@ -330,15 +342,15 @@ def hien_thi_footer_chung():
                     <div class="footer-title">👥 NHÓM THỰC HIỆN</div>
                     <div class="info-row">
                         <b>1. Kim Mạnh Hưng</b><br>
-                        <span style="font-size:0.9rem; opacity:0.8;">MSSV: 2211090016 | 📧 <a href="mailto:2211090016@studenthuph.edu.vn" style="color:#777;">2211090016@studenthuph.edu.vn</a></span>
+                        <span style="font-size:0.9rem; opacity:0.8;">MSSV: 2211090016 | 📧 <a href="mailto:2211090016@studenthuph.edu.vn" class="footer-link">2211090016@studenthuph.edu.vn</a></span>
                     </div>
                     <div class="info-row" style="margin-top:15px;">
                         <b>2. Đinh Lê Quỳnh Phương</b><br>
-                        <span style="font-size:0.9rem; opacity:0.8;">MSSV: 2211090031 | Lớp: CNCQ KHDL1-1A<br>📧 <a href="mailto:2211090031@studenthuph.edu.vn" style="color:#777;">2211090031@studenthuph.edu.vn</a></span>
+                        <span style="font-size:0.9rem; opacity:0.8;">MSSV: 2211090031 | Lớp: CNCQ KHDL1-1A<br>📧 <a href="mailto:2211090031@studenthuph.edu.vn" class="footer-link">2211090031@studenthuph.edu.vn</a></span>
                     </div>
                     <div class="info-row" style="margin-top:20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top:10px;">
                         <span class="info-label">👨‍🏫 Giảng viên hướng dẫn:</span><br>
-                        <span>ThS. Trần Lâm Quân</span>
+                        <span>TS. Trần Lâm Quân</span>
                     </div>
                 </div>
             </div>
