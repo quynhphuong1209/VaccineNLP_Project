@@ -108,10 +108,10 @@ class VaccineMultitaskModel(nn.Module):
     """Multitask model with shared PhoBERT encoder and task-specific heads."""
 
     def __init__(self, model_name="vinai/phobert-base-v2",
-                 num_misinfo=3, num_stance=4, num_sentiment=3):
+                 num_misinfo=3, num_stance=4, num_sentiment=3, token=None):
         super(VaccineMultitaskModel, self).__init__()
-        self.config = AutoConfig.from_pretrained(model_name)
-        self.encoder = AutoModel.from_pretrained(model_name)
+        self.config = AutoConfig.from_pretrained(model_name, token=token)
+        self.encoder = AutoModel.from_pretrained(model_name, token=token)
 
         hidden_size = self.config.hidden_size
         self.head_misinfo = nn.Linear(hidden_size, num_misinfo)
@@ -140,16 +140,29 @@ class VaccineMultitaskModel(nn.Module):
 def load_model(model_key="PhoBERT-v2"):
     """Load selected multitask model + tokenizer (cached)."""
     cfg = MODEL_CONFIGS[model_key]
-    model = VaccineMultitaskModel(model_name=cfg["repo_id"])
     checkpoint_loaded = False
     
-    if cfg["path"].exists():
-        state = torch.load(str(cfg["path"]), map_location="cpu", weights_only=False)
-        model.load_state_dict(state)
-        checkpoint_loaded = True
+    # Lấy token từ Secrets của Streamlit (nếu có)
+    hf_token = None
+    if "HF_TOKEN" in st.secrets:
+        hf_token = st.secrets["HF_TOKEN"]
+    elif "HF_TOKEN" in os.environ:
+        hf_token = os.environ["HF_TOKEN"]
+    
+    try:
+        model = VaccineMultitaskModel(model_name=cfg["repo_id"], token=hf_token)
+        tokenizer = AutoTokenizer.from_pretrained(cfg["repo_id"], token=hf_token)
+        
+        if cfg["path"].exists():
+            state = torch.load(str(cfg["path"]), map_location="cpu", weights_only=False)
+            model.load_state_dict(state)
+            checkpoint_loaded = True
+            
+    except Exception as e:
+        # Trả về None để hiển thị lỗi minh bạch trên UI
+        return None, None, False
         
     model.eval()
-    tokenizer = AutoTokenizer.from_pretrained(cfg["repo_id"])
     return model, tokenizer, checkpoint_loaded
 
 @st.cache_data
@@ -409,6 +422,11 @@ def main():
 
     model, tokenizer, checkpoint_loaded = load_model(model_selection)
     xai_cache = load_xai_cache()
+
+    if model is None:
+        st.error(f"❌ Không thể tải mã nguồn gốc của `{model_selection}` từ Hugging Face.")
+        st.info("💡 **Lý do phổ biến:** Mô hình này (như Gemma) yêu cầu quyền truy cập (Gated Model). \n\n**Cách khắc phục trên Streamlit Cloud:** Hãy vào phần Settings > Secrets và thêm dòng: `HF_TOKEN = 'your_huggingface_token'`")
+        st.stop()
 
     if not checkpoint_loaded:
         st.warning(f"⚠️ Không tìm thấy checkpoint cho `{model_selection}`. Chế độ chưa fine-tune.")
