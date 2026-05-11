@@ -245,64 +245,64 @@ def hien_thi_footer_chung(is_dark=True):
     border_color = "#007bff"
 
     footer_html = f"""
-    <div class="main-footer">
-        <div class="footer-container">
-            <!-- Cột 1: Logo & Trường -->
-            <div class="footer-col logo-col">
-                <img src="{logo_src}" class="footer-logo-img" alt="HUPH Logo">
-                <div class="school-name">TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG</div>
-                <div style="font-size:0.9rem; opacity:0.8; margin-top:10px;">
-                    <p>📍 Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</p>
-                    <p>🌐 <a href="https://huph.edu.vn/" target="_blank" class="footer-link">huph.edu.vn</a></p>
-                </div>
-            </div>
-            
-            <!-- Cột 2: Đề tài -->
-            <div class="footer-col">
-                <div class="footer-title">🔬 ĐỀ TÀI ĐỒ ÁN</div>
-                <div class="project-name-vi">Ứng dụng Xử lý Ngôn ngữ Tự nhiên trong phát hiện thông tin sai lệch về vaccine và phân tích thái độ cộng đồng trên môi trường số tại Việt Nam</div>
-                <div class="project-name-en" style="margin-top:10px; font-size:0.9rem; opacity:0.8;">
-                    (Applying NLP for Vaccine Misinformation Detection and Community Attitude Analysis in Vietnamese Digital Environments)
-                </div>
-            </div>
-            
-            <!-- Cột 3: Nhóm thực hiện -->
-            <div class="footer-col">
-                <div class="footer-title">👥 NHÓM THỰC HIỆN</div>
-                <div class="info-row">
-                    <b>1. Kim Mạnh Hưng</b><br>
-                    <span style="font-size:0.9rem; opacity:0.8;">
-                        MSSV: 2211090016 | Lớp: KHDL1<br>
-                        📧 <a href="mailto:2211090016@studenthuph.edu.vn" class="footer-link">2211090016@studenthuph.edu.vn</a>
-                    </span>
-                </div>
-                <div class="info-row" style="margin-top:15px;">
-                    <b>2. Đinh Lê Quỳnh Phương</b><br>
-                    <span style="font-size:0.9rem; opacity:0.8;">
-                        MSSV: 2211090031 | Lớp: KHDL1<br>
-                        📧 <a href="mailto:2211090031@studenthuph.edu.vn" class="footer-link">2211090031@studenthuph.edu.vn</a>
-                    </span>
-                </div>
-            </div>
-
-            <!-- Cột 4: Giảng viên hướng dẫn -->
-            <div class="footer-col">
-                <div class="footer-title">👨‍🏫 GIẢNG VIÊN HƯỚNG DẪN</div>
-                <div class="info-row">
-                    <b style="font-size:1.1rem;">TS. Trần Lâm Quân</b><br>
-                    <div style="margin-top:10px; font-size:0.9rem; opacity:0.8;">
-                        Viện Đào tạo bồi dưỡng cán bộ quản lý y tế<br>
-                        Trường Đại học Y tế công cộng
-                    </div>
-                </div>
+<div class="main-footer">
+    <div class="footer-container">
+        <!-- Cột 1: Logo & Trường -->
+        <div class="footer-col logo-col">
+            <img src="{logo_src}" class="footer-logo-img" alt="HUPH Logo">
+            <div class="school-name">TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG</div>
+            <div style="font-size:0.9rem; opacity:0.8; margin-top:10px;">
+                <p>📍 Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</p>
+                <p>🌐 <a href="https://huph.edu.vn/" target="_blank" class="footer-link">huph.edu.vn</a></p>
             </div>
         </div>
         
-        <div class="footer-bottom">
-            © 2026 VaccineNLP Project | Đồ án tốt nghiệp chuyên ngành Khoa học Dữ liệu - HUPH
+        <!-- Cột 2: Đề tài -->
+        <div class="footer-col">
+            <div class="footer-title">🔬 ĐỀ TÀI ĐỒ ÁN</div>
+            <div class="project-name-vi">Ứng dụng Xử lý Ngôn ngữ Tự nhiên trong phát hiện thông tin sai lệch về vaccine và phân tích thái độ cộng đồng trên môi trường số tại Việt Nam</div>
+            <div class="project-name-en" style="margin-top:10px; font-size:0.9rem; opacity:0.8;">
+                (Applying NLP for Vaccine Misinformation Detection and Community Attitude Analysis in Vietnamese Digital Environments)
+            </div>
+        </div>
+        
+        <!-- Cột 3: Nhóm thực hiện -->
+        <div class="footer-col">
+            <div class="footer-title">👥 NHÓM THỰC HIỆN</div>
+            <div class="info-row">
+                <b>1. Kim Mạnh Hưng</b><br>
+                <span style="font-size:0.9rem; opacity:0.8;">
+                    MSSV: 2211090016 | Lớp: KHDL1<br>
+                    📧 <a href="mailto:2211090016@studenthuph.edu.vn" class="footer-link">2211090016@studenthuph.edu.vn</a>
+                </span>
+            </div>
+            <div class="info-row" style="margin-top:15px;">
+                <b>2. Đinh Lê Quỳnh Phương</b><br>
+                <span style="font-size:0.9rem; opacity:0.8;">
+                    MSSV: 2211090031 | Lớp: KHDL1<br>
+                    📧 <a href="mailto:2211090031@studenthuph.edu.vn" class="footer-link">2211090031@studenthuph.edu.vn</a>
+                </span>
+            </div>
+        </div>
+
+        <!-- Cột 4: Giảng viên hướng dẫn -->
+        <div class="footer-col">
+            <div class="footer-title">👨‍🏫 GIẢNG VIÊN HƯỚNG DẪN</div>
+            <div class="info-row">
+                <b style="font-size:1.1rem;">TS. Trần Lâm Quân</b><br>
+                <div style="margin-top:10px; font-size:0.9rem; opacity:0.8;">
+                    Viện Đào tạo bồi dưỡng cán bộ quản lý y tế<br>
+                    Trường Đại học Y tế công cộng
+                </div>
+            </div>
         </div>
     </div>
-    """
+    
+    <div class="footer-bottom">
+        © 2026 VaccineNLP Project | Đồ án tốt nghiệp chuyên ngành Khoa học Dữ liệu - HUPH
+    </div>
+</div>
+"""
     st.markdown(footer_html, unsafe_allow_html=True)
 
 def render_result_card(task_name: str, task_key: str, result: dict):
