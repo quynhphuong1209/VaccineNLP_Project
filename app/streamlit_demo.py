@@ -362,16 +362,20 @@ def main():
 
     st.markdown(f"""
     <style>
-        /* GIÃN RỘNG TOÀN MÀN HÌNH - Xử lý triệt để các container của Streamlit */
-        .main .block-container {{
-            max-width: none !important;
-            padding-left: 3rem !important;
-            padding-right: 3rem !important;
-            padding-top: 2rem !important;
+        /* GIÃN RỘNG TUYỆT ĐỐI TOÀN MÀN HÌNH */
+        [data-testid="stAppViewBlockContainer"], 
+        .main .block-container,
+        .st-emotion-cache-13ln4jf,
+        .st-emotion-cache-1y4p8pa {{
+            max-width: 100% !important;
+            width: 100% !important;
+            padding-left: 2rem !important;
+            padding-right: 2rem !important;
+            padding-top: 1rem !important;
         }}
         
-        /* Đảm bảo Banner cũng rộng ra */
-        [data-testid="stVerticalBlock"] > div:first-child {{
+        /* Loại bỏ các khoảng trống thừa của Streamlit */
+        [data-testid="stVerticalBlock"] > div {{
             width: 100% !important;
         }}
         
@@ -453,9 +457,9 @@ def main():
     #     st.warning(f"⚠️ Không tìm thấy checkpoint cho `{model_selection}`. Chế độ chưa fine-tune.")
 
     st.markdown("""
-    <div style="text-align: center; margin-bottom: 2.5rem; padding: 2rem; background: rgba(255,255,255,0.02); border-radius: 20px; border: 1px solid rgba(255,255,255,0.05);">
-        <h1 style="color: #FFD700; font-family: 'Times New Roman', Times, serif; font-weight: bold; font-size: 3rem; margin-bottom: 0.5rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">🔬 VaccineNLP · Dashboard</h1>
-        <p style="color: white; font-family: 'Times New Roman', Times, serif; font-style: italic; font-size: 1.3rem;">Hệ thống AI giải thích được — Phân loại đa chiều thông tin vắc-xin trên mạng xã hội</p>
+    <div style="width: 100%; text-align: center; margin-bottom: 2.5rem; padding: 2.5rem; background: rgba(255,255,255,0.02); border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); box-sizing: border-box;">
+        <h1 style="color: #FFD700; font-family: 'Times New Roman', Times, serif; font-weight: bold; font-size: 3.5rem; margin-bottom: 0.5rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">🔬 VaccineNLP · Dashboard</h1>
+        <p style="color: white; font-family: 'Times New Roman', Times, serif; font-style: italic; font-size: 1.5rem; opacity: 0.9;">Hệ thống AI giải thích được — Phân loại đa chiều thông tin vắc-xin trên mạng xã hội</p>
     </div>
     """, unsafe_allow_html=True)
 
