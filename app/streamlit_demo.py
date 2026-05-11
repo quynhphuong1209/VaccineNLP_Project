@@ -469,6 +469,42 @@ def main():
             border: 1px solid {border_color} !important;
             border-radius: 12px !important;
         }}
+
+        /* Fix Selectbox (Dropdown) colors in Light Mode */
+        div[data-baseweb="select"] > div {{
+            background-color: {input_bg} !important;
+            color: {text_color} !important;
+            border: 1px solid {input_border} !important;
+        }}
+        div[role="listbox"] {{
+            background-color: {sidebar_bg} !important;
+            color: {text_color} !important;
+        }}
+        div[role="option"] {{
+            background-color: transparent !important;
+            color: {text_color} !important;
+        }}
+        div[role="option"]:hover {{
+            background-color: #007bff20 !important;
+        }}
+
+        /* Table styling - Thêm viền đen cho bảng Benchmark */
+        table {{
+            width: 100%;
+            border-collapse: collapse !important;
+            color: {text_color} !important;
+            font-family: 'Times New Roman', Times, serif !important;
+            border: 1px solid {"#444" if is_dark else "#000"} !important;
+        }}
+        th, td {{
+            border: 1px solid {"#444" if is_dark else "#000"} !important;
+            padding: 12px !important;
+            text-align: center !important;
+        }}
+        th {{
+            background-color: {"#1a1a2e" if is_dark else "#f0f2f6"} !important;
+            font-weight: bold !important;
+        }}
     </style>
     """, unsafe_allow_html=True)
 
