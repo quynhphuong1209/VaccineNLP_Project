@@ -309,7 +309,7 @@ def render_benchmark_tab():
     st.table(df)
 
     is_dark = st.session_state.get("theme", "Dark") == "Dark"
-    chart_font_color = "#e2e4e9" if is_dark else "#111111"
+    chart_font_color = "#e2e4e9" if is_dark else "#000000"
     
     fig = go.Figure()
     tasks = ["Misinfo", "Stance", "Sentiment"]
@@ -515,10 +515,17 @@ def main():
         /* Fix Selectbox (Dropdown) colors - SIÊU ÉP BUỘC */
         [data-testid="stSidebar"] [data-testid="stSelectbox"] div[data-baseweb="select"],
         [data-testid="stSidebar"] [data-testid="stSelectbox"] button,
-        [data-testid="stSidebar"] [data-testid="stSelectbox"] div[data-baseweb="select"] * {{
+        [data-testid="stSidebar"] [data-testid="stSelectbox"] div[data-baseweb="select"] > div,
+        [data-testid="stSidebar"] [data-testid="stSelectbox"] div[data-baseweb="select"] div {{
             background-color: {input_bg} !important;
             color: {text_color} !important;
+            border: none !important; /* Xóa viền nội bộ */
+        }}
+        
+        /* Chỉ giữ lại viền ngoài cùng của ô Selectbox */
+        [data-testid="stSidebar"] [data-testid="stSelectbox"] [data-baseweb="select"] {{
             border: 1px solid {input_border} !important;
+            border-radius: 8px !important;
         }}
         
         [data-testid="stSidebar"] [data-testid="stSelectbox"] p,
@@ -535,7 +542,6 @@ def main():
         [data-baseweb="popover"] li, [role="option"] {{
             background-color: transparent !important;
             color: {text_color} !important;
-        }}
         }}
         [data-baseweb="popover"] li:hover, [role="option"]:hover {{
             background-color: {"rgba(255,255,255,0.1)" if is_dark else "rgba(0,0,0,0.05)"} !important;
