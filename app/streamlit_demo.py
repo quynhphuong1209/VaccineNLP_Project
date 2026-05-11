@@ -338,8 +338,6 @@ def main():
         st.session_state.theme = "Dark"
     if "last_result" not in st.session_state:
         st.session_state.last_result = None
-    if "last_result" not in st.session_state:
-        st.session_state.last_result = None
 
     with st.sidebar:
         st.markdown("<h2 style='text-align: center;'>🔬 VaccineNLP</h2>", unsafe_allow_html=True)
@@ -358,7 +356,7 @@ def main():
         
         st.divider()
         st.markdown("##### 📋 Mẫu thử nghiệm")
-        selected_sample = st.radio("Chọn mẫu:", options=["Tự nhập"] + list(SAMPLE_TEXTS.keys()), index=0)
+        selected_sample = st.radio("Chọn mẫu:", options=["Tự nhập"] + list(SAMPLE_TEXTS.keys()), index=0, key="sidebar_sample_selector")
         st.divider()
         st.markdown("##### 🤖 Mô hình Phân loại")
         st.info("Mô hình này đảm nhiệm việc phân loại nhãn (Tin giả, Quan điểm, Cảm xúc).")
@@ -603,13 +601,17 @@ def main():
 
     with tabs[0]:
         input_text = SAMPLE_TEXTS[selected_sample] if selected_sample != "Tự nhập" else ""
-        user_text = st.text_area("Nhập văn bản cần phân tích:", value=input_text, height=140, placeholder="Dán nội dung bài viết về vắc-xin...")
+        
+        # Sử dụng key để Streamlit tự động quản lý trạng thái văn bản
+        user_text = st.text_area("Nhập văn bản cần phân tích:", value=input_text, height=140, placeholder="Dán nội dung bài viết về vắc-xin...", key="user_text_area")
         
         col_btn1, col_btn2, _ = st.columns([1, 1, 4])
         with col_btn1:
             analyze_btn = st.button("🔍 Phân tích", use_container_width=True)
         with col_btn2:
-            if st.button("🗑️ Reset", use_container_width=True): st.rerun()
+            if st.button("🗑️ Reset", use_container_width=True):
+                st.session_state.last_result = None
+                st.rerun()
 
         if analyze_btn and user_text.strip():
             with st.spinner(f"🧠 {model_selection} đang xử lý..."):
