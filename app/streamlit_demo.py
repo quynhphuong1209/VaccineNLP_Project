@@ -258,9 +258,9 @@ def hien_thi_footer_chung(is_dark=True):
 <!-- Cột 2: Đề tài -->
 <div class="footer-col">
 <div class="footer-title">🔬 ĐỀ TÀI ĐỒ ÁN</div>
-<div class="project-name-vi">Ứng dụng Xử lý Ngôn ngữ Tự nhiên trong phát hiện thông tin sai lệch về vaccine và phân tích thái độ cộng đồng trên môi trường số tại Việt Nam</div>
+<div class="project-name-vi">Phát hiện Tin giả và Phân tích Thái độ về Vaccine tại Việt Nam</div>
 <div class="project-name-en" style="margin-top:10px; font-size:0.9rem; opacity:0.8;">
-(Applying NLP for Vaccine Misinformation Detection and Community Attitude Analysis in Vietnamese Digital Environments)
+(Vaccine Misinformation & Attitude Analysis in Vietnam)
 </div>
 </div>
 <!-- Cột 3: Nhóm thực hiện -->
@@ -768,8 +768,8 @@ def main():
 
     st.markdown(f"""
     <div style="width: 100%; text-align: center; margin-bottom: 2.5rem; padding: 2.5rem; background: {banner_bg}; border-radius: 20px; border: 1px solid {banner_border}; box-sizing: border-box;">
-        <h1 style="color: #FFD700; font-family: 'Times New Roman', Times, serif; font-weight: bold; font-size: 2.2rem; margin-bottom: 0.8rem; line-height: 1.3; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">🔬 ỨNG DỤNG XỬ LÝ NGÔN NGỮ TỰ NHIÊN TRONG PHÁT HIỆN THÔNG TIN SAI LỆCH VỀ VACCINE VÀ PHÂN TÍCH THÁI ĐỘ CỘNG ĐỒNG TRÊN MÔI TRƯỜNG SỐ TẠI VIỆT NAM 💉</h1>
-        <p style="color: {banner_p_color}; font-family: 'Times New Roman', Times, serif; font-style: italic; font-size: 1.1rem; opacity: {banner_p_opacity}; line-height: 1.4;">(Applying NLP for Vaccine Misinformation Detection and Community Attitude Analysis in Vietnamese Digital Environments)</p>
+        <h1 style="color: #FFD700; font-family: 'Times New Roman', Times, serif; font-weight: bold; font-size: 2.2rem; margin-bottom: 0.8rem; line-height: 1.3; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">🔬 PHÁT HIỆN TIN GIẢ VÀ PHÂN TÍCH THÁI ĐỘ VỀ VACCINE TẠI VIỆT NAM 💉</h1>
+        <p style="color: {banner_p_color}; font-family: 'Times New Roman', Times, serif; font-style: italic; font-size: 1.1rem; opacity: {banner_p_opacity}; line-height: 1.4;">(Vaccine Misinformation & Attitude Analysis in Vietnam)</p>
     </div>
     """, unsafe_allow_html=True)
 
