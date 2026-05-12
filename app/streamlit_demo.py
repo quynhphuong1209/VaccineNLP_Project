@@ -492,6 +492,19 @@ def main():
         # Chỉ xóa kết quả cũ khi người dùng chủ động chọn mẫu khác
         st.session_state.last_result = None
 
+    # ─────────────────────────────────────────────────────────────
+    # DYNAMIC COLORS BASED ON THEME
+    # ─────────────────────────────────────────────────────────────
+    is_dark = st.session_state.theme == "Dark"
+    bg_color = "#0d0f12" if is_dark else "#ffffff"
+    text_color = "#e2e4e9" if is_dark else "#111111"
+    secondary_text = "#888" if is_dark else "#555"
+    border_color = "rgba(255,255,255,0.05)" if is_dark else "rgba(0,0,0,0.1)"
+    sidebar_bg = "#111" if is_dark else "#f8f9fa"
+    input_bg = "#13161b" if is_dark else "#ffffff"
+    input_border = "#2a5298" if is_dark else "#ced4da"
+    card_bg = "rgba(255, 255, 255, 0.03)" if is_dark else "#fdfdfd"
+
     with st.sidebar:
         st.markdown("<h2 style='text-align: center;'>🔬 VaccineNLP</h2>", unsafe_allow_html=True)
         st.divider()
@@ -521,18 +534,22 @@ def main():
         st.info("Mô hình này đảm nhiệm việc phân loại nhãn (Tin giả, Quan điểm, Cảm xúc).")
         model_selection = st.selectbox("Chọn model:", options=list(MODEL_CONFIGS.keys()), index=0)
 
+        # PHẦN THÔNG TIN HỆ THỐNG MỚI THÊM
+        st.markdown(f"""
+        <div style="margin-top: 15px; padding: 12px; background: {input_bg}; border: 1px solid {border_color}; border-radius: 10px;">
+            <div style="font-size: 13px; font-weight: bold; margin-bottom: 8px; color: {text_color};">Về hệ thống</div>
+            <div style="font-size: 10.5px; line-height: 1.5; color: {text_color}; opacity: 0.85;">
+                • <b>Classifier:</b> PhoBERT-v2<br>
+                • <b>XAI Engine:</b> Gemma-4 4B (cached)<br>
+                • <b>Tasks:</b> Misinfo · Stance · Sentiment<br>
+                • <b>Benchmark:</b> 186 samples
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
     # ─────────────────────────────────────────────────────────────
     # DYNAMIC CSS BASED ON THEME
     # ─────────────────────────────────────────────────────────────
-    is_dark = st.session_state.theme == "Dark"
-    bg_color = "#0d0f12" if is_dark else "#ffffff"
-    card_bg = "rgba(255, 255, 255, 0.03)" if is_dark else "#fdfdfd"
-    text_color = "#e2e4e9" if is_dark else "#111111"
-    secondary_text = "#888" if is_dark else "#555"
-    border_color = "rgba(255,255,255,0.05)" if is_dark else "rgba(0,0,0,0.1)"
-    sidebar_bg = "#111" if is_dark else "#f8f9fa"
-    input_bg = "#13161b" if is_dark else "#ffffff"
-    input_border = "#2a5298" if is_dark else "#ced4da"
 
     st.markdown(f"""
     <style>
