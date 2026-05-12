@@ -227,9 +227,14 @@ def query_gemma_api(prompt, repo_id, token):
     
     try:
         response = requests.post(API_URL, headers=headers, json=payload, timeout=30)
+        if response.status_code == 503:
+            return "⏳ Mô hình đang được khởi động trên server Hugging Face. Vui lòng thử lại sau 30 giây."
+        
         result = response.json()
         if isinstance(result, list) and len(result) > 0:
             return result[0].get("generated_text", "Không có phản hồi từ API.")
+        if "error" in result:
+            return f"Hugging Face Error: {result['error']}"
         return str(result)
     except Exception as e:
         return f"Lỗi gọi API: {str(e)}"
@@ -247,13 +252,7 @@ def load_xai_cache():
 # ─────────────────────────────────────────────────────────────
 @st.cache_data(show_spinner=False)
 def predict_cached(text: str, model_key: str) -> dict:
-    """Phiên bản cache của hàm predict để tăng tốc độ phân tích văn bản lặp lại."""
     import torch.nn.functional as F
-    
-    model, tokenizer, _ = load_model(model_key)
-    if model is None:
-        return None
-    
     cfg = MODEL_CONFIGS[model_key]
     
     if cfg["type"] == "gemma_api":
@@ -269,6 +268,10 @@ def predict_cached(text: str, model_key: str) -> dict:
             "sentiment": {"pred": 2, "conf": [0.1, 0.1, 0.8]},
             "raw_gen": response
         }
+
+    model, tokenizer, _ = load_model(model_key)
+    if model is None:
+        return None
 
     if cfg["type"] == "gemma":
         # Gemma logic: Prompt-based inference
