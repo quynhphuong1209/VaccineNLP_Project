@@ -499,7 +499,7 @@ def render_benchmark_tab():
         uniformtext_minsize=8, 
         uniformtext_mode='hide'
     )
-    st.plotly_chart(fig, width="stretch")
+    st.plotly_chart(fig, use_container_width=True)
 
 def render_evaluation_tab():
     """Báo cáo đánh giá chuyên sâu so sánh 3 kiến trúc mô hình (XLM-R, PhoBERT, Gemma-4)."""
@@ -1032,9 +1032,9 @@ def main():
         
         col_btn1, col_btn2, _ = st.columns([1, 1, 4])
         with col_btn1:
-            analyze_btn = st.button("🔍 Phân tích", width="stretch")
+            analyze_btn = st.button("🔍 Phân tích", use_container_width=True)
         with col_btn2:
-            if st.button("🗑️ Reset", width="stretch"):
+            if st.button("🗑️ Reset", use_container_width=True):
                 st.session_state.last_result = None
                 st.rerun()
 
