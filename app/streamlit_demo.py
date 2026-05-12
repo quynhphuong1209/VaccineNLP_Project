@@ -18,6 +18,13 @@ import sys
 from pathlib import Path
 from underthesea import word_tokenize
 import logging
+import torch
+import torch.nn as nn
+from transformers import AutoModel, AutoConfig, AutoTokenizer, AutoModelForCausalLM
+from peft import PeftModel
+
+# Ẩn các cảnh báo
+logging.getLogger("transformers").setLevel(logging.ERROR)
 
 # Ẩn các cảnh báo không cần thiết của transformers
 logging.getLogger("transformers").setLevel(logging.ERROR)
@@ -151,101 +158,41 @@ class VaccineMultitaskModel(nn.Module):
 # ─────────────────────────────────────────────────────────────
 # CACHED RESOURCE LOADERS
 # ─────────────────────────────────────────────────────────────
+@st.cache_resource(max_entries=1)
 def load_model(model_key="PhoBERT-v2"):
-    """Load selected multitask model + tokenizer (on-demand to save RAM)."""
-    import gc
-    
-    # 1. Kiểm tra xem mô hình này đã được nạp chưa
-    if "current_model_key" in st.session_state and st.session_state.current_model_key == model_key:
-        if "model" in st.session_state and "tokenizer" in st.session_state:
-            return st.session_state.model, st.session_state.tokenizer, st.session_state.get("checkpoint_loaded", True)
-
-    # 2. Xóa mô hình cũ khỏi RAM
-    with st.spinner(f"Đang giải phóng RAM và nạp {model_key}..."):
-        if "model" in st.session_state:
-            del st.session_state.model
-        if "tokenizer" in st.session_state:
-            del st.session_state.tokenizer
-        gc.collect()
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
-            
-        cfg = MODEL_CONFIGS[model_key]
-        checkpoint_loaded = False
-        repo_id = cfg["repo_id"]
-    if "local_repo" in cfg:
-        local_path = Path(cfg["local_repo"])
-        if local_path.exists():
-            repo_id = str(local_path)
-            print(f">>> [DEBUG] Đang dùng mô hình Local: {repo_id}")
-        else:
-            print(f">>> [DEBUG] Không tìm thấy local_repo, chuyển sang dùng Cloud: {repo_id}")
-    
+    """Load selected model with automatic RAM eviction (max_entries=1)."""
+    cfg = MODEL_CONFIGS[model_key]
+    checkpoint_loaded = False
     hf_token = st.secrets.get("HF_TOKEN") or os.environ.get("HF_TOKEN") or st.secrets.get("VaccineNLP_TOKEN")
     
     try:
         if cfg["type"] == "gemma_api":
-            # Không cần nạp gì vào RAM nếu dùng API
             return None, None, True
             
         if cfg["type"] == "gemma":
-            # Load Gemma as a CausalLM with Peft adapter from Hugging Face
-            from transformers import AutoModelForCausalLM, AutoTokenizer
-            from peft import PeftModel
-            import gc
-            
-            with st.spinner("Đang tối ưu RAM và nạp Gemma (vui lòng đợi)..."):
-                # Giải phóng RAM từ các mô hình trước đó
-                gc.collect()
-                if torch.cuda.is_available():
-                    torch.cuda.empty_cache()
-                
-                # Nạp mô hình với cấu hình tiết kiệm RAM nhất cho CPU
-                base_model = AutoModelForCausalLM.from_pretrained(
-                    cfg["repo_id"], 
-                    token=hf_token, 
-                    torch_dtype=torch.bfloat16, # bfloat16 tiết kiệm RAM hơn float32
-                    device_map={"": "cpu"},     # Ép chạy trên CPU để tránh lỗi device
-                    low_cpu_mem_usage=True,
-                    trust_remote_code=True
-                )
-                tokenizer = AutoTokenizer.from_pretrained(cfg["repo_id"], token=hf_token, trust_remote_code=True)
-                model = PeftModel.from_pretrained(base_model, cfg["hf_adapter"], token=hf_token)
-                checkpoint_loaded = True
+            base_model = AutoModelForCausalLM.from_pretrained(
+                cfg["repo_id"], token=hf_token, torch_dtype=torch.bfloat16, device_map={"": "cpu"}, low_cpu_mem_usage=True
+            )
+            tokenizer = AutoTokenizer.from_pretrained(cfg["repo_id"], token=hf_token)
+            model = PeftModel.from_pretrained(base_model, cfg["hf_adapter"], token=hf_token)
+            checkpoint_loaded = True
         else:
-            # Load custom multitask model from Hugging Face (downloads best_model.pt automatically)
             from huggingface_hub import hf_hub_download
-            from transformers import AutoTokenizer
             model_path = hf_hub_download(repo_id=cfg["repo_id"], filename="best_model.pt", token=hf_token)
-            
             tokenizer = AutoTokenizer.from_pretrained(cfg["base_repo"], token=hf_token, trust_remote_code=True)
             model = VaccineMultitaskModel(model_name=cfg["base_repo"], token=hf_token)
             
             state = torch.load(model_path, map_location="cpu", weights_only=False)
-            
-            # TỰ ĐỘNG KHỚP KEYS (Fix lỗi XLM-R vs PhoBERT)
-            new_state = {}
-            for k, v in state.items():
-                if k.startswith("head_") and not any(k.startswith(f"heads.{n}") for n in ["misinfo", "stance", "sentiment"]):
-                    # Chuyển head_misinfo -> heads.misinfo
-                    new_key = k.replace("head_", "heads.")
-                    new_state[new_key] = v
-                else:
-                    new_state[k] = v
-            
+            new_state = { (k.replace("head_", "heads.") if k.startswith("head_") and "heads." not in k else k): v for k, v in state.items() }
             model.load_state_dict(new_state, strict=False)
             checkpoint_loaded = True
             
-    except Exception as e:
-        st.error(f"❌ Lỗi nạp mô hình {model_key}: {str(e)}")
-        return None, None, False
+        model.eval()
+        return model, tokenizer, checkpoint_loaded
         
-    model.eval()
-    st.session_state.model = model
-    st.session_state.tokenizer = tokenizer
-    st.session_state.current_model_key = model_key
-    st.session_state.checkpoint_loaded = checkpoint_loaded
-    return model, tokenizer, checkpoint_loaded
+    except Exception as e:
+        st.error(f"❌ Lỗi nạp mô hình: {str(e)}")
+        return None, None, False
 
 def query_gemma_api(prompt, repo_id, token):
     """Calls Hugging Face Inference API for Gemma (saves RAM)."""
