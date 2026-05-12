@@ -229,6 +229,9 @@ def load_model(model_key="PhoBERT-v2"):
         return None, None, False
         
     model.eval()
+    st.session_state.model = model
+    st.session_state.tokenizer = tokenizer
+    st.session_state.current_model_key = model_key
     return model, tokenizer, checkpoint_loaded
 
 @st.cache_data
