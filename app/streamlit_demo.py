@@ -302,10 +302,10 @@ def hien_thi_footer_chung(is_dark=True):
     if is_dark:
         footer_bg = "linear-gradient(135deg, #0a192f 0%, #112240 100%)"
         footer_text = "#a8b2d1"
-        title_color = "#64ffda"
+        title_color = "#007bff"
         label_color = "#ccd6f6"
         school_name_color = "#fff"
-        col_border = "rgba(100, 255, 218, 0.1)"
+        col_border = "rgba(0, 123, 255, 0.2)"
         bottom_text = "#8892b0"
         project_vi = "#ffd700"
     else:
@@ -509,7 +509,7 @@ def main():
     bg_color = "#0a192f" if is_dark else "#ffffff"
     text_color = "#ccd6f6" if is_dark else "#111111"
     secondary_text = "#8892b0" if is_dark else "#555"
-    border_color = "rgba(100, 255, 218, 0.2)" if is_dark else "rgba(0,0,0,0.1)"
+    border_color = "rgba(0, 123, 255, 0.3)" if is_dark else "rgba(0,0,0,0.1)"
     sidebar_bg = "#0d1b3e" if is_dark else "#f8f9fa"
     input_bg = "#112240" if is_dark else "#ffffff"
     input_border = "#233554" if is_dark else "#ced4da"
@@ -632,9 +632,10 @@ def main():
             padding: 0 25px !important;
         }}
         .stTabs [aria-selected="true"] {{
-            background-color: #64ffda !important;
-            color: #0a192f !important;
+            background-color: {"#64ffda" if is_dark else "#ffffff"} !important;
+            color: {"#0a192f" if is_dark else "#000000"} !important;
             font-weight: bold !important;
+            border: {"none" if is_dark else "1px solid #ced4da"} !important;
         }}
 
         /* Input area styling */
@@ -791,8 +792,8 @@ def main():
             padding: 50px 20px;
             color: {"#ccc" if is_dark else "#444"};
             font-family: 'Times New Roman', Times, serif !important;
-            border-top: 4px solid #64ffda;
-            box-shadow: 0 -10px 25px rgba(100, 255, 218, 0.1);
+            border-top: 4px solid #007bff;
+            box-shadow: 0 -10px 25px rgba(0, 123, 255, 0.1);
             margin-top: 60px;
         }}
         .footer-container {{
@@ -820,7 +821,7 @@ def main():
             filter: drop-shadow(0 0 8px rgba(0,123,255,0.2));
         }}
         .footer-title {{
-            color: {"#64ffda" if is_dark else "#0056b3"};
+            color: {"#007bff" if is_dark else "#0056b3"};
             font-weight: bold;
             margin-bottom: 15px;
             font-size: 1.2rem;
@@ -845,7 +846,7 @@ def main():
             text-align: center;
         }}
         .footer-link {{
-            color: #64ffda !important;
+            color: #007bff !important;
             text-decoration: none;
         }}
     </style>
