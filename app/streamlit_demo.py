@@ -114,16 +114,25 @@ class VaccineMultitaskModel(nn.Module):
     def __init__(self, model_name="vinai/phobert-base-v2",
                  num_misinfo=3, num_stance=4, num_sentiment=3, token=None):
         super(VaccineMultitaskModel, self).__init__()
-        from transformers import AutoConfig, AutoModel
+        import transformers
+        AutoConfig = transformers.AutoConfig
+        AutoModel = transformers.AutoModel
+        
         self.config = AutoConfig.from_pretrained(model_name, token=token, trust_remote_code=True)
         self.encoder = AutoModel.from_pretrained(model_name, token=token, trust_remote_code=True)
 
         hidden_size = self.config.hidden_size
+        # Cấu trúc linh hoạt: Hỗ trợ cả ModuleDict và các lớp riêng lẻ
         self.heads = nn.ModuleDict({
             "misinfo": nn.Linear(hidden_size, num_misinfo),
             "stance": nn.Linear(hidden_size, num_stance),
             "sentiment": nn.Linear(hidden_size, num_sentiment)
         })
+        # Alias để tương thích ngược nếu cần
+        self.head_misinfo = self.heads["misinfo"]
+        self.head_stance = self.heads["stance"]
+        self.head_sentiment = self.heads["sentiment"]
+        
         self.dropout = nn.Dropout(0.1)
 
     def forward(self, input_ids, attention_mask):
@@ -199,7 +208,18 @@ def load_model(model_key="PhoBERT-v2"):
             model = VaccineMultitaskModel(model_name=cfg["base_repo"], token=hf_token)
             
             state = torch.load(model_path, map_location="cpu", weights_only=False)
-            model.load_state_dict(state)
+            
+            # TỰ ĐỘNG KHỚP KEYS (Fix lỗi XLM-R vs PhoBERT)
+            new_state = {}
+            for k, v in state.items():
+                if k.startswith("head_") and not any(k.startswith(f"heads.{n}") for n in ["misinfo", "stance", "sentiment"]):
+                    # Chuyển head_misinfo -> heads.misinfo
+                    new_key = k.replace("head_", "heads.")
+                    new_state[new_key] = v
+                else:
+                    new_state[k] = v
+            
+            model.load_state_dict(new_state, strict=False)
             checkpoint_loaded = True
             
     except Exception as e:
@@ -463,7 +483,7 @@ def render_benchmark_tab():
         uniformtext_minsize=8, 
         uniformtext_mode='hide'
     )
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
 # ─────────────────────────────────────────────────────────────
 # MAIN APP
@@ -489,11 +509,11 @@ def main():
         st.markdown("##### 🎨 Giao diện")
         theme_col1, theme_col2 = st.columns(2)
         with theme_col1:
-            if st.button("🌙 Tối", use_container_width=True, type="primary" if st.session_state.theme == "Dark" else "secondary"):
+            if st.button("🌙 Tối", width="stretch", type="primary" if st.session_state.theme == "Dark" else "secondary"):
                 st.session_state.theme = "Dark"
                 st.rerun()
         with theme_col2:
-            if st.button("☀️ Sáng", use_container_width=True, type="primary" if st.session_state.theme == "Light" else "secondary"):
+            if st.button("☀️ Sáng", width="stretch", type="primary" if st.session_state.theme == "Light" else "secondary"):
                 st.session_state.theme = "Light"
                 st.rerun()
         
@@ -851,9 +871,9 @@ def main():
         
         col_btn1, col_btn2, _ = st.columns([1, 1, 4])
         with col_btn1:
-            analyze_btn = st.button("🔍 Phân tích", use_container_width=True)
+            analyze_btn = st.button("🔍 Phân tích", width="stretch")
         with col_btn2:
-            if st.button("🗑️ Reset", use_container_width=True):
+            if st.button("🗑️ Reset", width="stretch"):
                 st.session_state.last_result = None
                 st.rerun()
 
