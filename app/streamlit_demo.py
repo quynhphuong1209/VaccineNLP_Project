@@ -34,18 +34,18 @@ XAI_CACHE_PATH = APP_DIR / "xai_cache.json"
 
 MODEL_CONFIGS = {
     "PhoBERT-v2": {
-        "repo_id": "quynhphuong1209/vaccinenlp-phobert-v2", # Fine-tuned model on HF
+        "repo_id": "quynhphuong1209/phobert-multitask", # Repo thực tế của bạn
         "base_repo": "vinai/phobert-base-v2",
         "type": "phobert"
     },
     "XLM-R-v1": {
-        "repo_id": "quynhphuong1209/vaccinenlp-xlm-r-v1", # Fine-tuned model on HF
+        "repo_id": "quynhphuong1209/xlmr-multitask", # Repo thực tế của bạn
         "base_repo": "xlm-roberta-base",
         "type": "xlm-roberta"
     },
     "Gemma-4-4B": {
         "repo_id": "unsloth/gemma-4-E4B-it", # Base model
-        "hf_adapter": "quynhphuong1209/vaccinenlp-gemma-adapter", # LoRA Adapter on HF
+        "hf_adapter": "quynhphuong1209/gemma-4-E4B-unsloth-vaccine-xai", # Repo thực tế của bạn
         "type": "gemma"
     }
 }
