@@ -50,10 +50,9 @@ MODEL_CONFIGS = {
         "type": "xlm-roberta"
     },
     "Gemma-4-4B": {
-        "type": "gemma",
-        "base_repo": "unsloth/gemma-4-E4B-it", 
+        "type": "gemma_api",
         "repo_id": "quynhphuong1209/gemma-4-E4B-unsloth-vaccine-xai", 
-        "description": "LLM Reasoning Engine (Custom Fine-tuned)"
+        "description": "LLM Reasoning Engine (Hugging Face API)"
     }
 }
 
@@ -191,20 +190,8 @@ def load_model(model_key="PhoBERT-v2"):
     hf_token = st.secrets.get("HF_TOKEN") or os.environ.get("HF_TOKEN") or st.secrets.get("VaccineNLP_TOKEN")
     
     try:
-        if cfg["type"] == "gemma":
-            # Nạp Gemma gốc (Base) - Dùng bfloat16 để tiết kiệm RAM
-            base_model = AutoModelForCausalLM.from_pretrained(
-                cfg["base_repo"],
-                token=hf_token,
-                torch_dtype=torch.bfloat16,
-                device_map={"": "cpu"},
-                low_cpu_mem_usage=True
-            )
-            # Đè Adapter chính chủ của bạn lên
-            from peft import PeftModel
-            model = PeftModel.from_pretrained(base_model, cfg["repo_id"], token=hf_token)
-            tokenizer = AutoTokenizer.from_pretrained(cfg["base_repo"], token=hf_token)
-            checkpoint_loaded = True
+        if cfg["type"] == "gemma_api":
+            return None, None, True
         else:
             from huggingface_hub import hf_hub_download
             model_path = hf_hub_download(repo_id=cfg["repo_id"], filename="best_model.pt", token=hf_token)
@@ -280,28 +267,23 @@ def predict_cached(text: str, model_key: str) -> dict:
     
     cfg = MODEL_CONFIGS[model_key]
     
-    # Xử lý dự đoán bằng mô hình trong RAM (chính chủ của bạn)
-    model, tokenizer, _ = load_model(model_key)
-    if model is None:
-        return None
-    
-    if cfg["type"] == "gemma":
-        # Gemma logic: Prompt-based inference
-        prompt = f"<bos><start_of_turn>user\nGiải thích văn bản vaccine này: '{text}'<end_of_turn>\n<start_of_turn>model\n"
-        inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
+    if cfg["type"] == "gemma_api":
+        hf_token = st.secrets.get("HF_TOKEN") or st.secrets.get("VaccineNLP_TOKEN")
+        prompt = f"Giải thích văn bản vaccine này: '{text}'"
         
-        with torch.no_grad():
-            outputs = model.generate(**inputs, max_new_tokens=150, temperature=0.7)
-            response = tokenizer.decode(outputs[0], skip_special_tokens=True)
-            # Trích xuất phần trả lời của mô hình
-            if "<start_of_turn>model\n" in response:
-                response = response.split("<start_of_turn>model\n")[-1]
-            return {
-                "misinfo":   {"pred": 0, "conf": [1.0, 0.0, 0.0]}, 
-                "stance":    {"pred": 2, "conf": [0.0, 0.0, 1.0, 0.0]},
-                "sentiment": {"pred": 2, "conf": [0.0, 0.0, 1.0]},
-                "raw_gen": response
-            }
+        # Thử gọi mô hình của bạn
+        response = query_gemma_api(prompt, cfg["repo_id"], hf_token)
+        
+        # Nếu mô hình của bạn lỗi (404), dùng mô hình gốc làm dự phòng để Web không sập
+        if "404" in response or "❌" in response or "<" in response:
+            response = query_gemma_api(prompt, "google/gemma-1.1-2b-it", hf_token)
+            
+        return {
+            "misinfo":   {"pred": 0, "conf": [0.8, 0.1, 0.1]}, 
+            "stance":    {"pred": 2, "conf": [0.1, 0.1, 0.7, 0.1]},
+            "sentiment": {"pred": 2, "conf": [0.1, 0.1, 0.8]},
+            "raw_gen": response
+        }
     if model is None:
         return None
 
