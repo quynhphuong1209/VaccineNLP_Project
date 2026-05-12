@@ -632,10 +632,10 @@ def main():
             padding: 0 25px !important;
         }}
         .stTabs [aria-selected="true"] {{
-            background-color: {"#64ffda" if is_dark else "#ffffff"} !important;
-            color: {"#0a192f" if is_dark else "#000000"} !important;
+            background-color: {"#1a2b4b" if is_dark else "#ffffff"} !important;
+            color: {"#007bff" if is_dark else "#000000"} !important;
             font-weight: bold !important;
-            border: {"none" if is_dark else "1px solid #ced4da"} !important;
+            border: {"1px solid #007bff" if is_dark else "1px solid #ced4da"} !important;
         }}
 
         /* Input area styling */
