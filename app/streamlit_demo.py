@@ -180,7 +180,7 @@ def load_model(model_key="PhoBERT-v2"):
             model_path = hf_hub_download(repo_id=cfg["repo_id"], filename="best_model.pt", token=hf_token)
             
             tokenizer = AutoTokenizer.from_pretrained(cfg["base_repo"], token=hf_token, trust_remote_code=True)
-            model = VaccineMultitaskModel(model_name=cfg["base_repo"], token=hf_token, trust_remote_code=True)
+            model = VaccineMultitaskModel(model_name=cfg["base_repo"], token=hf_token)
             
             state = torch.load(model_path, map_location="cpu", weights_only=False)
             model.load_state_dict(state)
