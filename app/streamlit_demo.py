@@ -757,8 +757,13 @@ def main():
 
     st.markdown(f"""
     <style>
-        /* 🎨 CREATIVE INTERFACE UPGRADE */
+        /* 🎨 CREATIVE INTERFACE UPGRADE & ACADEMIC STYLING */
         
+        /* 0. Phông chữ Times New Roman toàn cục */
+        html, body, [data-testid="stAppViewContainer"], .stMarkdown, p, h1, h2, h3, h4, h5, h6, span, label, div, button, input, textarea, select {{
+            font-family: 'Times New Roman', Times, serif !important;
+        }}
+
         /* 1. Nền Gradient chuyển động (Animated Gradient Background) */
         [data-testid="stAppViewContainer"] {{
             background: { "linear-gradient(-45deg, #0a192f, #112240, #0d1b3e, #0a192f)" if is_dark else "linear-gradient(-45deg, #f8f9fa, #e9ecef, #dee2e6, #f8f9fa)" };
@@ -807,20 +812,28 @@ def main():
             background-color: transparent !important;
         }}
         .stTabs [data-baseweb="tab"] {{
-            background-color: {card_bg} !important;
-            border: 1px solid {border_color} !important;
-            border-radius: 12px 12px 0 0 !important;
+            background-color: transparent !important;
+            border: none !important;
+            border-bottom: 2px solid transparent !important;
+            border-radius: 0 !important;
             padding: 10px 25px !important;
             transition: all 0.3s ease !important;
+            color: {secondary_text} !important;
+            font-weight: normal !important;
         }}
         .stTabs [data-baseweb="tab"]:hover {{
-            border-color: #64ffda !important;
-            transform: translateY(-2px);
+            color: #64ffda !important;
+            border-bottom: 2px solid rgba(100, 255, 218, 0.3) !important;
         }}
         .stTabs [aria-selected="true"] {{
-            background: linear-gradient(135deg, #64ffda 0%, #48c6ef 100%) !important;
-            color: #0a192f !important;
+            background-color: transparent !important;
+            color: #64ffda !important;
+            border-bottom: 2px solid #64ffda !important;
             font-weight: bold !important;
+        }}
+        /* Loại bỏ gạch chân mặc định của Streamlit */
+        .stTabs [data-baseweb="tab-highlight"] {{
+            background-color: #64ffda !important;
         }}
 
         /* 6. Hiệu ứng Pulse cho nút Phân tích */
