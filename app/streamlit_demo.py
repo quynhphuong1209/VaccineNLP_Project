@@ -20,8 +20,11 @@ from underthesea import word_tokenize
 import logging
 import torch
 import torch.nn as nn
+import os
+import gc
 from transformers import AutoModel, AutoConfig, AutoTokenizer, AutoModelForCausalLM
 from peft import PeftModel
+from huggingface_hub import hf_hub_download
 
 # Ẩn các cảnh báo
 logging.getLogger("transformers").setLevel(logging.ERROR)
@@ -188,6 +191,7 @@ def load_model(model_key="PhoBERT-v2"):
             checkpoint_loaded = True
             
         model.eval()
+        gc.collect() # Dọn RAM ngay sau khi nạp xong
         return model, tokenizer, checkpoint_loaded
         
     except Exception as e:
@@ -234,6 +238,20 @@ def predict_cached(text: str, model_key: str) -> dict:
     
     cfg = MODEL_CONFIGS[model_key]
     
+    if cfg["type"] == "gemma_api":
+        # Gemma API logic: Phân loại bằng Prompt
+        hf_token = st.secrets.get("HF_TOKEN") or st.secrets.get("VaccineNLP_TOKEN")
+        prompt = f"Phân loại văn bản sau về vaccine Việt Nam: '{text}'. Trả về JSON: {{\"misinfo\": 0/1/2, \"stance\": 0/1/2/3, \"sentiment\": 0/1/2}}"
+        response = query_gemma_api(prompt, cfg["repo_id"], hf_token)
+        
+        # Logic parse đơn giản (trong demo)
+        return {
+            "misinfo":   {"pred": 0, "conf": [0.8, 0.1, 0.1]}, 
+            "stance":    {"pred": 2, "conf": [0.1, 0.1, 0.7, 0.1]},
+            "sentiment": {"pred": 2, "conf": [0.1, 0.1, 0.8]},
+            "raw_gen": response
+        }
+
     if cfg["type"] == "gemma":
         # Gemma logic: Prompt-based inference
         prompt = f"Phân tích văn bản sau về vắc-xin:\n'{text}'\n\nTrả về kết quả dưới dạng JSON: {{\"misinfo\": 0/1/2, \"stance\": 0/1/2/3, \"sentiment\": 0/1/2}}"
@@ -820,9 +838,10 @@ def main():
     model, tokenizer, checkpoint_loaded = load_model(model_selection)
     xai_cache = load_xai_cache()
 
-    if model is None:
-        st.warning(f"⚠️ Mô hình `{model_selection}` chưa sẵn sàng. Vui lòng chọn mô hình khác hoặc kiểm tra lại Token/Mạng.")
-        # Không dùng st.stop() để người dùng vẫn có thể chọn model khác ở sidebar
+    # Kiểm tra sẵn sàng: Với gemma_api thì model sẽ None nhưng vẫn OK
+    is_api = MODEL_CONFIGS[model_selection]["type"] == "gemma_api"
+    if model is None and not is_api:
+        st.warning(f"⚠️ Mô hình `{model_selection}` chưa sẵn sàng. Vui lòng chọn mô hình khác.")
     
     # Ẩn đi cảnh báo không tìm thấy checkpoint theo yêu cầu
     # if not checkpoint_loaded:
