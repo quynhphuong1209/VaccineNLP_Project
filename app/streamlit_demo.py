@@ -300,13 +300,13 @@ def hien_thi_footer_chung(is_dark=True):
 
     # Cấu hình màu sắc theo giao diện Sáng/Tối
     if is_dark:
-        footer_bg = "linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%)"
-        footer_text = "#ccc"
-        title_color = "#007bff"
-        label_color = "#eee"
+        footer_bg = "linear-gradient(135deg, #0a192f 0%, #112240 100%)"
+        footer_text = "#a8b2d1"
+        title_color = "#64ffda"
+        label_color = "#ccd6f6"
         school_name_color = "#fff"
-        col_border = "rgba(255,255,255,0.1)"
-        bottom_text = "#777"
+        col_border = "rgba(100, 255, 218, 0.1)"
+        bottom_text = "#8892b0"
         project_vi = "#ffd700"
     else:
         footer_bg = "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)"
@@ -480,6 +480,16 @@ def render_benchmark_tab():
 # ─────────────────────────────────────────────────────────────
 def main():
     # ─────────────────────────────────────────────────────────────
+    # PAGE CONFIGURATION
+    # ─────────────────────────────────────────────────────────────
+    st.set_page_config(
+        page_title="VaccineNLP - Phân tích tin giả & Thái độ",
+        page_icon="💉",
+        layout="wide",
+        initial_sidebar_state="expanded"
+    )
+
+    # ─────────────────────────────────────────────────────────────
     # THEME STATE & TOGGLE
     # ─────────────────────────────────────────────────────────────
     if "theme" not in st.session_state:
@@ -496,14 +506,14 @@ def main():
     # DYNAMIC COLORS BASED ON THEME
     # ─────────────────────────────────────────────────────────────
     is_dark = st.session_state.theme == "Dark"
-    bg_color = "#10141d" if is_dark else "#ffffff"
-    text_color = "#e2e4e9" if is_dark else "#111111"
-    secondary_text = "#94a3b8" if is_dark else "#555"
-    border_color = "rgba(30, 41, 59, 0.5)" if is_dark else "rgba(0,0,0,0.1)"
-    sidebar_bg = "#1a1f2c" if is_dark else "#f8f9fa"
-    input_bg = "#1e293b" if is_dark else "#ffffff"
-    input_border = "#334155" if is_dark else "#ced4da"
-    card_bg = "rgba(30, 41, 59, 0.4)" if is_dark else "#fdfdfd"
+    bg_color = "#0a192f" if is_dark else "#ffffff"
+    text_color = "#ccd6f6" if is_dark else "#111111"
+    secondary_text = "#8892b0" if is_dark else "#555"
+    border_color = "rgba(100, 255, 218, 0.2)" if is_dark else "rgba(0,0,0,0.1)"
+    sidebar_bg = "#0d1b3e" if is_dark else "#f8f9fa"
+    input_bg = "#112240" if is_dark else "#ffffff"
+    input_border = "#233554" if is_dark else "#ced4da"
+    card_bg = "rgba(17, 34, 64, 0.7)" if is_dark else "#fdfdfd"
 
     with st.sidebar:
         st.markdown("<h2 style='text-align: center;'>🔬 VaccineNLP</h2>", unsafe_allow_html=True)
@@ -615,15 +625,15 @@ def main():
         /* Tabs styling */
         .stTabs [data-baseweb="tab"] {{
             height: 48px !important;
-            background-color: {"#1a1a2e" if is_dark else "#e9ecef"} !important;
+            background-color: {"#112240" if is_dark else "#e9ecef"} !important;
             border-radius: 10px 10px 0 0;
             color: {text_color} !important;
             border: 1px solid {border_color};
             padding: 0 25px !important;
         }}
         .stTabs [aria-selected="true"] {{
-            background-color: #007bff !important;
-            color: white !important;
+            background-color: #64ffda !important;
+            color: #0a192f !important;
             font-weight: bold !important;
         }}
 
@@ -654,8 +664,8 @@ def main():
             transition: all 0.2s ease !important;
         }}
         [data-testid="stExpander"] summary:hover {{
-            background-color: {"rgba(255,255,255,0.05)" if is_dark else "rgba(0,0,0,0.02)"} !important;
-            color: #007bff !important;
+            background-color: {"rgba(100, 255, 218, 0.05)" if is_dark else "rgba(0,0,0,0.02)"} !important;
+            color: #64ffda !important;
         }}
         /* Fix icon trong expander */
         [data-testid="stExpander"] summary svg {{
@@ -671,10 +681,10 @@ def main():
             transition: all 0.3s ease !important;
         }}
         .stButton > button:hover {{
-            border-color: #007bff !important;
-            color: #007bff !important;
-            background-color: {"#1a1e2e" if is_dark else "#f0f7ff"} !important;
-            box-shadow: 0 4px 12px rgba(0,123,255,0.2) !important;
+            border-color: #64ffda !important;
+            color: #64ffda !important;
+            background-color: {"#172a45" if is_dark else "#f0f7ff"} !important;
+            box-shadow: 0 4px 12px rgba(100, 255, 218, 0.2) !important;
         }}
 
         /* Fix Selectbox (Dropdown) colors - SIÊU ÉP BUỘC */
@@ -717,8 +727,8 @@ def main():
         [data-baseweb="popover"] li:hover, 
         [role="option"]:hover,
         div[data-baseweb="popover"] div:hover {{
-            background-color: {"rgba(255,255,255,0.1)" if is_dark else "rgba(0,0,123,0.05)"} !important;
-            color: #007bff !important;
+            background-color: {"rgba(100, 255, 218, 0.1)" if is_dark else "rgba(0,0,123,0.05)"} !important;
+            color: #64ffda !important;
         }}
 
         /* Fix Radio Button styling (Mẫu thử nghiệm) */
@@ -771,18 +781,18 @@ def main():
             text-align: center !important;
         }}
         th {{
-            background-color: {"#1a1a2e" if is_dark else "#f0f2f6"} !important;
+            background-color: {"#112240" if is_dark else "#f0f2f6"} !important;
             font-weight: bold !important;
         }}
 
         /* Footer Unified Styling */
         .main-footer {{
-            background: {"linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%)" if is_dark else "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)"};
+            background: {"linear-gradient(135deg, #0a192f 0%, #112240 100%)" if is_dark else "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)"};
             padding: 50px 20px;
             color: {"#ccc" if is_dark else "#444"};
             font-family: 'Times New Roman', Times, serif !important;
-            border-top: 4px solid #007bff;
-            box-shadow: 0 -10px 25px rgba(0,123,255,0.1);
+            border-top: 4px solid #64ffda;
+            box-shadow: 0 -10px 25px rgba(100, 255, 218, 0.1);
             margin-top: 60px;
         }}
         .footer-container {{
@@ -810,7 +820,7 @@ def main():
             filter: drop-shadow(0 0 8px rgba(0,123,255,0.2));
         }}
         .footer-title {{
-            color: {"#007bff" if is_dark else "#0056b3"};
+            color: {"#64ffda" if is_dark else "#0056b3"};
             font-weight: bold;
             margin-bottom: 15px;
             font-size: 1.2rem;
@@ -835,7 +845,7 @@ def main():
             text-align: center;
         }}
         .footer-link {{
-            color: #007bff !important;
+            color: #64ffda !important;
             text-decoration: none;
         }}
     </style>
@@ -920,7 +930,7 @@ def main():
                     st.markdown("<br>", unsafe_allow_html=True)
                     st.markdown("##### 🧠 Hệ thống Giải thích (XAI Engine)")
                     with st.expander("📖 Xem giải thích chi tiết từ Gemma-4 XAI Engine", expanded=True):
-                        st.markdown(f"<div style='border-left: 3px solid #007bff; padding-left: 20px; color: {text_color}; opacity: 0.9;'>{reasoning}</div>", unsafe_allow_html=True)
+                        st.markdown(f"<div style='border-left: 3px solid #64ffda; padding-left: 20px; color: {text_color}; opacity: 0.9;'>{reasoning}</div>", unsafe_allow_html=True)
                         st.caption("💡 Giải thích được tạo tự động bởi mô hình Gemma-4 Reasoning Engine.")
                 else:
                     st.info("💡 Lý luận XAI không khả dụng cho văn bản này. Hãy chọn mẫu từ thanh bên.")
