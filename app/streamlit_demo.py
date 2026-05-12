@@ -589,23 +589,34 @@ def render_evaluation_tab():
     st.success(f"Hệ thống đạt trạng thái tối ưu khi kết hợp kiến trúc **Ensemble**: Sử dụng **PhoBERT-v2** để trích xuất đặc trưng và phân loại nhãn thô, sau đó dùng **Gemma-4 QLoRA** để thực hiện Explainable AI (XAI) nhằm minh bạch hóa quyết định của mô hình.")
 
 def render_resources_tab():
-    """Hiển thị danh sách các Notebook Kaggle nghiên cứu của nhóm."""
+    """Hiển thị danh sách các Notebook Kaggle và HuggingFace nghiên cứu của nhóm."""
     st.markdown("## 📚 Tài liệu & Notebooks Nghiên cứu")
-    st.info("💡 Đây là danh sách các Notebook Kaggle chứa toàn bộ mã nguồn huấn luyện, cấu hình mô hình và quá trình thực nghiệm của nhóm.")
+    st.info("💡 Đây là danh sách các tài nguyên nghiên cứu bao gồm mã nguồn (Kaggle) và các mô hình đã huấn luyện (HuggingFace) của nhóm.")
 
     col1, col2 = st.columns(2)
 
     with col1:
         st.markdown("### 👨‍💻 1. Kim Mạnh Hưng")
+        st.markdown("##### **I. Kaggle**")
         st.markdown("""
         - [Gemma-4 QLoRA Multitask](https://www.kaggle.com/code/kimmnhhng/vaccinenlp-gemma-4-qlora-multitask)
         - [PhoBERT-v2 Multitask](https://www.kaggle.com/code/kimmnhhng/vaccinenlp-phobert-v2-multitask)
         - [Gemma E4B-IT Analysis](https://www.kaggle.com/code/kimmnhhng/gemma-e4b-it)
         - [XLM-R-v1 Multitask Classification](https://www.kaggle.com/code/kimmnhhng/vaccinenlp-xlm-r-v1-multitask-classifi)
         """)
+        st.markdown("##### **II. HuggingFace**")
+        st.markdown("""
+        - [Gemma-4-E4B XAI Model](https://huggingface.co/hung2903/gemma-4-E4B-unsloth-vaccine-xai)
+        - [XLM-R Vaccine Multitask](https://huggingface.co/hung2903/xlmr-vaccine-multitask)
+        - [PhoBERT Vaccine Multitask](https://huggingface.co/hung2903/phobert-vaccine-multitask)
+        - [Gemma-4-4B LoRA v1](https://huggingface.co/hung2903/gemma-4-4b-lora-v1)
+        - [Gemma-4 Vaccine Reasoning](https://huggingface.co/hung2903/gemma4-vaccinenlp-reasoning)
+        - [Synapse UNet Light](https://huggingface.co/hung2903/synapse-unet-light/tree/main)
+        """)
 
     with col2:
         st.markdown("### 👩‍💻 2. Đinh Lê Quỳnh Phương")
+        st.markdown("##### **I. Kaggle**")
         st.markdown("""
         - [Gemma-4 QLoRA Multitask (Main)](https://www.kaggle.com/code/inhlqunhphng/vaccinenlp-gemma-4-qlora-multitask)
         - [XLM-R-v1 Baseline](https://www.kaggle.com/code/inhlqunhphng/vaccinenlp-xlm-r-v1-multitask-classifi)
@@ -614,6 +625,12 @@ def render_resources_tab():
         - [Final Evaluation (T4 GPU)](https://www.kaggle.com/code/inhlqunhphng/vaccine-nlp-eval-final-t4)
         - [Gemma-4 4B Training (02)](https://www.kaggle.com/code/inhlqunhphng/02-gemma4-4b-qlora-training)
         - [Gemma E4B-IT Insights](https://www.kaggle.com/code/inhlqunhphng/gemma-e4b-it)
+        """)
+        st.markdown("##### **II. HuggingFace**")
+        st.markdown("""
+        - [PhoBERT Multitask](https://huggingface.co/quynhphuong1209/phobert-multitask)
+        - [XLM-R Multitask](https://huggingface.co/quynhphuong1209/xlmr-multitask)
+        - [Gemma-4-E4B XAI Model](https://huggingface.co/quynhphuong1209/gemma-4-E4B-unsloth-vaccine-xai)
         """)
 
 # ─────────────────────────────────────────────────────────────
