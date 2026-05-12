@@ -169,16 +169,19 @@ def load_model(model_key="PhoBERT-v2"):
             # Load Gemma as a CausalLM with Peft adapter from Hugging Face
             from transformers import AutoModelForCausalLM, AutoTokenizer
             from peft import PeftModel
-            base_model = AutoModelForCausalLM.from_pretrained(
-                cfg["repo_id"], 
-                token=hf_token, 
-                torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
-                device_map="auto" if torch.cuda.is_available() else None,
-                trust_remote_code=True
-            )
-            tokenizer = AutoTokenizer.from_pretrained(cfg["repo_id"], token=hf_token, trust_remote_code=True)
-            model = PeftModel.from_pretrained(base_model, cfg["hf_adapter"], token=hf_token)
-            checkpoint_loaded = True
+            
+            with st.spinner("Đang nạp mô hình Gemma (có thể mất 1-2 phút)..."):
+                base_model = AutoModelForCausalLM.from_pretrained(
+                    cfg["repo_id"], 
+                    token=hf_token, 
+                    torch_dtype=torch.float16 if torch.cuda.is_available() else torch.bfloat16 if torch.backends.mps.is_available() else torch.float32,
+                    device_map="auto" if torch.cuda.is_available() else None,
+                    low_cpu_mem_usage=True,
+                    trust_remote_code=True
+                )
+                tokenizer = AutoTokenizer.from_pretrained(cfg["repo_id"], token=hf_token, trust_remote_code=True)
+                model = PeftModel.from_pretrained(base_model, cfg["hf_adapter"], token=hf_token)
+                checkpoint_loaded = True
         else:
             # Load custom multitask model from Hugging Face (downloads best_model.pt automatically)
             from huggingface_hub import hf_hub_download
