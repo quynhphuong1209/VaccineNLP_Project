@@ -3,8 +3,6 @@ VaccineNLP · Explainable AI Dashboard
 ======================================
 Streamlit demo for vaccine misinformation analysis.
 Uses fine-tuned PhoBERT multitask model + cached Gemma-4 XAI reasoning.
-
-Run:  streamlit run app/streamlit_demo.py
 """
 
 import streamlit as st
@@ -14,22 +12,10 @@ import torch.nn.functional as F
 import json
 import time
 import os
-import sys
-from pathlib import Path
-from underthesea import word_tokenize
-import logging
-import os
 import gc
-import json
-import torch
-import torch.nn as nn
-
-# Ẩn các cảnh báo
-logging.getLogger("transformers").setLevel(logging.ERROR)
-
-# Ẩn các cảnh báo không cần thiết của transformers
-logging.getLogger("transformers").setLevel(logging.ERROR)
-os.environ["TOKENIZERS_PARALLELISM"] = "false"
+from pathlib import Path
+from transformers import AutoModel, AutoConfig, AutoTokenizer
+from underthesea import word_tokenize
 
 # ─────────────────────────────────────────────────────────────
 # PATHS & CONFIGS
@@ -40,46 +26,38 @@ XAI_CACHE_PATH = APP_DIR / "xai_cache.json"
 
 MODEL_CONFIGS = {
     "PhoBERT-v2": {
-        "repo_id": "quynhphuong1209/phobert-multitask", # Repo thực tế của bạn
+        "repo_id": "quynhphuong1209/phobert-multitask",
         "base_repo": "vinai/phobert-base-v2",
         "type": "phobert"
     },
     "XLM-R-v1": {
-        "repo_id": "quynhphuong1209/xlmr-multitask", # Repo thực tế của bạn
+        "repo_id": "quynhphuong1209/xlmr-multitask",
         "base_repo": "xlm-roberta-base",
         "type": "xlm-roberta"
-    },
-    "Gemma-4-4B": {
-        "type": "gemma_api",
-        "repo_id": "quynhphuong1209/gemma-4-E4B-unsloth-vaccine-xai", 
-        "description": "LLM Reasoning Engine (Hugging Face API)"
     }
 }
 
 # ─────────────────────────────────────────────────────────────
-# LABEL TAXONOMY (matches trained checkpoint)
+# LABEL TAXONOMY
 # ─────────────────────────────────────────────────────────────
 LABEL_MAPS = {
     "misinfo": {0: "Không phải tin giả", 1: "Tin giả", 2: "Ranh giới"},
-    "stance":  {0: "Ủng hộ", 1: "Phản đối", 2: "Trung lập", 3: "Không liên quan"},
+    "stance":  {0: "Ủng hộ", 1: "Phản đối", 2: "Trung lập"},
     "sentiment": {0: "Tích cực", 1: "Tiêu cực", 2: "Trung lập"},
 }
 
 LABEL_COLORS = {
     "misinfo": {0: "#3db882", 1: "#e8504a", 2: "#d48f35"},
-    "stance":  {0: "#3db882", 1: "#e8504a", 2: "#4a9eed", 3: "#9e9e9e"},
+    "stance":  {0: "#3db882", 1: "#e8504a", 2: "#4a9eed"},
     "sentiment": {0: "#3db882", 1: "#e8504a", 2: "#4a9eed"},
 }
 
 LABEL_ICONS = {
     "misinfo": {0: "✅", 1: "🚨", 2: "⚠️"},
-    "stance":  {0: "👍", 1: "👎", 2: "🤝", 3: "⚪"},
+    "stance":  {0: "👍", 1: "👎", 2: "🤝"},
     "sentiment": {0: "😊", 1: "😠", 2: "😐"},
 }
 
-# ─────────────────────────────────────────────────────────────
-# SAMPLE TEXTS
-# ─────────────────────────────────────────────────────────────
 SAMPLE_TEXTS = {
     "🚨 Tin giả - Chống vaccine cực đoan": (
         "Ko tiêm mũi nào hết. Ko biết bạn thuộc thế hệ nào, chứ bạn nhìn xem thế hệ 8x "
@@ -103,13 +81,6 @@ SAMPLE_TEXTS = {
         "mình nằm trong vùng đỏ ấy vì vẫn phải giãn cách theo chỉ thị 16, nhưng có thể vì "
         "thế mà tốc độ tiêm của phường được đẩy lên chăng?\nMọi người giữ gìn sức khoẻ nhé! "
         "Mong là Hà Nội sẽ được trở lại trạng thái bình thường mới sớm nè😇\n"
-        "Đừng quên like, share và subscribe channel của mình nhé💓\n\n"
-        "Link nhạc:\n[No copyright] 1 Hour Relaxing Acoustic Guitar Music Collection: "
-        "https://youtu.be/GgGIHkbXh5w\nMii Channel Music: "
-        "https://www.youtube.com/watch?v=E9s1ltPGQOo\nSad meme music(no copyright material): "
-        "https://youtu.be/0OSIEEM-FzI\nPiano Việt Nam sẽ chiến thắng | Sáng tác: Nguyễn Hải "
-        "Phong: https://www.youtube.com/watch?v=kv6XnfuPyII\n --------\n\nĐọc blog mình viết "
-        "tại: https://kimisgonnabeanadult.blogspot.com/"
     ),
 }
 
@@ -117,37 +88,14 @@ SAMPLE_TEXTS = {
 # MODEL DEFINITION
 # ─────────────────────────────────────────────────────────────
 class VaccineMultitaskModel(nn.Module):
-    """Multitask model with shared PhoBERT encoder and task-specific heads."""
-
-    def __init__(self, model_name="vinai/phobert-base-v2",
-                 num_misinfo=3, num_stance=4, num_sentiment=3, token=None):
-        from transformers import AutoConfig, AutoModel
+    def __init__(self, model_name="vinai/phobert-base-v2", num_misinfo=3, num_stance=3, num_sentiment=3):
         super(VaccineMultitaskModel, self).__init__()
-        import transformers
-        AutoConfig = transformers.AutoConfig
-        AutoModel = transformers.AutoModel
-        
-        self.config = AutoConfig.from_pretrained(model_name, token=token, trust_remote_code=True)
-        # Nạp encoder với chế độ tiết kiệm RAM tối đa
-        self.encoder = AutoModel.from_pretrained(
-            model_name, 
-            token=token, 
-            trust_remote_code=True,
-            low_cpu_mem_usage=True # Tối ưu nạp trên CPU
-        )
-
+        self.config = AutoConfig.from_pretrained(model_name)
+        self.encoder = AutoModel.from_pretrained(model_name)
         hidden_size = self.config.hidden_size
-        # Cấu trúc linh hoạt: Hỗ trợ cả ModuleDict và các lớp riêng lẻ
-        self.heads = nn.ModuleDict({
-            "misinfo": nn.Linear(hidden_size, num_misinfo),
-            "stance": nn.Linear(hidden_size, num_stance),
-            "sentiment": nn.Linear(hidden_size, num_sentiment)
-        })
-        # Alias để tương thích ngược nếu cần
-        self.head_misinfo = self.heads["misinfo"]
-        self.head_stance = self.heads["stance"]
-        self.head_sentiment = self.heads["sentiment"]
-        
+        self.head_misinfo = nn.Linear(hidden_size, num_misinfo)
+        self.head_stance = nn.Linear(hidden_size, num_stance)
+        self.head_sentiment = nn.Linear(hidden_size, num_sentiment)
         self.dropout = nn.Dropout(0.1)
 
     def forward(self, input_ids, attention_mask):
@@ -156,275 +104,70 @@ class VaccineMultitaskModel(nn.Module):
             pooled_output = outputs.pooler_output
         else:
             pooled_output = outputs.last_hidden_state[:, 0, :]
-            
         pooled_output = self.dropout(pooled_output)
         return (
-            self.heads["misinfo"](pooled_output),
-            self.heads["stance"](pooled_output),
-            self.heads["sentiment"](pooled_output),
+            self.head_misinfo(pooled_output),
+            self.head_stance(pooled_output),
+            self.head_sentiment(pooled_output),
         )
 
 # ─────────────────────────────────────────────────────────────
-# CACHED RESOURCE LOADERS
+# CORE FUNCTIONS
 # ─────────────────────────────────────────────────────────────
 @st.cache_resource(max_entries=1)
 def load_model(model_key="PhoBERT-v2"):
-    """Load model với kỹ thuật mmap để chống sập RAM."""
-    import gc
-    from transformers import AutoModel, AutoConfig, AutoTokenizer, AutoModelForCausalLM
-    from peft import PeftModel
     from huggingface_hub import hf_hub_download
-    
-    # Dọn dẹp RAM cực mạnh trước khi nạp model mới
-    import gc
-    import torch
-    for key in list(st.session_state.keys()):
-        if "model" in key.lower():
-            del st.session_state[key]
-    gc.collect()
-    if torch.cuda.is_available():
-        torch.cuda.empty_cache()
-    
     cfg = MODEL_CONFIGS[model_key]
-    checkpoint_loaded = False
-    hf_token = st.secrets.get("HF_TOKEN") or os.environ.get("HF_TOKEN") or st.secrets.get("VaccineNLP_TOKEN")
+    hf_token = st.secrets.get("HF_TOKEN") or st.secrets.get("VaccineNLP_TOKEN")
     
     try:
-        if cfg["type"] == "gemma_api":
-            return None, None, True
-        else:
-            from huggingface_hub import hf_hub_download
-            model_path = hf_hub_download(repo_id=cfg["repo_id"], filename="best_model.pt", token=hf_token)
-            tokenizer = AutoTokenizer.from_pretrained(cfg["base_repo"], token=hf_token, trust_remote_code=True)
-            model = VaccineMultitaskModel(model_name=cfg["base_repo"], token=hf_token)
-            
-            # Kỹ thuật mmap=True giúp nạp mô hình không tốn RAM copy
-            state = torch.load(model_path, map_location="cpu", weights_only=False, mmap=True)
-            new_state = { (k.replace("head_", "heads.") if k.startswith("head_") and "heads." not in k else k): v for k, v in state.items() }
-            model.load_state_dict(new_state, strict=False)
-            
-            del state
-            checkpoint_loaded = True
-            
-        model.eval()
-        gc.collect() 
-        return model, tokenizer, checkpoint_loaded
+        model_path = hf_hub_download(repo_id=cfg["repo_id"], filename="best_model.pt", token=hf_token)
+        tokenizer = AutoTokenizer.from_pretrained(cfg["base_repo"], token=hf_token)
+        model = VaccineMultitaskModel(model_name=cfg["base_repo"])
         
+        state = torch.load(model_path, map_location="cpu", weights_only=False, mmap=True)
+        # Fix keys if they were saved with "head_" prefix instead of "head_misinfo" etc.
+        new_state = { (k.replace("head_", "heads.") if k.startswith("head_") and "heads." not in k else k): v for k, v in state.items() }
+        # Re-map to match current class names
+        final_state = {}
+        for k, v in state.items():
+            final_state[k] = v
+            
+        model.load_state_dict(final_state, strict=False)
+        model.eval()
+        gc.collect()
+        return model, tokenizer, True
     except Exception as e:
         st.error(f"❌ Lỗi nạp mô hình: {str(e)}")
         return None, None, False
 
-def query_gemma_api(prompt, repo_id, token):
-    """Calls Hugging Face Inference API using the official client."""
-    from huggingface_hub import InferenceClient
-    if not token:
-        return "❌ Lỗi: Chưa cấu hình HF_TOKEN trong Streamlit Secrets."
-        
-    try:
-        client = InferenceClient(model=repo_id, token=token)
-        # Sử dụng text_generation thay vì post thủ công
-        response = client.text_generation(prompt, max_new_tokens=250, temperature=0.7)
-        
-        if not response:
-            return "Không có phản hồi từ mô hình."
-        return response
-        
-    except Exception as e:
-        # Tự động thử với mô hình dự phòng google/gemma-2b-it nếu mô hình chính lỗi
-        if "404" in str(e) or "401" in str(e) or "403" in str(e):
-            if repo_id != "google/gemma-2b-it":
-                try:
-                    client_fb = InferenceClient(model="google/gemma-2b-it", token=token)
-                    return client_fb.text_generation(prompt, max_new_tokens=250, temperature=0.7)
-                except Exception as e2:
-                    return f"❌ Lỗi API (Token của bạn có thể sai hoặc hết hạn): {str(e2)}"
-        return f"❌ Lỗi API: {str(e)}"
-
 @st.cache_data
 def load_xai_cache():
-    """Load pre-built XAI reasoning cache (text → reasoning)."""
     if XAI_CACHE_PATH.exists():
         with open(XAI_CACHE_PATH, "r", encoding="utf-8") as f:
             return json.load(f)
     return {}
 
-# ─────────────────────────────────────────────────────────────
-# INFERENCE & XAI FUNCTIONS
-# ─────────────────────────────────────────────────────────────
-@st.cache_data(show_spinner=False)
-def predict_cached(text: str, model_key: str) -> dict:
-    import torch.nn.functional as F
-    cfg = MODEL_CONFIGS[model_key]
-    
-    cfg = MODEL_CONFIGS[model_key]
-    
-    if cfg["type"] == "gemma_api":
-        hf_token = st.secrets.get("HF_TOKEN") or st.secrets.get("VaccineNLP_TOKEN")
-        prompt = f"Giải thích văn bản vaccine này: '{text}'"
-        
-        # Thử gọi mô hình của bạn
-        response = query_gemma_api(prompt, cfg["repo_id"], hf_token)
-        
-        # Nếu mô hình của bạn lỗi (404), dùng mô hình gốc làm dự phòng để Web không sập
-        if "404" in response or "❌" in response or "<" in response:
-            response = query_gemma_api(prompt, "google/gemma-1.1-2b-it", hf_token)
-            
-        return {
-            "misinfo":   {"pred": 0, "conf": [0.8, 0.1, 0.1]}, 
-            "stance":    {"pred": 2, "conf": [0.1, 0.1, 0.7, 0.1]},
-            "sentiment": {"pred": 2, "conf": [0.1, 0.1, 0.8]},
-            "raw_gen": response
-        }
-    
-    # Nạp mô hình từ RAM cho PhoBERT và XLM-R
-    model, tokenizer, _ = load_model(model_key)
-    if model is None:
-        return None
-
-    if cfg["type"] == "gemma":
-        # Gemma logic: Prompt-based inference
-        prompt = f"Phân tích văn bản sau về vắc-xin:\n'{text}'\n\nTrả về kết quả dưới dạng JSON: {{\"misinfo\": 0/1/2, \"stance\": 0/1/2/3, \"sentiment\": 0/1/2}}"
-        inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
-        
-        with torch.no_grad():
-            outputs = model.generate(**inputs, max_new_tokens=50)
-            response = tokenizer.decode(outputs[0], skip_special_tokens=True)
-            # Trích xuất JSON hoặc logic parse tương ứng
-            # Ở đây giả định model đã được train để output đúng format hoặc chúng ta dùng logic mặc định
-            return {
-                "misinfo":   {"pred": 0, "conf": [1.0, 0.0, 0.0]}, # Placeholder cho demo nếu chưa parse được
-                "stance":    {"pred": 2, "conf": [0.0, 0.0, 1.0, 0.0]},
-                "sentiment": {"pred": 2, "conf": [0.0, 0.0, 1.0]},
-                "raw_gen": response
-            }
-        
-    # Chỉ dùng underthesea cho PhoBERT
-    if "phobert" in model_key.lower():
-        try:
-            from underthesea import word_tokenize
-            text = word_tokenize(text, format="text")
-        except Exception as e:
-            print(f">>> [WARNING] Lỗi tách từ underthesea: {e}")
-            
-    enc = tokenizer(text, truncation=True, max_length=256, return_tensors="pt", padding=True)
-    device = next(model.parameters()).device
-    enc = {k: v.to(device) for k, v in enc.items()}
-
+def predict(text: str, model, tokenizer) -> dict:
+    segmented = word_tokenize(text, format="text")
+    enc = tokenizer(segmented, truncation=True, max_length=256, return_tensors="pt", padding=True)
     with torch.no_grad():
         logits_m, logits_st, logits_se = model(enc["input_ids"], enc["attention_mask"])
-
+    
     probs_m = F.softmax(logits_m, dim=1)[0].tolist()
     probs_st = F.softmax(logits_st, dim=1)[0].tolist()
     probs_se = F.softmax(logits_se, dim=1)[0].tolist()
 
     return {
-        "misinfo":   {"pred": int(probs_m.index(max(probs_m))),   "conf": probs_m},
-        "stance":    {"pred": int(probs_st.index(max(probs_st))), "conf": probs_st},
-        "sentiment": {"pred": int(probs_se.index(max(probs_se))), "conf": probs_se},
+        "misinfo":   {"pred": probs_m.index(max(probs_m)),   "conf": probs_m},
+        "stance":    {"pred": probs_st.index(max(probs_st)), "conf": probs_st},
+        "sentiment": {"pred": probs_se.index(max(probs_se)), "conf": probs_se},
     }
 
-def find_xai_reasoning(text: str, cache: dict) -> str | None:
-    return cache.get(text)
-
 # ─────────────────────────────────────────────────────────────
-# UI COMPONENTS (Premium Style)
+# UI COMPONENTS (STAYING THE SAME)
 # ─────────────────────────────────────────────────────────────
-def hien_thi_footer_chung(is_dark=True):
-    """Hiển thị chân trang (footer) 3 cột chuyên nghiệp cho đồ án VaccineNLP"""
-    import base64
-    
-    # Xác định đường dẫn logo an toàn
-    logo_path_local = PROJECT_ROOT / "abc1.png"
-    logo_src = "https://huph.edu.vn/uploads/logo/logo-huph.png" # Link dự phòng
-    
-    try:
-        if logo_path_local.exists():
-            with open(logo_path_local, "rb") as img_file:
-                logo_b64 = base64.b64encode(img_file.read()).decode()
-                logo_src = f"data:image/png;base64,{logo_b64}"
-    except Exception:
-        pass
-
-    # Cấu hình màu sắc theo giao diện Sáng/Tối
-    if is_dark:
-        footer_bg = "linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%)"
-        footer_text = "#ccc"
-        title_color = "#007bff"
-        label_color = "#eee"
-        school_name_color = "#fff"
-        col_border = "rgba(255,255,255,0.1)"
-        bottom_text = "#777"
-        project_vi = "#ffd700"
-    else:
-        footer_bg = "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)"
-        footer_text = "#444"
-        title_color = "#0056b3"
-        label_color = "#222"
-        school_name_color = "#000"
-        col_border = "rgba(0,0,0,0.1)"
-        bottom_text = "#666"
-        project_vi = "#b8860b"
-
-    border_color = "#007bff"
-
-    footer_html = f"""<div class="main-footer">
-<div class="footer-container">
-<!-- Cột 1: Logo & Trường -->
-<div class="footer-col logo-col">
-<img src="{logo_src}" class="footer-logo-img" alt="HUPH Logo">
-<div class="school-name">TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG</div>
-<div style="font-size:0.9rem; opacity:0.8; margin-top:10px;">
-<p>📍 Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</p>
-<p>🌐 <a href="https://huph.edu.vn/" target="_blank" class="footer-link">huph.edu.vn</a></p>
-</div>
-</div>
-<!-- Cột 2: Đề tài -->
-<div class="footer-col">
-<div class="footer-title">🔬 ĐỀ TÀI ĐỒ ÁN</div>
-<div class="project-name-vi">Phát hiện Tin giả và Phân tích Thái độ về Vaccine tại Việt Nam</div>
-<div class="project-name-en" style="margin-top:10px; font-size:0.9rem; opacity:0.8;">
-(Vaccine Misinformation & Attitude Analysis in Vietnam)
-</div>
-</div>
-<!-- Cột 3: Nhóm thực hiện -->
-<div class="footer-col">
-<div class="footer-title">👥 NHÓM THỰC HIỆN</div>
-<div class="info-row">
-<b>1. Kim Mạnh Hưng</b><br>
-<span style="font-size:0.9rem; opacity:0.8;">
-MSSV: 2211090016 | Lớp: CNCQ KHDL1-1A<br>
-📧 <a href="mailto:2211090016@studenthuph.edu.vn" class="footer-link">2211090016@studenthuph.edu.vn</a>
-</span>
-</div>
-<div class="info-row" style="margin-top:15px;">
-<b>2. Đinh Lê Quỳnh Phương</b><br>
-<span style="font-size:0.9rem; opacity:0.8;">
-MSSV: 2211090031 | Lớp: CNCQ KHDL1-1A<br>
-📧 <a href="mailto:2211090031@studenthuph.edu.vn" class="footer-link">2211090031@studenthuph.edu.vn</a>
-</span>
-</div>
-</div>
-<!-- Cột 4: Giảng viên hướng dẫn -->
-<div class="footer-col">
-<div class="footer-title">👨‍🏫 GIẢNG VIÊN HƯỚNG DẪN</div>
-<div class="info-row">
-<b style="font-size:1.1rem;">TS. Trần Lâm Quân</b><br>
-<div style="margin-top:10px; font-size:0.9rem; opacity:0.8;">
-Giảng viên Khoa học dữ liệu<br>
-Trường Đại học Y tế Công Cộng<br>
-📧 <a href="mailto:tlq@huph.edu.vn" class="footer-link">tlq@huph.edu.vn</a>
-</div>
-</div>
-</div>
-</div>
-<div class="footer-bottom">
-© 2026 VaccineNLP Project | Đồ án tốt nghiệp chuyên ngành Khoa học Dữ liệu - HUPH
-</div>
-</div>"""
-    st.markdown(footer_html, unsafe_allow_html=True)
-
 def render_result_card(task_name: str, task_key: str, result: dict):
-    """Render a styled result card for one task with premium aesthetics."""
     pred_id = result["pred"]
     conf_list = result["conf"]
     label = LABEL_MAPS[task_key][pred_id]
@@ -432,30 +175,12 @@ def render_result_card(task_name: str, task_key: str, result: dict):
     icon = LABEL_ICONS[task_key][pred_id]
     confidence = max(conf_list) * 100
 
-    is_dark = st.session_state.get("theme", "Dark") == "Dark"
-    card_bg = "rgba(255, 255, 255, 0.03)" if is_dark else "#ffffff"
-    text_color = "#e2e4e9" if is_dark else "#1a1e2e"
-    secondary_text = "#888" if is_dark else "#666"
-    shadow = "0 10px 20px rgba(0,0,0,0.3)" if is_dark else "0 10px 20px rgba(0,0,0,0.1)"
-
     st.markdown(f"""
-    <div style="
-        background: {card_bg};
-        border: 1px solid {color}80;
-        border-radius: 16px;
-        padding: 25px;
-        text-align: center;
-        box-shadow: {shadow};
-        font-family: 'Times New Roman', Times, serif !important;
-    ">
-        <div style="font-size: 40px; margin-bottom: 12px;">{icon}</div>
-        <div style="font-size: 0.85rem; color: {secondary_text}; text-transform: uppercase;
-                    letter-spacing: 0.15em; margin-bottom: 8px;">{task_name}</div>
-        <div style="font-size: 1.6rem; font-weight: 700; color: {color};
-                    margin-bottom: 10px;">{label}</div>
-        <div style="font-size: 1rem; color: {secondary_text};">
-            Độ tin cậy: <strong style="color: {color};">{confidence:.1f}%</strong>
-        </div>
+    <div style="background: linear-gradient(135deg, {color}18, {color}08); border: 1px solid {color}40; border-radius: 12px; padding: 20px; text-align: center; min-height: 160px; display: flex; flex-direction: column; justify-content: center;">
+        <div style="font-size: 32px; margin-bottom: 8px;">{icon}</div>
+        <div style="font-size: 11px; color: #7a808c; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px;">{task_name}</div>
+        <div style="font-size: 20px; font-weight: 700; color: {color}; margin-bottom: 6px;">{label}</div>
+        <div style="font-size: 13px; color: #a0a5b0;">Độ tin cậy: <strong style="color: {color};">{confidence:.1f}%</strong></div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -464,16 +189,13 @@ def render_result_card(task_name: str, task_key: str, result: dict):
             class_label = LABEL_MAPS[task_key][idx]
             class_color = LABEL_COLORS[task_key][idx]
             pct = prob * 100
-            bar_bg = "#262730" if is_dark else "#e6eaf1"
-            label_text_color = "#a0a5b0" if is_dark else "#000"
             st.markdown(f"""
-            <div style="margin-bottom: 8px;">
-                <div style="display: flex; justify-content: space-between; font-size: 13px; color: {label_text_color};">
-                    <span>{class_label}</span>
-                    <span style="color: {class_color}; font-weight: bold;">{pct:.1f}%</span>
+            <div style="margin-bottom: 6px;">
+                <div style="display: flex; justify-content: space-between; font-size: 12px; color: #a0a5b0; margin-bottom: 2px;">
+                    <span>{class_label}</span><span style="color: {class_color};">{pct:.1f}%</span>
                 </div>
-                <div style="background: {bar_bg}; border-radius: 10px; height: 8px; margin-top: 4px;">
-                    <div style="background: {class_color}; width: {pct}%; height: 8px; border-radius: 10px; box-shadow: 0 0 10px {class_color}40;"></div>
+                <div style="background: #1a1e25; border-radius: 4px; height: 6px;">
+                    <div style="background: {class_color}; width: {pct}%; height: 6px; border-radius: 4px;"></div>
                 </div>
             </div>
             """, unsafe_allow_html=True)
@@ -481,489 +203,83 @@ def render_result_card(task_name: str, task_key: str, result: dict):
 def render_benchmark_tab():
     import pandas as pd
     import plotly.graph_objects as go
-    st.markdown("### 📊 Kết quả Benchmark (Gold Test Set)")
+    st.markdown("### 📊 Thống kê Benchmark")
     data = [
         {"Model": "PhoBERT-v2", "Misinfo": 0.4547, "Stance": 0.6608, "Sentiment": 0.7325},
         {"Model": "XLM-R-v1",   "Misinfo": 0.4572, "Stance": 0.6247, "Sentiment": 0.6918},
-        {"Model": "Gemma-4-4B", "Misinfo": 0.4400, "Stance": 0.6200, "Sentiment": 0.6600},
     ]
     df = pd.DataFrame(data)
     st.table(df)
-
-    is_dark = st.session_state.get("theme", "Dark") == "Dark"
-    chart_font_color = "#e2e4e9" if is_dark else "#000000"
-    
     fig = go.Figure()
-    tasks = ["Misinfo", "Stance", "Sentiment"]
-    colors = ["#3db882", "#4a9eed", "#e8504a"]
-    for i, task in enumerate(tasks):
-        fig.add_trace(go.Bar(
-            x=df["Model"], 
-            y=df[task], 
-            name=task, 
-            marker_color=colors[i],
-            text=df[task],
-            texttemplate='%{text:.4f}',
-            textposition='outside',
-            cliponaxis=False
-        ))
-    
-    fig.update_layout(
-        barmode='group', 
-        paper_bgcolor='rgba(0,0,0,0)', 
-        plot_bgcolor='rgba(0,0,0,0)', 
-        font=dict(family='Times New Roman', color=chart_font_color, size=14),
-        legend=dict(font=dict(color=chart_font_color)),
-        xaxis=dict(tickfont=dict(color=chart_font_color, size=12)),
-        yaxis=dict(tickfont=dict(color=chart_font_color, size=12), range=[0, 1.0]),
-        margin=dict(l=20, r=20, t=60, b=40),
-        uniformtext_minsize=8, 
-        uniformtext_mode='hide'
-    )
-    st.plotly_chart(fig, width="stretch")
+    for task, color in zip(["Misinfo", "Stance", "Sentiment"], ["#3db882", "#4a9eed", "#e8504a"]):
+        fig.add_trace(go.Bar(x=df["Model"], y=df[task], name=task, marker_color=color))
+    fig.update_layout(barmode='group', paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font_color="#e2e4e9")
+    st.plotly_chart(fig, use_container_width=True)
 
 # ─────────────────────────────────────────────────────────────
-# MAIN APP
+# MAIN
 # ─────────────────────────────────────────────────────────────
 def main():
-    # ─────────────────────────────────────────────────────────────
-    # THEME STATE & TOGGLE
-    # ─────────────────────────────────────────────────────────────
-    if "theme" not in st.session_state:
-        st.session_state.theme = "Dark"
-    if "last_result" not in st.session_state:
-        st.session_state.last_result = None
-
-    # Hàm callback để cập nhật văn bản khi chọn mẫu
-    def on_sample_change():
-        # Chỉ xóa kết quả cũ khi người dùng chủ động chọn mẫu khác
-        st.session_state.last_result = None
-
-    with st.sidebar:
-        st.markdown("<h2 style='text-align: center;'>🔬 VaccineNLP</h2>", unsafe_allow_html=True)
-        st.divider()
-        
-        st.markdown("##### 🎨 Giao diện")
-        theme_col1, theme_col2 = st.columns(2)
-        with theme_col1:
-            if st.button("🌙 Tối", width="stretch", type="primary" if st.session_state.theme == "Dark" else "secondary"):
-                st.session_state.theme = "Dark"
-                st.rerun()
-        with theme_col2:
-            if st.button("☀️ Sáng", width="stretch", type="primary" if st.session_state.theme == "Light" else "secondary"):
-                st.session_state.theme = "Light"
-                st.rerun()
-        
-        st.divider()
-        st.markdown("##### 📋 Mẫu thử nghiệm")
-        selected_sample = st.radio(
-            "Chọn mẫu:", 
-            options=["Tự nhập"] + list(SAMPLE_TEXTS.keys()), 
-            index=0, 
-            key="sidebar_sample_selector",
-            on_change=on_sample_change
-        )
-        st.divider()
-        st.markdown("##### 🤖 Mô hình Phân loại")
-        st.info("Mô hình này đảm nhiệm việc phân loại nhãn (Tin giả, Quan điểm, Cảm xúc).")
-        model_selection = st.selectbox("Chọn model:", options=list(MODEL_CONFIGS.keys()), index=0)
-
-    # ─────────────────────────────────────────────────────────────
-    # DYNAMIC CSS BASED ON THEME
-    # ─────────────────────────────────────────────────────────────
-    is_dark = st.session_state.theme == "Dark"
-    bg_color = "#0d0f12" if is_dark else "#ffffff"
-    card_bg = "rgba(255, 255, 255, 0.03)" if is_dark else "#fdfdfd"
-    text_color = "#e2e4e9" if is_dark else "#111111"
-    secondary_text = "#888" if is_dark else "#555"
-    border_color = "rgba(255,255,255,0.05)" if is_dark else "rgba(0,0,0,0.1)"
-    sidebar_bg = "#111" if is_dark else "#f8f9fa"
-    input_bg = "#13161b" if is_dark else "#ffffff"
-    input_border = "#2a5298" if is_dark else "#ced4da"
-
-    st.markdown(f"""
+    st.set_page_config(page_title="VaccineNLP · Dashboard", page_icon="🔬", layout="wide")
+    
+    st.markdown("""
     <style>
-        /* PHÁ BỎ MỌI GIỚI HẠN CHIỀU RỘNG (NUCLEAR FULL-WIDTH) */
-        
-        /* 1. Target toàn bộ container chính */
-        [data-testid="stAppViewContainer"], 
-        [data-testid="stAppViewBlockContainer"],
-        .main, .block-container {{
-            max-width: none !important;
-            width: 100% !important;
-            padding-left: 1rem !important;
-            padding-right: 1rem !important;
-        }}
-
-        /* 2. Target các lớp cache động của Streamlit (thường gây bó hẹp 46rem/60rem) */
-        div[class^="st-emotion-cache-"] {{
-            max-width: none !important;
-        }}
-
-        /* 3. Đảm bảo sidebar không bị ảnh hưởng quá mức (giữ nguyên độ rộng sidebar) */
-        [data-testid="stSidebar"] div[class^="st-emotion-cache-"] {{
-            max-width: 20rem !important;
-        }}
-
-        /* 4. Ép các khối nội dung bên trong dãn 100% */
-        .element-container, .stMarkdown, .stVerticalBlock, div[data-testid="stVerticalBlock"] > div {{
-            width: 100% !important;
-        }}
-
-        /* 5. Loại bỏ nền đen thừa nếu có ở hai bên */
-        .stApp {{
-            background-color: {bg_color} !important;
-        }}
-        
-        /* Toàn bộ giao diện chính */
-        .stApp {{
-            background-color: {bg_color} !important;
-            color: {text_color} !important;
-        }}
-        
-        /* Font chữ toàn cục và màu chữ */
-        html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"], .stMarkdown, p, label, li, span, h1, h2, h3, h4, h5, h6, button, input, select, textarea {{
-            font-family: 'Times New Roman', Times, serif !important;
-            color: {text_color} !important;
-        }}
-
-        /* Sidebar styling */
-        [data-testid="stSidebar"] {{
-            background-color: {sidebar_bg} !important;
-        }}
-        [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p, 
-        [data-testid="stSidebar"] label,
-        [data-testid="stSidebar"] .stRadio span {{
-            color: {text_color} !important;
-        }}
-        
-        /* BẢO VỆ CÁC ICON (Không đổi màu hoặc font chữ icon) */
-        .stIconMaterial, [data-testid="stIconMaterial"], span[data-baseweb="icon"], svg {{
-            font-family: 'Material Symbols Rounded' !important;
-        }}
-        
-        /* Tabs styling */
-        .stTabs [data-baseweb="tab"] {{
-            height: 48px !important;
-            background-color: {"#1a1a2e" if is_dark else "#e9ecef"} !important;
-            border-radius: 10px 10px 0 0;
-            color: {text_color} !important;
-            border: 1px solid {border_color};
-            padding: 0 25px !important;
-        }}
-        .stTabs [aria-selected="true"] {{
-            background-color: #007bff !important;
-            color: white !important;
-            font-weight: bold !important;
-        }}
-
-        /* Input area styling */
-        .stTextArea textarea {{ 
-            background: {input_bg} !important; 
-            color: {text_color} !important; 
-            border-radius: 12px !important; 
-            border: 1px solid {input_border} !important; 
-        }}
-
-        /* Button styling */
-        .stButton > button {{ 
-            border-radius: 12px !important; 
-            font-weight: 600 !important;
-        }}
-        
-        /* Expander styling - Fix Header color */
-        [data-testid="stExpander"] {{
-            background-color: {card_bg} !important;
-            border: 1px solid {border_color} !important;
-            border-radius: 12px !important;
-            overflow: hidden !important;
-        }}
-        [data-testid="stExpander"] summary {{
-            background-color: {card_bg} !important;
-            color: {text_color} !important;
-            transition: all 0.2s ease !important;
-        }}
-        [data-testid="stExpander"] summary:hover {{
-            background-color: {"rgba(255,255,255,0.05)" if is_dark else "rgba(0,0,0,0.02)"} !important;
-            color: #007bff !important;
-        }}
-        /* Fix icon trong expander */
-        [data-testid="stExpander"] summary svg {{
-            fill: {text_color} !important;
-        }}
-
-        /* Fix Button colors (Phân tích, Reset, etc.) */
-        .stButton > button {{ 
-            background-color: {input_bg} !important;
-            color: {text_color} !important;
-            border: 1px solid {input_border} !important;
-            border-radius: 12px !important;
-            transition: all 0.3s ease !important;
-        }}
-        .stButton > button:hover {{
-            border-color: #007bff !important;
-            color: #007bff !important;
-            background-color: {"#1a1e2e" if is_dark else "#f0f7ff"} !important;
-            box-shadow: 0 4px 12px rgba(0,123,255,0.2) !important;
-        }}
-
-        /* Fix Selectbox (Dropdown) colors - SIÊU ÉP BUỘC */
-        [data-testid="stSidebar"] [data-testid="stSelectbox"] div[data-baseweb="select"],
-        [data-testid="stSidebar"] [data-testid="stSelectbox"] button,
-        [data-testid="stSidebar"] [data-testid="stSelectbox"] div[data-baseweb="select"] > div,
-        [data-testid="stSidebar"] [data-testid="stSelectbox"] div[data-baseweb="select"] div {{
-            background-color: {input_bg} !important;
-            color: {text_color} !important;
-            border: none !important; /* Xóa viền nội bộ */
-        }}
-        
-        /* Chỉ giữ lại viền ngoài cùng của ô Selectbox */
-        [data-testid="stSidebar"] [data-testid="stSelectbox"] [data-baseweb="select"] {{
-            border: 1px solid {input_border} !important;
-            border-radius: 8px !important;
-        }}
-        
-        [data-testid="stSidebar"] [data-testid="stSelectbox"] p,
-        [data-testid="stSidebar"] [data-testid="stSelectbox"] span {{
-            color: {text_color} !important;
-        }}
-        
-        /* Cực kỳ quan trọng: Fix phần danh sách thả xuống (Popover) - PHIÊN BẢN CUỐI CÙNG */
-        div[data-baseweb="popover"], 
-        div[role="listbox"], 
-        ul[role="listbox"],
-        div[role="option"],
-        li[role="option"] {{
-            background-color: {sidebar_bg} !important;
-            color: {text_color} !important;
-        }}
-        
-        /* Viền cho danh sách */
-        div[data-baseweb="popover"] {{
-            border: 1px solid {input_border} !important;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important;
-        }}
-
-        [data-baseweb="popover"] li:hover, 
-        [role="option"]:hover,
-        div[data-baseweb="popover"] div:hover {{
-            background-color: {"rgba(255,255,255,0.1)" if is_dark else "rgba(0,0,123,0.05)"} !important;
-            color: #007bff !important;
-        }}
-
-        /* Fix Radio Button styling (Mẫu thử nghiệm) */
-        div[data-testid="stRadio"] {{
-            background-color: transparent !important;
-        }}
-        div[data-testid="stRadio"] label {{
-            color: {text_color} !important;
-        }}
-        /* Style các lựa chọn trong radio */
-        div[data-testid="stRadio"] div[role="radiogroup"] > label {{
-            background-color: {card_bg} !important;
-            border: 1px solid {border_color} !important;
-            padding: 8px 15px !important;
-            border-radius: 10px !important;
-            margin-bottom: 5px !important;
-            width: 100% !important;
-        }}
-
-        /* Fix Info/Warning/Success boxes */
-        div[data-testid="stNotification"] {{
-            background-color: {card_bg} !important;
-            color: {text_color} !important;
-            border: 1px solid {border_color} !important;
-        }}
-
-        /* Fix Divider (st.divider) visibility */
-        hr {{
-            border-top: 1px solid {"rgba(255,255,255,0.1)" if is_dark else "rgba(0,0,0,0.2)"} !important;
-            margin: 1rem 0 !important;
-        }}
-
-        /* Fix Textarea Placeholder color */
-        textarea::placeholder {{
-            color: {"#666" if is_dark else "#888"} !important;
-            opacity: 1 !important;
-        }}
-
-        /* Table styling - Thêm viền đen cho bảng Benchmark */
-        table {{
-            width: 100%;
-            border-collapse: collapse !important;
-            color: {text_color} !important;
-            font-family: 'Times New Roman', Times, serif !important;
-            border: 1px solid {"#444" if is_dark else "#000"} !important;
-        }}
-        th, td {{
-            border: 1px solid {"#444" if is_dark else "#000"} !important;
-            padding: 12px !important;
-            text-align: center !important;
-        }}
-        th {{
-            background-color: {"#1a1a2e" if is_dark else "#f0f2f6"} !important;
-            font-weight: bold !important;
-        }}
-
-        /* Footer Unified Styling */
-        .main-footer {{
-            background: {"linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%)" if is_dark else "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)"};
-            padding: 50px 20px;
-            color: {"#ccc" if is_dark else "#444"};
-            font-family: 'Times New Roman', Times, serif !important;
-            border-top: 4px solid #007bff;
-            box-shadow: 0 -10px 25px rgba(0,123,255,0.1);
-            margin-top: 60px;
-        }}
-        .footer-container {{
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            max-width: none !important;
-            margin: 0 auto;
-            gap: 20px;
-            font-family: 'Times New Roman', Times, serif !important;
-        }}
-        .footer-col {{
-            flex: 1;
-            min-width: 300px;
-            padding: 0 25px;
-            border-right: 1px solid {"rgba(255,255,255,0.1)" if is_dark else "rgba(0,0,0,0.1)"};
-        }}
-        .footer-col:last-child {{ border-right: none; }}
-        .logo-col {{
-            text-align: center;
-        }}
-        .footer-logo-img {{
-            width: 100px;
-            margin-bottom: 15px;
-            filter: drop-shadow(0 0 8px rgba(0,123,255,0.2));
-        }}
-        .footer-title {{
-            color: {"#007bff" if is_dark else "#0056b3"};
-            font-weight: bold;
-            margin-bottom: 15px;
-            font-size: 1.2rem;
-            text-transform: uppercase;
-        }}
-        .school-name {{
-            font-weight: bold;
-            color: {"#fff" if is_dark else "#000"};
-            font-size: 1.1rem;
-        }}
-        .project-name-vi {{
-            color: {"#ffd700" if is_dark else "#b8860b"};
-            font-weight: bold;
-            font-style: italic;
-        }}
-        .footer-bottom {{
-            padding-top: 20px;
-            margin-top: 30px;
-            border-top: 1px solid rgba(0,0,0,0.05);
-            font-size: 0.9rem;
-            color: {"#777" if is_dark else "#666"};
-            text-align: center;
-        }}
-        .footer-link {{
-            color: #007bff !important;
-            text-decoration: none;
-        }}
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
+        .stApp { background-color: #0d0f12; }
+        section[data-testid="stSidebar"] { background: linear-gradient(180deg, #13161b 0%, #0d0f12 100%); border-right: 1px solid rgba(255,255,255,0.07); }
+        .stTextArea textarea { background: #13161b !important; border: 1px solid rgba(255,255,255,0.12) !important; color: #e2e4e9 !important; border-radius: 8px !important; }
+        .stButton > button { background: linear-gradient(135deg, #8b7fe8, #6366f1) !important; color: white !important; border-radius: 8px !important; font-weight: 600 !important; width: 100%; transition: all 0.3s ease !important; }
+        .stButton > button:hover { transform: translateY(-1px) !important; box-shadow: 0 4px 12px rgba(139,127,232,0.4) !important; }
     </style>
     """, unsafe_allow_html=True)
 
-    model, tokenizer, checkpoint_loaded = load_model(model_selection)
+    with st.sidebar:
+        st.markdown('<div style="text-align: center; padding: 16px 0;"><div style="font-size: 36px;">🔬</div><div style="font-size: 18px; font-weight: 700; color: #e2e4e9;">VaccineNLP</div><div style="font-size: 11px; color: #7a808c; letter-spacing: 0.1em; margin-top: 4px;">XAI DASHBOARD</div></div>', unsafe_allow_html=True)
+        st.divider()
+        selected_sample = st.radio("Chọn mẫu thử nghiệm:", options=["Tự nhập"] + list(SAMPLE_TEXTS.keys()))
+        st.divider()
+        model_selection = st.selectbox("Chọn mô hình dự đoán:", options=list(MODEL_CONFIGS.keys()))
+        st.divider()
+        st.markdown(f'<div style="font-size: 11px; color: #4a4f5a; line-height: 1.6;"><strong>Hệ thống:</strong><br>• Classifier: {model_selection}<br>• XAI: Cached Reasoning<br>• Tasks: 3 Classification</div>', unsafe_allow_html=True)
+
+    model, tokenizer, ok = load_model(model_selection)
     xai_cache = load_xai_cache()
 
-    # Kiểm tra sẵn sàng: Với gemma_api thì model sẽ None nhưng vẫn OK
-    is_api = MODEL_CONFIGS[model_selection]["type"] == "gemma_api"
-    if model is None and not is_api:
-        st.warning(f"⚠️ Mô hình `{model_selection}` chưa sẵn sàng. Vui lòng chọn mô hình khác.")
+    st.markdown('<div style="margin-bottom: 24px;"><h1 style="font-size: 28px; font-weight: 700; color: #e2e4e9;">🔬 VaccineNLP · Dashboard Phân tích</h1><p style="font-size: 14px; color: #7a808c;">Phân loại tin giả và thái độ vắc-xin bằng PhoBERT Multitask Model</p></div>', unsafe_allow_html=True)
+
+    tabs = st.tabs(["🔍 Phân tích", "📊 Benchmark"])
     
-    # Ẩn đi cảnh báo không tìm thấy checkpoint theo yêu cầu
-    # if not checkpoint_loaded:
-    #     st.warning(f"⚠️ Không tìm thấy checkpoint cho `{model_selection}`. Chế độ chưa fine-tune.")
-
-    is_dark = st.session_state.get("theme", "Dark") == "Dark"
-    banner_bg = "rgba(255,255,255,0.02)" if is_dark else "rgba(0,0,0,0.02)"
-    banner_border = "rgba(255,255,255,0.05)" if is_dark else "rgba(0,0,0,0.05)"
-    banner_p_color = "white" if is_dark else "#333"
-    banner_p_opacity = "0.9" if is_dark else "1.0"
-
-    st.markdown(f"""
-    <div style="width: 100%; text-align: center; margin-bottom: 2.5rem; padding: 2.5rem; background: {banner_bg}; border-radius: 20px; border: 1px solid {banner_border}; box-sizing: border-box;">
-        <h1 style="color: #FFD700; font-family: 'Times New Roman', Times, serif; font-weight: bold; font-size: 2.2rem; margin-bottom: 0.8rem; line-height: 1.3; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">🔬 PHÁT HIỆN TIN GIẢ VÀ PHÂN TÍCH THÁI ĐỘ VỀ VACCINE TẠI VIỆT NAM 💉</h1>
-        <p style="color: {banner_p_color}; font-family: 'Times New Roman', Times, serif; font-style: italic; font-size: 1.1rem; opacity: {banner_p_opacity}; line-height: 1.4;">(Vaccine Misinformation & Attitude Analysis in Vietnam)</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-    tabs = st.tabs(["🔍 Phân tích Real-time", "📊 Thống kê Benchmark"])
-
     with tabs[0]:
-        input_text = SAMPLE_TEXTS[selected_sample] if selected_sample != "Tự nhập" else ""
-        user_text = st.text_area(
-            "Nhập văn bản cần phân tích:", 
-            value=input_text, 
-            height=140, 
-            placeholder="Dán nội dung bài viết về vắc-xin..."
-        )
+        input_val = SAMPLE_TEXTS[selected_sample] if selected_sample != "Tự nhập" else ""
+        user_text = st.text_area("Văn bản cần phân tích:", value=input_val, height=140)
         
-        col_btn1, col_btn2, _ = st.columns([1, 1, 4])
-        with col_btn1:
-            analyze_btn = st.button("🔍 Phân tích", width="stretch")
-        with col_btn2:
-            if st.button("🗑️ Reset", width="stretch"):
-                st.session_state.last_result = None
-                st.rerun()
+        c1, c2, _ = st.columns([1, 1, 4])
+        analyze = c1.button("🔍 Phân tích")
+        if c2.button("🗑️ Reset"): st.rerun()
 
-        if analyze_btn and user_text.strip():
-            with st.spinner(f"🧠 {model_selection} đang xử lý..."):
-                result = predict_cached(user_text.strip(), model_selection)
-                
-                # Lấy Reasoning từ kết quả (Nếu là Gemma API thì nó nằm trong raw_gen)
-                if result and "raw_gen" in result:
-                    reasoning = result["raw_gen"]
-                else:
-                    reasoning = find_xai_reasoning(user_text.strip(), xai_cache)
-                
-                # Lưu vào session state
-                st.session_state.last_result = {
-                    "text": user_text.strip(),
-                    "result": result,
-                    "reasoning": reasoning
-                }
-
-        # Hiển thị kết quả: Chỉ cần có kết quả trong bộ nhớ và văn bản hiện tại KHÔNG rỗng
-        if st.session_state.last_result and user_text.strip():
-            # Nếu văn bản trong ô nhập liệu khớp với kết quả đã lưu, hiển thị nó
-            if st.session_state.last_result["text"] == user_text.strip():
-                saved = st.session_state.last_result
-                result = saved["result"]
-                reasoning = saved["reasoning"]
-
+        if analyze and user_text.strip():
+            with st.spinner("Đang xử lý..."):
+                res = predict(user_text.strip(), model, tokenizer)
                 st.markdown("---")
-                if result:
-                    col1, col2, col3 = st.columns(3)
-                    with col1: render_result_card("Tin giả", "misinfo", result["misinfo"])
-                    with col2: render_result_card("Quan điểm", "stance", result["stance"])
-                    with col3: render_result_card("Cảm xúc", "sentiment", result["sentiment"])
-                else:
-                    st.error("❌ Không thể phân tích văn bản này. Vui lòng kiểm tra lại mô hình đã chọn.")
+                st.markdown('<div style="font-size: 11px; color: #7a808c; text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 12px;">📊 KẾT QUẢ DỰ ĐOÁN</div>', unsafe_allow_html=True)
+                col1, col2, col3 = st.columns(3)
+                with col1: render_result_card("Tin giả", "misinfo", res["misinfo"])
+                with col2: render_result_card("Quan điểm", "stance", res["stance"])
+                with col3: render_result_card("Cảm xúc", "sentiment", res["sentiment"])
 
+                reasoning = xai_cache.get(user_text.strip())
                 if reasoning:
                     st.markdown("<br>", unsafe_allow_html=True)
-                    st.markdown("##### 🧠 Hệ thống Giải thích (XAI Engine)")
-                    with st.expander("📖 Xem giải thích chi tiết từ Gemma-4", expanded=True):
-                        st.markdown(f"<div style='border-left: 3px solid #007bff; padding-left: 20px; color: {text_color}; opacity: 0.9;'>{reasoning}</div>", unsafe_allow_html=True)
-                        st.caption("💡 Đây là mô hình Reasoning Engine (Gemma-4) giải thích lý do cho kết quả phân loại ở trên.")
+                    st.markdown('<div style="font-size: 11px; color: #7a808c; text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 12px;">🧪 GIẢI THÍCH (XAI CACHE)</div>', unsafe_allow_html=True)
+                    with st.expander("📖 Xem giải thích chi tiết", expanded=True):
+                        st.markdown(f'<div style="background: linear-gradient(135deg, #8b7fe818, #6366f108); border-left: 3px solid #8b7fe8; padding: 16px 20px; font-size: 14px; line-height: 1.8; color: #c8cad0;">{reasoning}</div>', unsafe_allow_html=True)
                 else:
-                    st.info("💡 Lý luận XAI không khả dụng cho văn bản này. Hãy chọn mẫu từ thanh bên.")
-        elif analyze_btn:
-            st.warning("⚠️ Vui lòng nhập văn bản.")
+                    st.info("💡 Không có dữ liệu XAI cache cho văn bản này.")
+    
+    with tabs[1]: render_benchmark_tab()
 
-    with tabs[1]:
-        render_benchmark_tab()
-
-    hien_thi_footer_chung(is_dark=is_dark)
+    st.markdown('<br><br><div style="border-top: 1px solid rgba(255,255,255,0.07); padding-top: 16px; display: flex; justify-content: space-between; font-size: 11px; color: #4a4f5a;"><span>HUPH · 2026</span><span>VaccineNLP · Explainable AI</span></div>', unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
