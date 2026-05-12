@@ -215,29 +215,39 @@ def load_model(model_key="PhoBERT-v2"):
         return None, None, False
 
 def query_gemma_api(prompt, repo_id, token):
-    """Calls Hugging Face Inference API for Gemma (saves RAM)."""
+    """Calls Hugging Face Inference API with robust error handling."""
     import requests
+    if not token:
+        return "❌ Lỗi: Chưa cấu hình HF_TOKEN trong Streamlit Secrets."
+        
     API_URL = f"https://api-inference.huggingface.co/models/{repo_id}"
     headers = {"Authorization": f"Bearer {token}"}
-    
-    payload = {
-        "inputs": prompt,
-        "parameters": {"max_new_tokens": 512, "temperature": 0.7}
-    }
+    payload = {"inputs": prompt, "parameters": {"max_new_tokens": 512, "temperature": 0.7}}
     
     try:
         response = requests.post(API_URL, headers=headers, json=payload, timeout=30)
-        if response.status_code == 503:
-            return "⏳ Mô hình đang được khởi động trên server Hugging Face. Vui lòng thử lại sau 30 giây."
         
+        # Nếu đang nạp mô hình (503)
+        if response.status_code == 503:
+            return "⏳ Mô hình đang khởi động trên Hugging Face. Vui lòng thử lại sau 30 giây."
+            
+        # Kiểm tra nếu không phải 200
+        if response.status_code != 200:
+            return f"❌ Lỗi API (Status {response.status_code}): {response.text[:100]}"
+            
+        # Kiểm tra nếu phản hồi không phải JSON
+        if "application/json" not in response.headers.get("Content-Type", ""):
+            return f"❌ Lỗi: Server trả về định dạng không phải JSON ({response.headers.get('Content-Type')})"
+
         result = response.json()
         if isinstance(result, list) and len(result) > 0:
             return result[0].get("generated_text", "Không có phản hồi từ API.")
-        if "error" in result:
+        if isinstance(result, dict) and "error" in result:
             return f"Hugging Face Error: {result['error']}"
         return str(result)
+        
     except Exception as e:
-        return f"Lỗi gọi API: {str(e)}"
+        return f"❌ Lỗi kết nối API: {str(e)}"
 
 @st.cache_data
 def load_xai_cache():
