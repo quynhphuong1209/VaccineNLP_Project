@@ -42,9 +42,8 @@ MODEL_CONFIGS = {
         "type": "xlm-roberta"
     },
     "Gemma-4-4B": {
-        "repo_id": "unsloth/gemma-4-E4B-it", # Base model
-        "hf_adapter": "quynhphuong1209/gemma-4-E4B-unsloth-vaccine-xai", # Repo thực tế của bạn
-        "type": "gemma"
+        "repo_id": "quynhphuong1209/gemma-4-E4B-unsloth-vaccine-xai", 
+        "type": "gemma_api" # Chuyển sang dùng API để cứu RAM
     }
 }
 
@@ -185,6 +184,10 @@ def load_model(model_key="PhoBERT-v2"):
     hf_token = st.secrets.get("HF_TOKEN") or os.environ.get("HF_TOKEN") or st.secrets.get("VaccineNLP_TOKEN")
     
     try:
+        if cfg["type"] == "gemma_api":
+            # Không cần nạp gì vào RAM nếu dùng API
+            return None, None, True
+            
         if cfg["type"] == "gemma":
             # Load Gemma as a CausalLM with Peft adapter from Hugging Face
             from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -234,16 +237,35 @@ def load_model(model_key="PhoBERT-v2"):
             checkpoint_loaded = True
             
     except Exception as e:
-        print(f">>> [ERROR] Lỗi nạp mô hình {model_key}: {str(e)}")
-        import traceback
-        traceback.print_exc()
+        st.error(f"❌ Lỗi nạp mô hình {model_key}: {str(e)}")
         return None, None, False
         
     model.eval()
     st.session_state.model = model
     st.session_state.tokenizer = tokenizer
     st.session_state.current_model_key = model_key
+    st.session_state.checkpoint_loaded = checkpoint_loaded
     return model, tokenizer, checkpoint_loaded
+
+def query_gemma_api(prompt, repo_id, token):
+    """Calls Hugging Face Inference API for Gemma (saves RAM)."""
+    import requests
+    API_URL = f"https://api-inference.huggingface.co/models/{repo_id}"
+    headers = {"Authorization": f"Bearer {token}"}
+    
+    payload = {
+        "inputs": prompt,
+        "parameters": {"max_new_tokens": 512, "temperature": 0.7}
+    }
+    
+    try:
+        response = requests.post(API_URL, headers=headers, json=payload, timeout=30)
+        result = response.json()
+        if isinstance(result, list) and len(result) > 0:
+            return result[0].get("generated_text", "Không có phản hồi từ API.")
+        return str(result)
+    except Exception as e:
+        return f"Lỗi gọi API: {str(e)}"
 
 @st.cache_data
 def load_xai_cache():
@@ -894,7 +916,17 @@ def main():
         if analyze_btn and user_text.strip():
             with st.spinner(f"🧠 {model_selection} đang xử lý..."):
                 result = predict_cached(user_text.strip(), model_selection)
-                reasoning = find_xai_reasoning(user_text.strip(), xai_cache)
+                
+                # Xử lý Reasoning (Gemma)
+                if MODEL_CONFIGS[model_selection]["type"] == "gemma_api":
+                    # Dùng API nếu là Gemma
+                    hf_token = st.secrets.get("HF_TOKEN") or st.secrets.get("VaccineNLP_TOKEN")
+                    prompt = f"Giải thích tại sao văn bản này có thể là tin giả hoặc thái độ tiêu cực về vaccine: {user_text.strip()}"
+                    reasoning = query_gemma_api(prompt, MODEL_CONFIGS[model_selection]["repo_id"], hf_token)
+                else:
+                    # Dùng cache cũ cho các model khác
+                    reasoning = find_xai_reasoning(user_text.strip(), xai_cache)
+                
                 # Lưu vào session state
                 st.session_state.last_result = {
                     "text": user_text.strip(),
