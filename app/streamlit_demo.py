@@ -287,8 +287,15 @@ def predict_cached(text: str, model_key: str) -> dict:
                 "raw_gen": response
             }
         
-    segmented = word_tokenize(text, format="text")
-    enc = tokenizer(segmented, truncation=True, max_length=256, return_tensors="pt", padding=True)
+    # Chỉ dùng underthesea cho PhoBERT
+    if "phobert" in model_key.lower():
+        try:
+            from underthesea import word_tokenize
+            text = word_tokenize(text, format="text")
+        except Exception as e:
+            print(f">>> [WARNING] Lỗi tách từ underthesea: {e}")
+            
+    enc = tokenizer(text, truncation=True, max_length=256, return_tensors="pt", padding=True)
     device = next(model.parameters()).device
     enc = {k: v.to(device) for k, v in enc.items()}
 
