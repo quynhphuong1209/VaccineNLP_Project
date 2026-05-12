@@ -193,10 +193,13 @@ def load_model(model_key="PhoBERT-v2"):
         
         del state
         gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
         return model, tokenizer, True
         
     except Exception as e:
         st.error(f"❌ Lỗi nạp mô hình: {str(e)}")
+        gc.collect()
         return None, None, False
 
 @st.cache_data
@@ -499,7 +502,7 @@ def render_benchmark_tab():
         uniformtext_minsize=8, 
         uniformtext_mode='hide'
     )
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')
 
 def render_evaluation_tab():
     """Báo cáo đánh giá chuyên sâu so sánh 3 kiến trúc mô hình (XLM-R, PhoBERT, Gemma-4)."""
@@ -553,7 +556,7 @@ def render_evaluation_tab():
         yaxis=dict(range=[0, 1.0], gridcolor='rgba(128,128,128,0.1)', title="Macro F1 Score"),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
     )
-    st.plotly_chart(fig_comp, use_container_width=True)
+    st.plotly_chart(fig_comp, width='stretch')
 
     # 3. Biểu đồ Training Loss & Quá trình hội tụ
     st.markdown("### 📈 3. Quá trình Huấn luyện & Hội tụ (Training Loss)")
@@ -575,7 +578,7 @@ def render_evaluation_tab():
         yaxis=dict(title="Loss", gridcolor='rgba(128,128,128,0.1)'),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
     )
-    st.plotly_chart(fig_loss, use_container_width=True)
+    st.plotly_chart(fig_loss, width='stretch')
 
     # 4. Ma trận nhầm lẫn (Confusion Matrix) & Phân bố nhãn
     col_cm, col_pie = st.columns(2)
@@ -597,7 +600,7 @@ def render_evaluation_tab():
             paper_bgcolor='rgba(0,0,0,0)',
             font=dict(family='Times New Roman', color=text_color)
         )
-        st.plotly_chart(fig_cm, use_container_width=True)
+        st.plotly_chart(fig_cm, width='stretch')
 
     with col_pie:
         st.markdown("##### **Phân bố nhãn trong Dataset (10k samples)**")
@@ -610,7 +613,7 @@ def render_evaluation_tab():
             font=dict(family='Times New Roman', color=text_color),
             showlegend=False
         )
-        st.plotly_chart(fig_pie, use_container_width=True)
+        st.plotly_chart(fig_pie, width='stretch')
 
     # 5. Phân tích chuyên sâu từng Model
     st.markdown("### 🧠 5. Đánh giá Định tính & Chiến lược Kết hợp")
@@ -1376,9 +1379,9 @@ def main():
         
         col_btn1, col_btn2, _ = st.columns([1, 1, 4])
         with col_btn1:
-            analyze_btn = st.button("🔍 Phân tích", use_container_width=True)
+            analyze_btn = st.button("🔍 Phân tích", width='stretch')
         with col_btn2:
-            if st.button("🗑️ Reset", use_container_width=True):
+            if st.button("🗑️ Reset", width='stretch'):
                 st.session_state.last_result = None
                 st.rerun()
 
@@ -1439,6 +1442,7 @@ def main():
         render_thesis_outline_tab()
 
     hien_thi_footer_chung(is_dark=is_dark)
+    gc.collect()
 
 if __name__ == "__main__":
     main()
