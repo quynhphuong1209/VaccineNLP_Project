@@ -496,14 +496,14 @@ def main():
     # DYNAMIC COLORS BASED ON THEME
     # ─────────────────────────────────────────────────────────────
     is_dark = st.session_state.theme == "Dark"
-    bg_color = "#0d0f12" if is_dark else "#ffffff"
+    bg_color = "#10141d" if is_dark else "#ffffff"
     text_color = "#e2e4e9" if is_dark else "#111111"
-    secondary_text = "#888" if is_dark else "#555"
-    border_color = "rgba(255,255,255,0.05)" if is_dark else "rgba(0,0,0,0.1)"
-    sidebar_bg = "#111" if is_dark else "#f8f9fa"
-    input_bg = "#13161b" if is_dark else "#ffffff"
-    input_border = "#2a5298" if is_dark else "#ced4da"
-    card_bg = "rgba(255, 255, 255, 0.03)" if is_dark else "#fdfdfd"
+    secondary_text = "#94a3b8" if is_dark else "#555"
+    border_color = "rgba(30, 41, 59, 0.5)" if is_dark else "rgba(0,0,0,0.1)"
+    sidebar_bg = "#1a1f2c" if is_dark else "#f8f9fa"
+    input_bg = "#1e293b" if is_dark else "#ffffff"
+    input_border = "#334155" if is_dark else "#ced4da"
+    card_bg = "rgba(30, 41, 59, 0.4)" if is_dark else "#fdfdfd"
 
     with st.sidebar:
         st.markdown("<h2 style='text-align: center;'>🔬 VaccineNLP</h2>", unsafe_allow_html=True)
