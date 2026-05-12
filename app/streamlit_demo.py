@@ -258,11 +258,15 @@ def predict_cached(text: str, model_key: str) -> dict:
 
     # Tra cứu giải thích (Ưu tiên cache -> Sau đó gọi Gemma API)
     xai_cache = load_xai_cache()
-    reasoning = xai_cache.get(text.strip())
+    clean_text = text.strip()
+    reasoning = xai_cache.get(clean_text)
     
     if not reasoning:
         hf_token = st.secrets.get("HF_TOKEN") or st.secrets.get("VaccineNLP_TOKEN")
-        prompt = f"Phân tích lý do tại sao văn bản sau có thể liên quan đến tin giả hoặc thái độ tiêu cực về vắc-xin: '{text}'"
+        # Rút gọn văn bản nếu quá dài để tránh lỗi API
+        short_text = clean_text[:1000] + "..." if len(clean_text) > 1000 else clean_text
+        # Prompt trung lập để Gemma giải thích được cả tin đúng và tin sai
+        prompt = f"Hãy phân tích nội dung sau về vắc-xin và giải thích tại sao nó được phân loại như vậy: '{short_text}'"
         reasoning = query_gemma_api(prompt, hf_token)
 
     return {
