@@ -127,7 +127,13 @@ class VaccineMultitaskModel(nn.Module):
         AutoModel = transformers.AutoModel
         
         self.config = AutoConfig.from_pretrained(model_name, token=token, trust_remote_code=True)
-        self.encoder = AutoModel.from_pretrained(model_name, token=token, trust_remote_code=True)
+        # Nạp encoder với chế độ tiết kiệm RAM tối đa
+        self.encoder = AutoModel.from_pretrained(
+            model_name, 
+            token=token, 
+            trust_remote_code=True,
+            low_cpu_mem_usage=True # Tối ưu nạp trên CPU
+        )
 
         hidden_size = self.config.hidden_size
         # Cấu trúc linh hoạt: Hỗ trợ cả ModuleDict và các lớp riêng lẻ
@@ -162,16 +168,14 @@ class VaccineMultitaskModel(nn.Module):
 # ─────────────────────────────────────────────────────────────
 @st.cache_resource(max_entries=1)
 def load_model(model_key="PhoBERT-v2"):
-    """Load selected model with extreme RAM protection."""
-    import time
+    """Load model với kỹ thuật mmap để chống sập RAM."""
     import gc
     from transformers import AutoModel, AutoConfig, AutoTokenizer, AutoModelForCausalLM
     from peft import PeftModel
     from huggingface_hub import hf_hub_download
     
-    # Ép dọn RAM và đợi 2 giây để hệ thống ổn định
+    # Dọn RAM trước khi nạp
     gc.collect()
-    time.sleep(2)
     
     cfg = MODEL_CONFIGS[model_key]
     checkpoint_loaded = False
@@ -194,16 +198,12 @@ def load_model(model_key="PhoBERT-v2"):
             tokenizer = AutoTokenizer.from_pretrained(cfg["base_repo"], token=hf_token, trust_remote_code=True)
             model = VaccineMultitaskModel(model_name=cfg["base_repo"], token=hf_token)
             
-            state = torch.load(model_path, map_location="cpu", weights_only=False)
+            # Kỹ thuật mmap=True giúp nạp mô hình không tốn RAM copy
+            state = torch.load(model_path, map_location="cpu", weights_only=False, mmap=True)
             new_state = { (k.replace("head_", "heads.") if k.startswith("head_") and "heads." not in k else k): v for k, v in state.items() }
             model.load_state_dict(new_state, strict=False)
             
-            # Giải phóng biến tạm ngay lập tức
             del state
-            del new_state
-            
-            # Ép mô hình về float16 để tiết kiệm 50% RAM
-            model = model.half() 
             checkpoint_loaded = True
             
         model.eval()
