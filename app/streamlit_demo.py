@@ -230,14 +230,14 @@ def query_gemma_api(prompt, repo_id, token):
         return response
         
     except Exception as e:
-        # Tự động thử với mô hình dự phòng google/gemma nếu mô hình chính lỗi
-        if "404" in str(e) or "401" in str(e):
-            if repo_id != "google/gemma-1.1-2b-it":
+        # Tự động thử với mô hình dự phòng google/gemma-2b-it nếu mô hình chính lỗi
+        if "404" in str(e) or "401" in str(e) or "403" in str(e):
+            if repo_id != "google/gemma-2b-it":
                 try:
-                    client_fb = InferenceClient(model="google/gemma-1.1-2b-it", token=token)
+                    client_fb = InferenceClient(model="google/gemma-2b-it", token=token)
                     return client_fb.text_generation(prompt, max_new_tokens=250, temperature=0.7)
                 except Exception as e2:
-                    return f"❌ Lỗi API (Thử cả bản gốc vẫn lỗi): {str(e2)}"
+                    return f"❌ Lỗi API (Token của bạn có thể sai hoặc hết hạn): {str(e2)}"
         return f"❌ Lỗi API: {str(e)}"
 
 @st.cache_data
