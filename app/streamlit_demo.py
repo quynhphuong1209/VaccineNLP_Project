@@ -673,6 +673,62 @@ def render_resources_tab():
                         '• <a href="https://github.com/quynhphuong1209/VaccineNLP_Project">VaccineNLP Project Repo</a>'
                         '</div>', unsafe_allow_html=True)
 
+def render_methodology_tab():
+    """Hiển thị phương pháp luận và kiến trúc hệ thống chuyên nghiệp."""
+    st.markdown("## 📜 Phương pháp luận & Kiến trúc Hệ thống")
+    
+    col1, col2 = st.columns([3, 2])
+    
+    with col1:
+        st.markdown("### 🏗️ 1. Kiến trúc mô hình Hybrid (PhoBERT + Gemma)")
+        st.write("""
+        Dự án xây dựng một hệ thống **Ensemble (Kết hợp)** tận dụng ưu điểm của hai dòng kiến trúc Transformer phổ biến nhất hiện nay:
+        - **Mô hình Phân loại (Classifier):** Sử dụng **PhoBERT-v2** (kiến trúc Encoder) được huấn luyện đa nhiệm (Multitask Learning). Ưu điểm là hiểu sâu ngữ pháp tiếng Việt và phân loại nhãn thô cực kỳ chính xác.
+        - **Mô hình Lý luận (Reasoning Engine):** Sử dụng **Gemma-4-4B** (kiến trúc Decoder) được huấn luyện bằng kỹ thuật **QLoRA**. Đảm nhiệm vai trò giải thích lý do tại sao văn bản bị coi là tin giả hoặc có thái độ tiêu cực.
+        """)
+        
+        # Sơ đồ luồng (Flowchart giả lập bằng Markdown + Emojis)
+        st.markdown("##### **🛠️ Sơ đồ Luồng Xử lý (System Pipeline)**")
+        st.markdown("""
+        ```text
+        [ Văn bản đầu vào (Tiếng Việt) ]
+                    |
+                    v
+        [ Tiền xử lý: Tách từ, Chuẩn hóa ]
+                    |
+          +---------+---------+
+          |                   |
+          v                   v
+        [ PhoBERT Classifier ] [ Gemma-4 XAI Engine ]
+          |                   |
+          | (Gán nhãn)         | (Suy luận/Giải thích)
+          v                   v
+        [ Label Results ] <---> [ XAI Reasoning ]
+                    |
+                    v
+        [ Giao diện Người dùng (Dashboard) ]
+        ```
+        """)
+
+    with col2:
+        st.markdown("### 🎯 2. Các nhiệm vụ chính")
+        st.info("**Misinformation (Tin giả)**: Xác định tính xác thực của thông tin vắc-xin dựa trên các nguồn tin cậy.")
+        st.info("**Stance (Quan điểm)**: Phân tích thái độ đồng ý hoặc phản đối việc tiêm chủng.")
+        st.info("**Sentiment (Cảm xúc)**: Nhận diện trạng thái tâm lý (Tích cực/Tiêu cực/Trung tính) của cộng đồng.")
+        
+        st.markdown("### 🧪 3. Quy trình thực nghiệm")
+        st.write("""
+        - **Dataset:** 10,000+ bài viết MXH.
+        - **Hardware:** Huấn luyện trên GPU NVIDIA T4.
+        - **Optimization:** QLoRA 4-bit giúp tối ưu hóa bộ nhớ cho Gemma-4.
+        """)
+
+    st.divider()
+    st.markdown("#### 💡 Tại sao là Explainable AI (XAI)?")
+    st.write("""
+    Trong lĩnh vực y tế như vắc-xin, việc chỉ đưa ra nhãn 'Tin giả' là chưa đủ. Hệ thống cần giải thích **tại sao** đó là tin giả để thuyết phục người dùng và hỗ trợ cán bộ y tế trong việc điều hướng dư luận. Đây chính là giá trị cốt lõi của việc tích hợp Gemma-4 vào hệ thống.
+    """)
+
 # ─────────────────────────────────────────────────────────────
 # MAIN APP
 # ─────────────────────────────────────────────────────────────
@@ -1176,7 +1232,7 @@ def main():
     </div>
     """, unsafe_allow_html=True)
 
-    tabs = st.tabs(["🔍 Phân tích Real-time", "📊 Thống kê Benchmark", "📈 Đánh giá chuyên sâu", "📚 Tài liệu & Notebooks"])
+    tabs = st.tabs(["🔍 Phân tích Real-time", "📊 Thống kê Benchmark", "📈 Đánh giá chuyên sâu", "📚 Tài liệu & Notebooks", "📜 Phương pháp luận"])
 
     with tabs[0]:
         input_text = SAMPLE_TEXTS[selected_sample] if selected_sample != "Tự nhập" else ""
@@ -1244,6 +1300,9 @@ def main():
 
     with tabs[3]:
         render_resources_tab()
+
+    with tabs[4]:
+        render_methodology_tab()
 
     hien_thi_footer_chung(is_dark=is_dark)
 
