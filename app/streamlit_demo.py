@@ -119,9 +119,11 @@ class VaccineMultitaskModel(nn.Module):
         self.encoder = AutoModel.from_pretrained(model_name, token=token, trust_remote_code=True)
 
         hidden_size = self.config.hidden_size
-        self.head_misinfo = nn.Linear(hidden_size, num_misinfo)
-        self.head_stance = nn.Linear(hidden_size, num_stance)
-        self.head_sentiment = nn.Linear(hidden_size, num_sentiment)
+        self.heads = nn.ModuleDict({
+            "misinfo": nn.Linear(hidden_size, num_misinfo),
+            "stance": nn.Linear(hidden_size, num_stance),
+            "sentiment": nn.Linear(hidden_size, num_sentiment)
+        })
         self.dropout = nn.Dropout(0.1)
 
     def forward(self, input_ids, attention_mask):
@@ -133,9 +135,9 @@ class VaccineMultitaskModel(nn.Module):
             
         pooled_output = self.dropout(pooled_output)
         return (
-            self.head_misinfo(pooled_output),
-            self.head_stance(pooled_output),
-            self.head_sentiment(pooled_output),
+            self.heads["misinfo"](pooled_output),
+            self.heads["stance"](pooled_output),
+            self.heads["sentiment"](pooled_output),
         )
 
 # ─────────────────────────────────────────────────────────────
