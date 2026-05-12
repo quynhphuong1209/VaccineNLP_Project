@@ -589,53 +589,85 @@ def render_evaluation_tab():
     st.success(f"Hệ thống đạt trạng thái tối ưu khi kết hợp kiến trúc **Ensemble**: Sử dụng **PhoBERT-v2** để trích xuất đặc trưng và phân loại nhãn thô, sau đó dùng **Gemma-4 QLoRA** để thực hiện Explainable AI (XAI) nhằm minh bạch hóa quyết định của mô hình.")
 
 def render_resources_tab():
-    """Hiển thị danh sách các Notebook Kaggle và HuggingFace nghiên cứu của nhóm."""
+    """Hiển thị danh sách các tài nguyên nghiên cứu với giao diện Card sáng tạo."""
     st.markdown("## 📚 Tài liệu & Notebooks Nghiên cứu")
-    st.info("💡 Đây là danh sách các tài nguyên nghiên cứu bao gồm mã nguồn (Kaggle) và các mô hình đã huấn luyện (HuggingFace) của nhóm.")
+    
+    # CSS riêng cho các thẻ tài nguyên
+    st.markdown("""
+    <style>
+        .resource-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(100, 255, 218, 0.2);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+        .resource-card:hover {
+            border-color: #64ffda;
+            box-shadow: 0 10px 30px rgba(100, 255, 218, 0.1);
+            transform: translateY(-5px);
+        }
+        .resource-header {
+            color: #64ffda;
+            font-weight: bold;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+    </style>
+    """, unsafe_allow_html=True)
 
     col1, col2 = st.columns(2)
 
     with col1:
         st.markdown("### 👨‍💻 1. Kim Mạnh Hưng")
-        st.markdown("##### **I. Kaggle**")
-        st.markdown("""
-        - [Gemma-4 QLoRA Multitask](https://www.kaggle.com/code/kimmnhhng/vaccinenlp-gemma-4-qlora-multitask)
-        - [PhoBERT-v2 Multitask](https://www.kaggle.com/code/kimmnhhng/vaccinenlp-phobert-v2-multitask)
-        - [Gemma E4B-IT Analysis](https://www.kaggle.com/code/kimmnhhng/gemma-e4b-it)
-        - [XLM-R-v1 Multitask Classification](https://www.kaggle.com/code/kimmnhhng/vaccinenlp-xlm-r-v1-multitask-classifi)
-        """)
-        st.markdown("##### **II. HuggingFace**")
-        st.markdown("""
-        - [Gemma-4-E4B XAI Model](https://huggingface.co/hung2903/gemma-4-E4B-unsloth-vaccine-xai)
-        - [XLM-R Vaccine Multitask](https://huggingface.co/hung2903/xlmr-vaccine-multitask)
-        - [PhoBERT Vaccine Multitask](https://huggingface.co/hung2903/phobert-vaccine-multitask)
-        - [Gemma-4-4B LoRA v1](https://huggingface.co/hung2903/gemma-4-4b-lora-v1)
-        - [Gemma-4 Vaccine Reasoning](https://huggingface.co/hung2903/gemma4-vaccinenlp-reasoning)
-        - [Synapse UNet Light](https://huggingface.co/hung2903/synapse-unet-light/tree/main)
-        """)
-        st.markdown("##### **III. GitHub**")
-        st.markdown("- [VaccineNLP Thesis](https://github.com/hwngkm/VaccineNLP-Thesis)")
+        
+        with st.container():
+            st.markdown('<div class="resource-card"><div class="resource-header">📘 I. KAGGLE</div>'
+                        '• <a href="https://www.kaggle.com/code/kimmnhhng/vaccinenlp-gemma-4-qlora-multitask">Gemma-4 QLoRA</a><br>'
+                        '• <a href="https://www.kaggle.com/code/kimmnhhng/vaccinenlp-phobert-v2-multitask">PhoBERT-v2 Multitask</a><br>'
+                        '• <a href="https://www.kaggle.com/code/kimmnhhng/gemma-e4b-it">Gemma E4B-IT</a><br>'
+                        '• <a href="https://www.kaggle.com/code/kimmnhhng/vaccinenlp-xlm-r-v1-multitask-classifi">XLM-R-v1 Classifier</a>'
+                        '</div>', unsafe_allow_html=True)
+            
+            st.markdown('<div class="resource-card"><div class="resource-header">🤗 II. HUGGINGFACE</div>'
+                        '• <a href="https://huggingface.co/hung2903/gemma-4-E4B-unsloth-vaccine-xai">Gemma-4-E4B XAI</a><br>'
+                        '• <a href="https://huggingface.co/hung2903/xlmr-vaccine-multitask">XLM-R Multitask</a><br>'
+                        '• <a href="https://huggingface.co/hung2903/phobert-vaccine-multitask">PhoBERT Multitask</a><br>'
+                        '• <a href="https://huggingface.co/hung2903/gemma-4-4b-lora-v1">Gemma-4-4B LoRA</a><br>'
+                        '• <a href="https://huggingface.co/hung2903/gemma4-vaccinenlp-reasoning">Gemma-4 Reasoning</a><br>'
+                        '• <a href="https://huggingface.co/hung2903/synapse-unet-light/tree/main">Synapse UNet Light</a>'
+                        '</div>', unsafe_allow_html=True)
+            
+            st.markdown('<div class="resource-card"><div class="resource-header">💻 III. GITHUB</div>'
+                        '• <a href="https://github.com/hwngkm/VaccineNLP-Thesis">VaccineNLP Thesis Repo</a>'
+                        '</div>', unsafe_allow_html=True)
 
     with col2:
         st.markdown("### 👩‍💻 2. Đinh Lê Quỳnh Phương")
-        st.markdown("##### **I. Kaggle**")
-        st.markdown("""
-        - [Gemma-4 QLoRA Multitask (Main)](https://www.kaggle.com/code/inhlqunhphng/vaccinenlp-gemma-4-qlora-multitask)
-        - [XLM-R-v1 Baseline](https://www.kaggle.com/code/inhlqunhphng/vaccinenlp-xlm-r-v1-multitask-classifi)
-        - [PhoBERT Multitask Training (01)](https://www.kaggle.com/code/inhlqunhphng/01-phobert-multitask-training)
-        - [PhoBERT-v2 Classifier](https://www.kaggle.com/code/inhlqunhphng/vaccinenlp-phobert-v2-multitask-classifier)
-        - [Final Evaluation (T4 GPU)](https://www.kaggle.com/code/inhlqunhphng/vaccine-nlp-eval-final-t4)
-        - [Gemma-4 4B Training (02)](https://www.kaggle.com/code/inhlqunhphng/02-gemma4-4b-qlora-training)
-        - [Gemma E4B-IT Insights](https://www.kaggle.com/code/inhlqunhphng/gemma-e4b-it)
-        """)
-        st.markdown("##### **II. HuggingFace**")
-        st.markdown("""
-        - [PhoBERT Multitask](https://huggingface.co/quynhphuong1209/phobert-multitask)
-        - [XLM-R Multitask](https://huggingface.co/quynhphuong1209/xlmr-multitask)
-        - [Gemma-4-E4B XAI Model](https://huggingface.co/quynhphuong1209/gemma-4-E4B-unsloth-vaccine-xai)
-        """)
-        st.markdown("##### **III. GitHub**")
-        st.markdown("- [VaccineNLP Project Repo](https://github.com/quynhphuong1209/VaccineNLP_Project)")
+        
+        with st.container():
+            st.markdown('<div class="resource-card"><div class="resource-header">📘 I. KAGGLE</div>'
+                        '• <a href="https://www.kaggle.com/code/inhlqunhphng/vaccinenlp-gemma-4-qlora-multitask">Gemma-4 QLoRA (Main)</a><br>'
+                        '• <a href="https://www.kaggle.com/code/inhlqunhphng/vaccinenlp-xlm-r-v1-multitask-classifi">XLM-R-v1 Baseline</a><br>'
+                        '• <a href="https://www.kaggle.com/code/inhlqunhphng/01-phobert-multitask-training">PhoBERT Training (01)</a><br>'
+                        '• <a href="https://www.kaggle.com/code/inhlqunhphng/vaccinenlp-phobert-v2-multitask-classifier">PhoBERT-v2 Classifier</a><br>'
+                        '• <a href="https://www.kaggle.com/code/inhlqunhphng/vaccine-nlp-eval-final-t4">Final Evaluation</a><br>'
+                        '• <a href="https://www.kaggle.com/code/inhlqunhphng/02-gemma4-4b-qlora-training">Gemma-4 4B Training</a><br>'
+                        '• <a href="https://www.kaggle.com/code/inhlqunhphng/gemma-e4b-it">Gemma E4B-IT</a>'
+                        '</div>', unsafe_allow_html=True)
+            
+            st.markdown('<div class="resource-card"><div class="resource-header">🤗 II. HUGGINGFACE</div>'
+                        '• <a href="https://huggingface.co/quynhphuong1209/phobert-multitask">PhoBERT Multitask</a><br>'
+                        '• <a href="https://huggingface.co/quynhphuong1209/xlmr-multitask">XLM-R Multitask</a><br>'
+                        '• <a href="https://huggingface.co/quynhphuong1209/gemma-4-E4B-unsloth-vaccine-xai">Gemma-4-E4B XAI</a>'
+                        '</div>', unsafe_allow_html=True)
+            
+            st.markdown('<div class="resource-card"><div class="resource-header">💻 III. GITHUB</div>'
+                        '• <a href="https://github.com/quynhphuong1209/VaccineNLP_Project">VaccineNLP Project Repo</a>'
+                        '</div>', unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────────────────────
 # MAIN APP
@@ -725,29 +757,87 @@ def main():
 
     st.markdown(f"""
     <style>
-        /* PHÁ BỎ MỌI GIỚI HẠN CHIỀU RỘNG (NUCLEAR FULL-WIDTH) */
+        /* 🎨 CREATIVE INTERFACE UPGRADE */
         
-        /* 1. Target toàn bộ container chính */
-        [data-testid="stAppViewContainer"], 
-        [data-testid="stAppViewBlockContainer"],
-        .main, .block-container {{
+        /* 1. Nền Gradient chuyển động (Animated Gradient Background) */
+        [data-testid="stAppViewContainer"] {{
+            background: { "linear-gradient(-45deg, #0a192f, #112240, #0d1b3e, #0a192f)" if is_dark else "linear-gradient(-45deg, #f8f9fa, #e9ecef, #dee2e6, #f8f9fa)" };
+            background-size: 400% 400% !important;
+            animation: gradient 15s ease infinite !important;
+        }}
+        @keyframes gradient {{
+            0% {{ background-position: 0% 50%; }}
+            50% {{ background-position: 100% 50%; }}
+            100% {{ background-position: 0% 50%; }}
+        }}
+
+        /* 2. Thanh cuộn tùy chỉnh (Custom Scrollbar) */
+        ::-webkit-scrollbar {{
+            width: 8px;
+            height: 8px;
+        }}
+        ::-webkit-scrollbar-track {{
+            background: rgba(0,0,0,0.1);
+        }}
+        ::-webkit-scrollbar-thumb {{
+            background: #64ffda;
+            border-radius: 10px;
+        }}
+        ::-webkit-scrollbar-thumb:hover {{
+            background: #4cd9b9;
+        }}
+
+        /* 3. Hiệu ứng Glassmorphism cho Main Container */
+        [data-testid="stAppViewBlockContainer"] {{
             max-width: none !important;
             width: 100% !important;
-            padding-left: 1rem !important;
-            padding-right: 1rem !important;
+            padding: 2rem 5rem !important;
         }}
 
-        /* 2. Target các lớp cache động của Streamlit (thường gây bó hẹp 46rem/60rem) */
-        div[class^="st-emotion-cache-"] {{
-            max-width: none !important;
+        /* 4. Tối ưu hóa Sidebar (Glassmorphism & Neon) */
+        [data-testid="stSidebar"] {{
+            background-color: { "rgba(13, 27, 62, 0.8)" if is_dark else "rgba(248, 249, 250, 0.8)" } !important;
+            backdrop-filter: blur(15px) !important;
+            border-right: 1px solid {border_color} !important;
         }}
 
-        /* 3. Đảm bảo sidebar không bị ảnh hưởng quá mức (giữ nguyên độ rộng sidebar) */
-        [data-testid="stSidebar"] div[class^="st-emotion-cache-"] {{
-            max-width: 20rem !important;
+        /* 5. Hiệu ứng Tab sáng tạo */
+        .stTabs [data-baseweb="tab-list"] {{
+            gap: 10px;
+            background-color: transparent !important;
+        }}
+        .stTabs [data-baseweb="tab"] {{
+            background-color: {card_bg} !important;
+            border: 1px solid {border_color} !important;
+            border-radius: 12px 12px 0 0 !important;
+            padding: 10px 25px !important;
+            transition: all 0.3s ease !important;
+        }}
+        .stTabs [data-baseweb="tab"]:hover {{
+            border-color: #64ffda !important;
+            transform: translateY(-2px);
+        }}
+        .stTabs [aria-selected="true"] {{
+            background: linear-gradient(135deg, #64ffda 0%, #48c6ef 100%) !important;
+            color: #0a192f !important;
+            font-weight: bold !important;
         }}
 
-        /* 4. Ép các khối nội dung bên trong dãn 100% */
+        /* 6. Hiệu ứng Pulse cho nút Phân tích */
+        div[data-testid="stButton"] button:first-child {{
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            border-radius: 12px !important;
+            border: 1px solid #64ffda !important;
+            background: transparent !important;
+            color: #64ffda !important;
+        }}
+        div[data-testid="stButton"] button:first-child:hover {{
+            background: rgba(100, 255, 218, 0.1) !important;
+            box-shadow: 0 0 20px rgba(100, 255, 218, 0.4) !important;
+            transform: scale(1.02);
+        }}
+
+        /* 7. Ép các khối nội dung bên trong dãn 100% */
         .element-container, .stMarkdown, .stVerticalBlock, div[data-testid="stVerticalBlock"] > div {{
             width: 100% !important;
         }}
@@ -1034,9 +1124,38 @@ def main():
     banner_p_opacity = "0.9" if is_dark else "1.0"
 
     st.markdown(f"""
-    <div style="width: 100%; text-align: center; margin-bottom: 2.5rem; padding: 2.5rem; background: {banner_bg}; border-radius: 20px; border: 1px solid {banner_border}; box-sizing: border-box;">
-        <h1 style="color: #FFD700; font-family: 'Times New Roman', Times, serif; font-weight: bold; font-size: 2.2rem; margin-bottom: 0.8rem; line-height: 1.3; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">🔬 PHÁT HIỆN TIN GIẢ VÀ PHÂN TÍCH THÁI ĐỘ VỀ VACCINE TẠI VIỆT NAM 💉</h1>
-        <p style="color: {banner_p_color}; font-family: 'Times New Roman', Times, serif; font-style: italic; font-size: 1.1rem; opacity: {banner_p_opacity}; line-height: 1.4;">(Vaccine Misinformation & Attitude Analysis in Vietnam)</p>
+    <div style="
+        width: 100%; 
+        text-align: center; 
+        margin-bottom: 3rem; 
+        padding: 3.5rem 2rem; 
+        background: { "linear-gradient(135deg, rgba(10, 25, 47, 0.9) 0%, rgba(17, 34, 64, 0.9) 100%)" if is_dark else "linear-gradient(135deg, #ffffff 0%, #f0f2f6 100%)" };
+        border-radius: 24px; 
+        border: 1px solid {banner_border};
+        box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        position: relative;
+        overflow: hidden;
+    ">
+        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: linear-gradient(90deg, #64ffda, #48c6ef, #64ffda);"></div>
+        <h1 style="
+            color: #FFD700; 
+            font-family: 'Times New Roman', Times, serif; 
+            font-weight: 800; 
+            font-size: 2.8rem; 
+            margin-bottom: 1rem; 
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            text-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        ">🔬 PHÁT HIỆN TIN GIẢ VÀ PHÂN TÍCH THÁI ĐỘ VỀ VACCINE TẠI VIỆT NAM 💉</h1>
+        <div style="width: 100px; height: 3px; background: #64ffda; margin: 1.5rem auto;"></div>
+        <p style="
+            color: {banner_p_color}; 
+            font-family: 'Times New Roman', Times, serif; 
+            font-style: italic; 
+            font-size: 1.3rem; 
+            opacity: {banner_p_opacity};
+            letter-spacing: 0.5px;
+        ">Vaccine Misinformation & Attitude Analysis Framework for Vietnamese Social Media</p>
     </div>
     """, unsafe_allow_html=True)
 
