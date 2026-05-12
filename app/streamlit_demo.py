@@ -188,15 +188,19 @@ def load_model(model_key="PhoBERT-v2"):
             return None, None, True
             
         if cfg["type"] == "gemma":
-            # Nạp Gemma gốc (Base)
+            # Ép dọn RAM cực kỳ quyết liệt trước khi nạp LLM
+            gc.collect()
+            gc.collect()
+            
+            # Nạp Gemma gốc bằng bfloat16 (tiết kiệm RAM nhất cho CPU)
             base_model = AutoModelForCausalLM.from_pretrained(
                 cfg["base_repo"],
                 token=hf_token,
-                torch_dtype=torch.float16,
-                device_map={"": "cpu"},
-                low_cpu_mem_usage=True
+                torch_dtype=torch.bfloat16, 
+                low_cpu_mem_usage=True,
+                device_map={"": "cpu"}
             )
-            # Đè Adapter của bạn lên
+            # Đè Adapter "chính chủ" của bạn lên
             model = PeftModel.from_pretrained(base_model, cfg["repo_id"], token=hf_token)
             tokenizer = AutoTokenizer.from_pretrained(cfg["base_repo"], token=hf_token)
             checkpoint_loaded = True
@@ -271,6 +275,8 @@ def load_xai_cache():
 @st.cache_data(show_spinner=False)
 def predict_cached(text: str, model_key: str) -> dict:
     import torch.nn.functional as F
+    cfg = MODEL_CONFIGS[model_key]
+    
     cfg = MODEL_CONFIGS[model_key]
     
     # Xử lý dự đoán bằng mô hình trong RAM (cả PhoBERT/XLM-R và Gemma Local)
