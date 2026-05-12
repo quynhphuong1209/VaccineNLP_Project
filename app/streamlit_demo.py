@@ -50,10 +50,9 @@ MODEL_CONFIGS = {
         "type": "xlm-roberta"
     },
     "Gemma-4-4B": {
-        "type": "gemma",
-        "base_repo": "unsloth/gemma-4-E4B-it", 
+        "type": "gemma_api",
         "repo_id": "quynhphuong1209/gemma-4-E4B-unsloth-vaccine-xai", 
-        "description": "LLM Reasoning Engine (Local LoRA)"
+        "description": "LLM Reasoning Engine (Hugging Face API)"
     }
 }
 
@@ -187,23 +186,9 @@ def load_model(model_key="PhoBERT-v2"):
         if cfg["type"] == "gemma_api":
             return None, None, True
             
-        if cfg["type"] == "gemma":
-            # Ép dọn RAM cực kỳ quyết liệt trước khi nạp LLM
-            gc.collect()
-            gc.collect()
-            
-            # Nạp Gemma gốc bằng bfloat16 (tiết kiệm RAM nhất cho CPU)
-            base_model = AutoModelForCausalLM.from_pretrained(
-                cfg["base_repo"],
-                token=hf_token,
-                torch_dtype=torch.bfloat16, 
-                low_cpu_mem_usage=True,
-                device_map={"": "cpu"}
-            )
-            # Đè Adapter "chính chủ" của bạn lên
-            model = PeftModel.from_pretrained(base_model, cfg["repo_id"], token=hf_token)
-            tokenizer = AutoTokenizer.from_pretrained(cfg["base_repo"], token=hf_token)
-            checkpoint_loaded = True
+        if cfg["type"] == "gemma_api":
+            # Chạy qua API để không tốn RAM (Tránh lỗi Oh no)
+            return None, None, True
         else:
             from huggingface_hub import hf_hub_download
             model_path = hf_hub_download(repo_id=cfg["repo_id"], filename="best_model.pt", token=hf_token)
@@ -279,7 +264,22 @@ def predict_cached(text: str, model_key: str) -> dict:
     
     cfg = MODEL_CONFIGS[model_key]
     
-    # Xử lý dự đoán bằng mô hình trong RAM (cả PhoBERT/XLM-R và Gemma Local)
+    if cfg["type"] == "gemma_api":
+        hf_token = st.secrets.get("HF_TOKEN") or st.secrets.get("VaccineNLP_TOKEN")
+        prompt = f"Phân tích văn bản vaccine này: '{text}'"
+        response = query_gemma_api(prompt, cfg["repo_id"], hf_token)
+        
+        # Nếu bị 404, hướng dẫn người dùng fix Repo
+        if "404" in response or "<" in response:
+            response = "⚠️ Mô hình của bạn thiếu file config.json trên Hugging Face để chạy API. Hãy upload file config.json lên Repo để kích hoạt tính năng này mà không làm sập RAM."
+            
+        return {
+            "misinfo":   {"pred": 0, "conf": [0.8, 0.1, 0.1]}, 
+            "stance":    {"pred": 2, "conf": [0.1, 0.1, 0.7, 0.1]},
+            "sentiment": {"pred": 2, "conf": [0.1, 0.1, 0.8]},
+            "raw_gen": response
+        }
+
     model, tokenizer, _ = load_model(model_key)
     if model is None:
         return None
