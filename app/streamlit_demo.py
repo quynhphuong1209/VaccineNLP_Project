@@ -34,19 +34,18 @@ XAI_CACHE_PATH = APP_DIR / "xai_cache.json"
 
 MODEL_CONFIGS = {
     "PhoBERT-v2": {
-        "repo_id": "vinai/phobert-base-v2",
-        "path": PROJECT_ROOT / "experiments" / "results" / "phobert-v2" / "phobert_v2" / "best_model.pt",
+        "repo_id": "quynhphuong1209/vaccinenlp-phobert-v2", # Fine-tuned model on HF
+        "base_repo": "vinai/phobert-base-v2",
         "type": "phobert"
     },
     "XLM-R-v1": {
-        "repo_id": "xlm-roberta-base",
-        "path": PROJECT_ROOT / "experiments" / "results" / "xlm-r-v1" / "xlm-roberta-base" / "best_model.pt",
+        "repo_id": "quynhphuong1209/vaccinenlp-xlm-r-v1", # Fine-tuned model on HF
+        "base_repo": "xlm-roberta-base",
         "type": "xlm-roberta"
     },
     "Gemma-4-4B": {
-        "repo_id": "unsloth/gemma-4-E4B-it", # Base model từ Kaggle Kernel của bạn
-        "local_repo": str(PROJECT_ROOT / "experiments" / "results" / "gemma" / "gemma_qlora_xai" / "final_model"),
-        "path": PROJECT_ROOT / "experiments" / "results" / "gemma" / "gemma_qlora_xai" / "final_model" / "adapter_model.safetensors",
+        "repo_id": "unsloth/gemma-4-E4B-it", # Base model
+        "hf_adapter": "quynhphuong1209/vaccinenlp-gemma-adapter", # LoRA Adapter on HF
         "type": "gemma"
     }
 }
@@ -162,12 +161,9 @@ def load_model(model_key="PhoBERT-v2"):
     hf_token = st.secrets.get("HF_TOKEN") or os.environ.get("HF_TOKEN") or st.secrets.get("VaccineNLP_TOKEN")
     
     try:
-        tokenizer = AutoTokenizer.from_pretrained(repo_id if cfg["type"] != "gemma" else cfg["repo_id"], token=hf_token, trust_remote_code=True)
-        if tokenizer.pad_token is None:
-            tokenizer.pad_token = tokenizer.eos_token
-
         if cfg["type"] == "gemma":
-            # Load Gemma as a CausalLM with Peft adapter
+            # Load Gemma as a CausalLM with Peft adapter from Hugging Face
+            from transformers import AutoModelForCausalLM
             base_model = AutoModelForCausalLM.from_pretrained(
                 cfg["repo_id"], 
                 token=hf_token, 
@@ -175,18 +171,20 @@ def load_model(model_key="PhoBERT-v2"):
                 device_map="auto" if torch.cuda.is_available() else None,
                 trust_remote_code=True
             )
-            if Path(cfg["local_repo"]).exists():
-                model = PeftModel.from_pretrained(base_model, cfg["local_repo"])
-                checkpoint_loaded = True
-            else:
-                model = base_model
+            tokenizer = AutoTokenizer.from_pretrained(cfg["repo_id"], token=hf_token, trust_remote_code=True)
+            model = PeftModel.from_pretrained(base_model, cfg["hf_adapter"], token=hf_token)
+            checkpoint_loaded = True
         else:
-            # Load custom multitask model (PhoBERT/XLM-R)
-            model = VaccineMultitaskModel(model_name=repo_id, token=hf_token, trust_remote_code=True)
-            if cfg["path"].exists():
-                state = torch.load(str(cfg["path"]), map_location="cpu", weights_only=False)
-                model.load_state_dict(state)
-                checkpoint_loaded = True
+            # Load custom multitask model from Hugging Face (downloads best_model.pt automatically)
+            from huggingface_hub import hf_hub_download
+            model_path = hf_hub_download(repo_id=cfg["repo_id"], filename="best_model.pt", token=hf_token)
+            
+            tokenizer = AutoTokenizer.from_pretrained(cfg["base_repo"], token=hf_token, trust_remote_code=True)
+            model = VaccineMultitaskModel(model_name=cfg["base_repo"], token=hf_token, trust_remote_code=True)
+            
+            state = torch.load(model_path, map_location="cpu", weights_only=False)
+            model.load_state_dict(state)
+            checkpoint_loaded = True
             
     except Exception as e:
         print(f">>> [ERROR] Lỗi nạp mô hình {model_key}: {str(e)}")
