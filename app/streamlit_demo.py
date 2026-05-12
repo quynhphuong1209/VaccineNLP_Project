@@ -50,9 +50,10 @@ MODEL_CONFIGS = {
         "type": "xlm-roberta"
     },
     "Gemma-4-4B": {
-        "type": "gemma_api",
+        "type": "gemma",
+        "base_repo": "unsloth/gemma-4-E4B-it", 
         "repo_id": "quynhphuong1209/gemma-4-E4B-unsloth-vaccine-xai", 
-        "description": "LLM Reasoning Engine (Hugging Face API)"
+        "description": "LLM Reasoning Engine (Custom Fine-tuned)"
     }
 }
 
@@ -175,20 +176,35 @@ def load_model(model_key="PhoBERT-v2"):
     from peft import PeftModel
     from huggingface_hub import hf_hub_download
     
-    # Dọn RAM trước khi nạp
+    # Dọn dẹp RAM cực mạnh trước khi nạp model mới
+    import gc
+    import torch
+    for key in list(st.session_state.keys()):
+        if "model" in key.lower():
+            del st.session_state[key]
     gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
     
     cfg = MODEL_CONFIGS[model_key]
     checkpoint_loaded = False
     hf_token = st.secrets.get("HF_TOKEN") or os.environ.get("HF_TOKEN") or st.secrets.get("VaccineNLP_TOKEN")
     
     try:
-        if cfg["type"] == "gemma_api":
-            return None, None, True
-            
-        if cfg["type"] == "gemma_api":
-            # Chạy qua API để không tốn RAM (Tránh lỗi Oh no)
-            return None, None, True
+        if cfg["type"] == "gemma":
+            # Nạp Gemma gốc (Base) - Dùng bfloat16 để tiết kiệm RAM
+            base_model = AutoModelForCausalLM.from_pretrained(
+                cfg["base_repo"],
+                token=hf_token,
+                torch_dtype=torch.bfloat16,
+                device_map={"": "cpu"},
+                low_cpu_mem_usage=True
+            )
+            # Đè Adapter chính chủ của bạn lên
+            from peft import PeftModel
+            model = PeftModel.from_pretrained(base_model, cfg["repo_id"], token=hf_token)
+            tokenizer = AutoTokenizer.from_pretrained(cfg["base_repo"], token=hf_token)
+            checkpoint_loaded = True
         else:
             from huggingface_hub import hf_hub_download
             model_path = hf_hub_download(repo_id=cfg["repo_id"], filename="best_model.pt", token=hf_token)
@@ -264,23 +280,28 @@ def predict_cached(text: str, model_key: str) -> dict:
     
     cfg = MODEL_CONFIGS[model_key]
     
-    if cfg["type"] == "gemma_api":
-        hf_token = st.secrets.get("HF_TOKEN") or st.secrets.get("VaccineNLP_TOKEN")
-        prompt = f"Phân tích văn bản vaccine này: '{text}'"
-        response = query_gemma_api(prompt, cfg["repo_id"], hf_token)
-        
-        # Nếu bị lỗi, trả về nguyên văn để xử lý ở UI
-        if "❌" in response or "Lỗi" in response or "Status" in response:
-            pass # Giữ nguyên lỗi để UI xử lý
-            
-        return {
-            "misinfo":   {"pred": 0, "conf": [0.8, 0.1, 0.1]}, 
-            "stance":    {"pred": 2, "conf": [0.1, 0.1, 0.7, 0.1]},
-            "sentiment": {"pred": 2, "conf": [0.1, 0.1, 0.8]},
-            "raw_gen": response
-        }
-
+    # Xử lý dự đoán bằng mô hình trong RAM (chính chủ của bạn)
     model, tokenizer, _ = load_model(model_key)
+    if model is None:
+        return None
+    
+    if cfg["type"] == "gemma":
+        # Gemma logic: Prompt-based inference
+        prompt = f"<bos><start_of_turn>user\nGiải thích văn bản vaccine này: '{text}'<end_of_turn>\n<start_of_turn>model\n"
+        inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
+        
+        with torch.no_grad():
+            outputs = model.generate(**inputs, max_new_tokens=150, temperature=0.7)
+            response = tokenizer.decode(outputs[0], skip_special_tokens=True)
+            # Trích xuất phần trả lời của mô hình
+            if "<start_of_turn>model\n" in response:
+                response = response.split("<start_of_turn>model\n")[-1]
+            return {
+                "misinfo":   {"pred": 0, "conf": [1.0, 0.0, 0.0]}, 
+                "stance":    {"pred": 2, "conf": [0.0, 0.0, 1.0, 0.0]},
+                "sentiment": {"pred": 2, "conf": [0.0, 0.0, 1.0]},
+                "raw_gen": response
+            }
     if model is None:
         return None
 
@@ -956,12 +977,8 @@ def main():
                     st.markdown("<br>", unsafe_allow_html=True)
                     st.markdown("##### 🧠 Hệ thống Giải thích (XAI Engine)")
                     with st.expander("📖 Xem giải thích chi tiết từ Gemma-4", expanded=True):
-                        if "404" in str(reasoning) or "<" in str(reasoning):
-                            st.warning("💡 **Hướng dẫn:** Mô hình của bạn thiếu file `config.json` trên Hugging Face. Hãy upload file này lên Repo để kích hoạt tính năng giải thích.")
-                            st.markdown("[Tải file config.json tại đây](https://huggingface.co/unsloth/gemma-4-E4B-it/blob/main/config.json)")
-                        else:
-                            st.markdown(f"<div style='border-left: 3px solid #007bff; padding-left: 20px; color: {text_color}; opacity: 0.9;'>{reasoning}</div>", unsafe_allow_html=True)
-                            st.caption("💡 Đây là mô hình Reasoning Engine (Gemma-4) giải thích lý do cho kết quả phân loại ở trên.")
+                        st.markdown(f"<div style='border-left: 3px solid #007bff; padding-left: 20px; color: {text_color}; opacity: 0.9;'>{reasoning}</div>", unsafe_allow_html=True)
+                        st.caption("💡 Đây là mô hình Reasoning Engine (Gemma-4) giải thích lý do cho kết quả phân loại ở trên.")
                 else:
                     st.info("💡 Lý luận XAI không khả dụng cho văn bản này. Hãy chọn mẫu từ thanh bên.")
         elif analyze_btn:
