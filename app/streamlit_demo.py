@@ -50,10 +50,10 @@ MODEL_CONFIGS = {
         "type": "xlm-roberta"
     },
     "Gemma-4-4B": {
-        "type": "gemma_api",
-        "base_repo": "google/gemma-1.1-2b-it",
+        "type": "gemma",
+        "base_repo": "unsloth/gemma-2-4b-it", 
         "repo_id": "quynhphuong1209/gemma-4-E4B-unsloth-vaccine-xai", 
-        "description": "LLM Reasoning Engine (Hugging Face API)"
+        "description": "LLM Reasoning Engine (Local LoRA)"
     }
 }
 
@@ -188,11 +188,17 @@ def load_model(model_key="PhoBERT-v2"):
             return None, None, True
             
         if cfg["type"] == "gemma":
+            # Nạp Gemma gốc (Base)
             base_model = AutoModelForCausalLM.from_pretrained(
-                cfg["repo_id"], token=hf_token, torch_dtype=torch.bfloat16, device_map={"": "cpu"}, low_cpu_mem_usage=True
+                cfg["base_repo"],
+                token=hf_token,
+                torch_dtype=torch.float16,
+                device_map={"": "cpu"},
+                low_cpu_mem_usage=True
             )
-            tokenizer = AutoTokenizer.from_pretrained(cfg["repo_id"], token=hf_token)
-            model = PeftModel.from_pretrained(base_model, cfg["hf_adapter"], token=hf_token)
+            # Đè Adapter của bạn lên
+            model = PeftModel.from_pretrained(base_model, cfg["repo_id"], token=hf_token)
+            tokenizer = AutoTokenizer.from_pretrained(cfg["base_repo"], token=hf_token)
             checkpoint_loaded = True
         else:
             from huggingface_hub import hf_hub_download
@@ -267,20 +273,7 @@ def predict_cached(text: str, model_key: str) -> dict:
     import torch.nn.functional as F
     cfg = MODEL_CONFIGS[model_key]
     
-    if cfg["type"] == "gemma_api":
-        # Gemma API logic: Phân loại bằng Prompt
-        hf_token = st.secrets.get("HF_TOKEN") or st.secrets.get("VaccineNLP_TOKEN")
-        prompt = f"Phân loại văn bản sau về vaccine Việt Nam: '{text}'. Trả về JSON: {{\"misinfo\": 0/1/2, \"stance\": 0/1/2/3, \"sentiment\": 0/1/2}}"
-        response = query_gemma_api(prompt, cfg["repo_id"], hf_token)
-        
-        # Logic parse đơn giản (trong demo)
-        return {
-            "misinfo":   {"pred": 0, "conf": [0.8, 0.1, 0.1]}, 
-            "stance":    {"pred": 2, "conf": [0.1, 0.1, 0.7, 0.1]},
-            "sentiment": {"pred": 2, "conf": [0.1, 0.1, 0.8]},
-            "raw_gen": response
-        }
-
+    # Xử lý dự đoán bằng mô hình trong RAM (cả PhoBERT/XLM-R và Gemma Local)
     model, tokenizer, _ = load_model(model_key)
     if model is None:
         return None
