@@ -922,14 +922,10 @@ def main():
             with st.spinner(f"🧠 {model_selection} đang xử lý..."):
                 result = predict_cached(user_text.strip(), model_selection)
                 
-                # Xử lý Reasoning (Gemma)
-                if MODEL_CONFIGS[model_selection]["type"] == "gemma_api":
-                    # Dùng API nếu là Gemma
-                    hf_token = st.secrets.get("HF_TOKEN") or st.secrets.get("VaccineNLP_TOKEN")
-                    prompt = f"Giải thích tại sao văn bản này có thể là tin giả hoặc thái độ tiêu cực về vaccine: {user_text.strip()}"
-                    reasoning = query_gemma_api(prompt, MODEL_CONFIGS[model_selection]["repo_id"], hf_token)
+                # Lấy Reasoning từ kết quả (Nếu là Gemma API thì nó nằm trong raw_gen)
+                if result and "raw_gen" in result:
+                    reasoning = result["raw_gen"]
                 else:
-                    # Dùng cache cũ cho các model khác
                     reasoning = find_xai_reasoning(user_text.strip(), xai_cache)
                 
                 # Lưu vào session state
@@ -960,8 +956,12 @@ def main():
                     st.markdown("<br>", unsafe_allow_html=True)
                     st.markdown("##### 🧠 Hệ thống Giải thích (XAI Engine)")
                     with st.expander("📖 Xem giải thích chi tiết từ Gemma-4", expanded=True):
-                        st.markdown(f"<div style='border-left: 3px solid #007bff; padding-left: 20px; color: {text_color}; opacity: 0.9;'>{reasoning}</div>", unsafe_allow_html=True)
-                        st.caption("💡 Đây là mô hình Reasoning Engine (Gemma-4) giải thích lý do cho kết quả phân loại ở trên.")
+                        if "404" in str(reasoning) or "<" in str(reasoning):
+                            st.warning("💡 **Hướng dẫn:** Mô hình của bạn thiếu file `config.json` trên Hugging Face. Hãy upload file này lên Repo để kích hoạt tính năng giải thích.")
+                            st.markdown("[Tải file config.json tại đây](https://huggingface.co/unsloth/gemma-4-E4B-it/blob/main/config.json)")
+                        else:
+                            st.markdown(f"<div style='border-left: 3px solid #007bff; padding-left: 20px; color: {text_color}; opacity: 0.9;'>{reasoning}</div>", unsafe_allow_html=True)
+                            st.caption("💡 Đây là mô hình Reasoning Engine (Gemma-4) giải thích lý do cho kết quả phân loại ở trên.")
                 else:
                     st.info("💡 Lý luận XAI không khả dụng cho văn bản này. Hãy chọn mẫu từ thanh bên.")
         elif analyze_btn:
