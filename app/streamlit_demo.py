@@ -360,9 +360,9 @@ def hien_thi_footer_chung(is_dark=True):
 <!-- Cột 2: Đề tài -->
 <div class="footer-col">
 <div class="footer-title">🔬 ĐỀ TÀI ĐỒ ÁN</div>
-<div class="project-name-vi">Phát hiện Tin giả và Phân tích Thái độ về Vaccine tại Việt Nam</div>
+<div class="project-name-vi">Ứng dụng Xử lý Ngôn ngữ Tự nhiên trong phát hiện thông tin sai lệch về vaccine và phân tích thái độ cộng đồng trên môi trường số tại Việt Nam</div>
 <div class="project-name-en" style="margin-top:10px; font-size:0.9rem; opacity:0.8;">
-(Vaccine Misinformation & Attitude Analysis in Vietnam)
+(Applying NLP for Vaccine Misinformation Detection and Community Attitude Analysis in Vietnamese Digital Environments)
 </div>
 </div>
 <!-- Cột 3: Nhóm thực hiện -->
