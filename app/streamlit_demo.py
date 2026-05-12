@@ -284,6 +284,9 @@ def predict_cached(text: str, model_key: str) -> dict:
             "sentiment": {"pred": 2, "conf": [0.1, 0.1, 0.8]},
             "raw_gen": response
         }
+    
+    # Nạp mô hình từ RAM cho PhoBERT và XLM-R
+    model, tokenizer, _ = load_model(model_key)
     if model is None:
         return None
 
