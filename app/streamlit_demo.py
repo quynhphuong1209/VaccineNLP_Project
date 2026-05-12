@@ -729,6 +729,79 @@ def render_methodology_tab():
     Trong lĩnh vực y tế như vắc-xin, việc chỉ đưa ra nhãn 'Tin giả' là chưa đủ. Hệ thống cần giải thích **tại sao** đó là tin giả để thuyết phục người dùng và hỗ trợ cán bộ y tế trong việc điều hướng dư luận. Đây chính là giá trị cốt lõi của việc tích hợp Gemma-4 vào hệ thống.
     """)
 
+def render_thesis_outline_tab():
+    """Hiển thị chi tiết đề cương và mục lục đồ án tốt nghiệp."""
+    st.markdown("## 📑 Đề cương & Mục lục Đồ án")
+    
+    with st.expander("📝 **Tên Đề Tài Đồ Án**", expanded=True):
+        st.info("**Ứng dụng Xử lý Ngôn ngữ Tự nhiên trong phát hiện thông tin sai lệch về vaccine và phân tích thái độ cộng đồng trên môi trường số tại Việt Nam**")
+        st.caption("*(Applying NLP for Vaccine Misinformation Detection and Community Attitude Analysis in Vietnamese Digital Environments)*")
+
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("### 📌 Cấu trúc Chương")
+        st.markdown("""
+        - **CHƯƠNG 1: ĐẶT VẤN ĐỀ** (Lý do chọn đề tài, Mục tiêu, RQ)
+        - **CHƯƠNG 2: TỔNG QUAN TÀI LIỆU** (Infodemic, NLP trong Y tế công cộng, Research Gap)
+        - **CHƯƠNG 3: PHƯƠNG PHÁP NGHIÊN CỨU** (Thiết kế Tier-Based, Tiền xử lý, Annotation Schema)
+        - **CHƯƠNG 4: KẾT QUẢ** (Mô tả Dataset, Performance Model, Kiểm định giả thuyết)
+        - **CHƯƠNG 5: BÀN LUẬN** (Diễn giải kết quả, So sánh, Hạn chế)
+        - **CHƯƠNG 6: KẾT LUẬN VÀ KIẾN NGHỊ**
+        """)
+
+    with col2:
+        st.markdown("### 🧪 Giả thuyết Nghiên cứu (Hypotheses)")
+        st.markdown("""
+        - **H1:** Nội dung có cảm xúc tiêu cực có xác suất cao hơn được phân loại là quan điểm phản đối vaccine.
+        - **H2:** Nội dung chứa thông tin sai lệch có mức tương tác trung bình cao hơn nội dung chính xác.
+        - **H3:** Nguồn báo điện tử chính thống có tỷ lệ thông tin sai lệch thấp hơn đáng kể so với nguồn mạng xã hội.
+        """)
+
+    st.divider()
+    
+    with st.container():
+        st.markdown("### 📋 Mục lục Chi tiết")
+        tab_c1, tab_c2, tab_c3 = st.tabs(["Chương 1-2", "Chương 3-4", "Chương 5-6"])
+        
+        with tab_c1:
+            st.markdown("""
+            **CHƯƠNG 1: ĐẶT VẤN ĐỀ**
+            - 1.1 Lý do chọn đề tài
+            - 1.2 Mục tiêu nghiên cứu (MT1-MT3)
+            - 1.3 Câu hỏi nghiên cứu (RQ1-RQ3)
+            - 1.6 Ý nghĩa khoa học và thực tiễn
+            
+            **CHƯƠNG 2: TỔNG QUAN TÀI LIỆU**
+            - 2.1 Vaccine misinformation: định nghĩa và phân loại
+            - 2.2 NLP ứng dụng trong public health surveillance
+            - 2.4 Khoảng trống nghiên cứu (Research Gap)
+            """)
+
+        with tab_c2:
+            st.markdown("""
+            **CHƯƠNG 3: PHƯƠNG PHÁP NGHIÊN CỨU**
+            - 3.2 Thu thập dữ liệu — Chiến lược Tier-Based (Tier A, B, C)
+            - 3.4 Annotation Protocol (Schema nhãn 3-trục)
+            - 3.5 Classification Pipeline (PhoBERT & XLM-R)
+            
+            **CHƯƠNG 4: KẾT QUẢ**
+            - 4.2 Kết quả mô hình NLP (So sánh F1 & Accuracy)
+            - 4.3 Kiểm định giả thuyết H1, H2, H3
+            """)
+
+        with tab_c3:
+            st.markdown("""
+            **CHƯƠNG 5: BÀN LUẬN**
+            - 5.1 Diễn giải kết quả chính
+            - 5.2 So sánh với nghiên cứu trước (ANTiVax, MiSoVac)
+            - 5.3 Hạn chế của nghiên cứu
+            
+            **CHƯƠNG 6: KẾT LUẬN VÀ KIẾN NGHỊ**
+            - 6.1 Tổng kết mục tiêu nghiên cứu
+            - 6.2 Kiến nghị cho Hệ thống Y tế Công cộng
+            """)
+
 # ─────────────────────────────────────────────────────────────
 # MAIN APP
 # ─────────────────────────────────────────────────────────────
@@ -1232,7 +1305,7 @@ def main():
     </div>
     """, unsafe_allow_html=True)
 
-    tabs = st.tabs(["🔍 Phân tích Real-time", "📊 Thống kê Benchmark", "📈 Đánh giá chuyên sâu", "📚 Tài liệu & Notebooks", "📜 Phương pháp luận"])
+    tabs = st.tabs(["🔍 Phân tích Real-time", "📊 Thống kê Benchmark", "📈 Đánh giá chuyên sâu", "📚 Tài liệu & Notebooks", "📜 Phương pháp luận", "📑 Đề cương & Mục lục"])
 
     with tabs[0]:
         input_text = SAMPLE_TEXTS[selected_sample] if selected_sample != "Tự nhập" else ""
@@ -1303,6 +1376,9 @@ def main():
 
     with tabs[4]:
         render_methodology_tab()
+
+    with tabs[5]:
+        render_thesis_outline_tab()
 
     hien_thi_footer_chung(is_dark=is_dark)
 
