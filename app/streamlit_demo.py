@@ -953,6 +953,7 @@ def main():
             transition: all 0.3s ease !important;
             color: {secondary_text} !important;
             font-weight: normal !important;
+            text-transform: uppercase !important;
         }}
         .stTabs [data-baseweb="tab"]:hover {{
             color: {"#64ffda" if is_dark else "#0056b3"} !important;
@@ -1305,7 +1306,7 @@ def main():
     </div>
     """, unsafe_allow_html=True)
 
-    tabs = st.tabs(["🔍 Phân tích Real-time", "📊 Thống kê Benchmark", "📈 Đánh giá chuyên sâu", "📚 Tài liệu & Notebooks", "📜 Phương pháp luận", "📑 Đề cương & Mục lục"])
+    tabs = st.tabs(["🔍 PHÂN TÍCH REAL-TIME", "📊 THỐNG KÊ BENCHMARK", "📈 ĐÁNH GIÁ CHUYÊN SÂU", "📚 TÀI LIỆU & NOTEBOOKS", "📜 PHƯƠNG PHÁP LUẬN", "📑 ĐỀ CƯƠNG & MỤC LỤC"])
 
     with tabs[0]:
         input_text = SAMPLE_TEXTS[selected_sample] if selected_sample != "Tự nhập" else ""
