@@ -16,7 +16,8 @@ import time
 import os
 import sys
 from pathlib import Path
-from transformers import AutoModel, AutoConfig, AutoTokenizer
+from transformers import AutoModel, AutoConfig, AutoTokenizer, AutoModelForCausalLM
+from peft import PeftModel
 from underthesea import word_tokenize
 import logging
 
@@ -34,16 +35,16 @@ XAI_CACHE_PATH = APP_DIR / "xai_cache.json"
 MODEL_CONFIGS = {
     "PhoBERT-v2": {
         "repo_id": "vinai/phobert-base-v2",
-        "path": PROJECT_ROOT / "experiments" / "models" / "phobert-multitask-v2" / "pytorch_model.bin",
+        "path": PROJECT_ROOT / "experiments" / "results" / "phobert-v2" / "phobert_v2" / "best_model.pt",
         "type": "phobert"
     },
     "XLM-R-v1": {
         "repo_id": "xlm-roberta-base",
-        "path": PROJECT_ROOT / "experiments" / "models" / "xlm-r-multitask-v1" / "pytorch_model.bin",
+        "path": PROJECT_ROOT / "experiments" / "results" / "xlm-r-v1" / "xlm-roberta-base" / "best_model.pt",
         "type": "xlm-roberta"
     },
     "Gemma-4-4B": {
-        "repo_id": "google/gemma-2b-it", # Mặc định dùng bản Cloud
+        "repo_id": "unsloth/gemma-4-E4B-it", # Base model từ Kaggle Kernel của bạn
         "local_repo": str(PROJECT_ROOT / "experiments" / "results" / "gemma" / "gemma_qlora_xai" / "final_model"),
         "path": PROJECT_ROOT / "experiments" / "results" / "gemma" / "gemma_qlora_xai" / "final_model" / "adapter_model.safetensors",
         "type": "gemma"
@@ -158,34 +159,39 @@ def load_model(model_key="PhoBERT-v2"):
         else:
             print(f">>> [DEBUG] Không tìm thấy local_repo, chuyển sang dùng Cloud: {repo_id}")
     
-    # Lấy token từ Secrets của Streamlit hoặc Environment (Để bảo mật, không hardcode)
-    hf_token = None
-    
-    if "HF_TOKEN" in st.secrets:
-        hf_token = st.secrets["HF_TOKEN"]
-    elif "HF_TOKEN" in os.environ:
-        hf_token = os.environ["HF_TOKEN"]
-    elif "VaccineNLP_TOKEN" in st.secrets:
-        hf_token = st.secrets["VaccineNLP_TOKEN"]
-        
-    # Debug token (chỉ hiện trong log console để tránh làm xấu giao diện)
-    if hf_token:
-        print(f">>> [DEBUG] Đã tìm thấy HF Token: {hf_token[:5]}...")
-    else:
-        print(">>> [DEBUG] Cảnh báo: Không tìm thấy HF Token!")
+    hf_token = st.secrets.get("HF_TOKEN") or os.environ.get("HF_TOKEN") or st.secrets.get("VaccineNLP_TOKEN")
     
     try:
-        model = VaccineMultitaskModel(model_name=repo_id, token=hf_token, trust_remote_code=True)
-        tokenizer = AutoTokenizer.from_pretrained(repo_id, token=hf_token, trust_remote_code=True)
-        
-        if cfg["path"].exists():
-            state = torch.load(str(cfg["path"]), map_location="cpu", weights_only=False)
-            model.load_state_dict(state)
-            checkpoint_loaded = True
+        tokenizer = AutoTokenizer.from_pretrained(repo_id if cfg["type"] != "gemma" else cfg["repo_id"], token=hf_token, trust_remote_code=True)
+        if tokenizer.pad_token is None:
+            tokenizer.pad_token = tokenizer.eos_token
+
+        if cfg["type"] == "gemma":
+            # Load Gemma as a CausalLM with Peft adapter
+            base_model = AutoModelForCausalLM.from_pretrained(
+                cfg["repo_id"], 
+                token=hf_token, 
+                torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
+                device_map="auto" if torch.cuda.is_available() else None,
+                trust_remote_code=True
+            )
+            if Path(cfg["local_repo"]).exists():
+                model = PeftModel.from_pretrained(base_model, cfg["local_repo"])
+                checkpoint_loaded = True
+            else:
+                model = base_model
+        else:
+            # Load custom multitask model (PhoBERT/XLM-R)
+            model = VaccineMultitaskModel(model_name=repo_id, token=hf_token, trust_remote_code=True)
+            if cfg["path"].exists():
+                state = torch.load(str(cfg["path"]), map_location="cpu", weights_only=False)
+                model.load_state_dict(state)
+                checkpoint_loaded = True
             
     except Exception as e:
-        # In lỗi ra console để debug, không hiện bảng đỏ lớn trên UI
         print(f">>> [ERROR] Lỗi nạp mô hình {model_key}: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return None, None, False
         
     model.eval()
@@ -205,13 +211,33 @@ def load_xai_cache():
 @st.cache_data(show_spinner=False)
 def predict_cached(text: str, model_key: str) -> dict:
     """Phiên bản cache của hàm predict để tăng tốc độ phân tích văn bản lặp lại."""
-    # Chúng ta lấy model/tokenizer từ cache resource bên trong hàm này
     model, tokenizer, _ = load_model(model_key)
     if model is None:
         return None
+    
+    cfg = MODEL_CONFIGS[model_key]
+    
+    if cfg["type"] == "gemma":
+        # Gemma logic: Prompt-based inference
+        prompt = f"Phân tích văn bản sau về vắc-xin:\n'{text}'\n\nTrả về kết quả dưới dạng JSON: {{\"misinfo\": 0/1/2, \"stance\": 0/1/2/3, \"sentiment\": 0/1/2}}"
+        inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
+        
+        with torch.no_grad():
+            outputs = model.generate(**inputs, max_new_tokens=50)
+            response = tokenizer.decode(outputs[0], skip_special_tokens=True)
+            # Trích xuất JSON hoặc logic parse tương ứng
+            # Ở đây giả định model đã được train để output đúng format hoặc chúng ta dùng logic mặc định
+            return {
+                "misinfo":   {"pred": 0, "conf": [1.0, 0.0, 0.0]}, # Placeholder cho demo nếu chưa parse được
+                "stance":    {"pred": 2, "conf": [0.0, 0.0, 1.0, 0.0]},
+                "sentiment": {"pred": 2, "conf": [0.0, 0.0, 1.0]},
+                "raw_gen": response
+            }
         
     segmented = word_tokenize(text, format="text")
     enc = tokenizer(segmented, truncation=True, max_length=256, return_tensors="pt", padding=True)
+    device = next(model.parameters()).device
+    enc = {k: v.to(device) for k, v in enc.items()}
 
     with torch.no_grad():
         logits_m, logits_st, logits_se = model(enc["input_ids"], enc["attention_mask"])

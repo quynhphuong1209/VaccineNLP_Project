@@ -38,7 +38,7 @@ Thumbs.db
 *.onnx
 *.safetensors
 experiments/models/
-experiments/results/
+# experiments/results/ (Removed from ignore to allow tracking results/models)
 **/checkpoint-*/
 temp/*
 !datasets/temp/README.md
