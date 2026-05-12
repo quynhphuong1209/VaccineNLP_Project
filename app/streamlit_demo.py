@@ -169,13 +169,20 @@ def load_model(model_key="PhoBERT-v2"):
             # Load Gemma as a CausalLM with Peft adapter from Hugging Face
             from transformers import AutoModelForCausalLM, AutoTokenizer
             from peft import PeftModel
+            import gc
             
-            with st.spinner("Đang nạp mô hình Gemma (có thể mất 1-2 phút)..."):
+            with st.spinner("Đang tối ưu RAM và nạp Gemma (vui lòng đợi)..."):
+                # Giải phóng RAM từ các mô hình trước đó
+                gc.collect()
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+                
+                # Nạp mô hình với cấu hình tiết kiệm RAM nhất cho CPU
                 base_model = AutoModelForCausalLM.from_pretrained(
                     cfg["repo_id"], 
                     token=hf_token, 
-                    torch_dtype=torch.float16 if torch.cuda.is_available() else torch.bfloat16 if torch.backends.mps.is_available() else torch.float32,
-                    device_map="auto" if torch.cuda.is_available() else None,
+                    torch_dtype=torch.bfloat16, # bfloat16 tiết kiệm RAM hơn float32
+                    device_map={"": "cpu"},     # Ép chạy trên CPU để tránh lỗi device
                     low_cpu_mem_usage=True,
                     trust_remote_code=True
                 )
