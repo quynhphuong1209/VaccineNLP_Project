@@ -613,6 +613,8 @@ def render_resources_tab():
         - [Gemma-4 Vaccine Reasoning](https://huggingface.co/hung2903/gemma4-vaccinenlp-reasoning)
         - [Synapse UNet Light](https://huggingface.co/hung2903/synapse-unet-light/tree/main)
         """)
+        st.markdown("##### **III. GitHub**")
+        st.markdown("- [VaccineNLP Thesis](https://github.com/hwngkm/VaccineNLP-Thesis)")
 
     with col2:
         st.markdown("### 👩‍💻 2. Đinh Lê Quỳnh Phương")
@@ -632,6 +634,8 @@ def render_resources_tab():
         - [XLM-R Multitask](https://huggingface.co/quynhphuong1209/xlmr-multitask)
         - [Gemma-4-E4B XAI Model](https://huggingface.co/quynhphuong1209/gemma-4-E4B-unsloth-vaccine-xai)
         """)
+        st.markdown("##### **III. GitHub**")
+        st.markdown("- [VaccineNLP Project Repo](https://github.com/quynhphuong1209/VaccineNLP_Project)")
 
 # ─────────────────────────────────────────────────────────────
 # MAIN APP
