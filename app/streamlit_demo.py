@@ -269,9 +269,9 @@ def predict_cached(text: str, model_key: str) -> dict:
         prompt = f"Phân tích văn bản vaccine này: '{text}'"
         response = query_gemma_api(prompt, cfg["repo_id"], hf_token)
         
-        # Nếu bị 404, hướng dẫn người dùng fix Repo
-        if "404" in response or "<" in response:
-            response = "⚠️ Mô hình của bạn thiếu file config.json trên Hugging Face để chạy API. Hãy upload file config.json lên Repo để kích hoạt tính năng này mà không làm sập RAM."
+        # Nếu bị lỗi, trả về nguyên văn để xử lý ở UI
+        if "❌" in response or "Lỗi" in response or "Status" in response:
+            pass # Giữ nguyên lỗi để UI xử lý
             
         return {
             "misinfo":   {"pred": 0, "conf": [0.8, 0.1, 0.1]}, 
