@@ -883,7 +883,7 @@ def main():
     # Ở phiên bản mới, reasoning được lấy trực tiếp từ hàm predict_cached
 
     # Kiểm tra sẵn sàng: Với gemma_api thì model sẽ None nhưng vẫn OK
-    is_api = MODEL_CONFIGS[model_selection]["type"] == "gemma_api"
+    is_api = MODEL_CONFIGS[model_selection]["type"] == "gemma4"
     if model is None and not is_api:
         st.warning(f"⚠️ Mô hình `{model_selection}` chưa sẵn sàng. Vui lòng chọn mô hình khác.")
     
@@ -900,6 +900,78 @@ def main():
     st.markdown(f"""
     <div style="width: 100%; text-align: center; margin-bottom: 2.5rem; padding: 2.5rem; background: {banner_bg}; border-radius: 20px; border: 1px solid {banner_border}; box-sizing: border-box;">
         <h1 style="color: #FFD700; font-family: 'Times New Roman', Times, serif; font-weight: bold; font-size: 2.2rem; margin-bottom: 0.8rem; line-height: 1.3; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">🔬 PHÁT HIỆN TIN GIẢ VÀ PHÂN TÍCH THÁI ĐỘ VỀ VACCINE TẠI VIỆT NAM 💉</h1>
+        <p style="color: {banner_p_color}; font-family: 'Times New Roman', Times, serif; font-style: italic; font-size: 1.1rem; opacity: {banner_p_opacity}; line-height: 1.4;">(Vaccine Misinformation & Attitude Analysis in Vietnam)</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    tabs = st.tabs(["🔍 Phân tích Real-time", "📊 Thống kê Benchmark"])
+
+    with tabs[0]:
+        input_text = SAMPLE_TEXTS[selected_sample] if selected_sample != "Tự nhập" else ""
+        user_text = st.text_area(
+            "Nhập văn bản cần phân tích:", 
+            value=input_text, 
+            height=140, 
+            placeholder="Dán nội dung bài viết về vắc-xin..."
+        )
+        
+        col_btn1, col_btn2, _ = st.columns([1, 1, 4])
+        with col_btn1:
+            analyze_btn = st.button("🔍 Phân tích", width="stretch")
+        with col_btn2:
+            if st.button("🗑️ Reset", width="stretch"):
+                st.session_state.last_result = None
+                st.rerun()
+
+        if analyze_btn and user_text.strip():
+            with st.spinner(f"🧠 {model_selection} đang xử lý..."):
+                # Thực hiện dự đoán và lấy cả nhãn lẫn lời giải thích
+                result = predict_cached(user_text.strip(), model_selection)
+                reasoning = result.get("reasoning") if result else None
+                
+                # Lưu vào session state
+                st.session_state.last_result = {
+                    "text": user_text.strip(),
+                    "result": result,
+                    "reasoning": reasoning
+                }
+
+        # Hiển thị kết quả: Chỉ cần có kết quả trong bộ nhớ và văn bản hiện tại KHÔNG rỗng
+        if st.session_state.last_result and user_text.strip():
+            # Nếu văn bản trong ô nhập liệu khớp với kết quả đã lưu, hiển thị nó
+            if st.session_state.last_result["text"] == user_text.strip():
+                saved = st.session_state.last_result
+                result = saved["result"]
+                reasoning = saved["reasoning"]
+
+                st.markdown("---")
+                if result:
+                    col1, col2, col3 = st.columns(3)
+                    with col1: render_result_card("Tin giả", "misinfo", result["misinfo"])
+                    with col2: render_result_card("Quan điểm", "stance", result["stance"])
+                    with col3: render_result_card("Cảm xúc", "sentiment", result["sentiment"])
+                else:
+                    st.error("❌ Không thể phân tích văn bản này. Vui lòng kiểm tra lại mô hình đã chọn.")
+
+                if reasoning:
+                    st.markdown("<br>", unsafe_allow_html=True)
+                    st.markdown("##### 🧠 Hệ thống Giải thích (XAI Engine)")
+                    with st.expander("📖 Xem giải thích chi tiết từ Gemma-4 XAI Engine", expanded=True):
+                        st.markdown(f"<div style='border-left: 3px solid #64ffda; padding-left: 20px; color: {text_color}; opacity: 0.9;'>{reasoning}</div>", unsafe_allow_html=True)
+                        st.caption("💡 Giải thích được tạo tự động bởi mô hình Gemma-4 Reasoning Engine.")
+                else:
+                    st.info("💡 Lý luận XAI không khả dụng cho văn bản này. Hãy chọn mẫu từ thanh bên.")
+        elif analyze_btn:
+            st.warning("⚠️ Vui lòng nhập văn bản.")
+
+    with tabs[1]:
+        render_benchmark_tab()
+
+    hien_thi_footer_chung(is_dark=is_dark)
+
+if __name__ == "__main__":
+    main()
+2px 4px rgba(0,0,0,0.3);">🔬 PHÁT HIỆN TIN GIẢ VÀ PHÂN TÍCH THÁI ĐỘ VỀ VACCINE TẠI VIỆT NAM 💉</h1>
         <p style="color: {banner_p_color}; font-family: 'Times New Roman', Times, serif; font-style: italic; font-size: 1.1rem; opacity: {banner_p_opacity}; line-height: 1.4;">(Vaccine Misinformation & Attitude Analysis in Vietnam)</p>
     </div>
     """, unsafe_allow_html=True)
