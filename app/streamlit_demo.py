@@ -592,30 +592,34 @@ def render_resources_tab():
     """Hiển thị danh sách các tài nguyên nghiên cứu với giao diện Card sáng tạo."""
     st.markdown("## 📚 Tài liệu & Notebooks Nghiên cứu")
     
+    is_dark = st.session_state.get("theme", "Dark") == "Dark"
+    accent_color = "#64ffda" if is_dark else "#0056b3"
+    card_bg = "rgba(255, 255, 255, 0.03)" if is_dark else "rgba(0, 0, 0, 0.03)"
+
     # CSS riêng cho các thẻ tài nguyên
-    st.markdown("""
+    st.markdown(f"""
     <style>
-        .resource-card {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(100, 255, 218, 0.2);
+        .resource-card {{
+            background: {card_bg};
+            border: 1px solid {accent_color}44;
             border-radius: 16px;
             padding: 20px;
             margin-bottom: 20px;
             transition: all 0.3s ease;
-        }
-        .resource-card:hover {
-            border-color: #64ffda;
-            box-shadow: 0 10px 30px rgba(100, 255, 218, 0.1);
+        }}
+        .resource-card:hover {{
+            border-color: {accent_color};
+            box-shadow: 0 10px 30px {accent_color}22;
             transform: translateY(-5px);
-        }
-        .resource-header {
-            color: #64ffda;
+        }}
+        .resource-header {{
+            color: {accent_color};
             font-weight: bold;
             margin-bottom: 10px;
             display: flex;
             align-items: center;
             gap: 10px;
-        }
+        }}
     </style>
     """, unsafe_allow_html=True)
 
@@ -822,31 +826,31 @@ def main():
             font-weight: normal !important;
         }}
         .stTabs [data-baseweb="tab"]:hover {{
-            color: #64ffda !important;
-            border-bottom: 2px solid rgba(100, 255, 218, 0.3) !important;
+            color: {"#64ffda" if is_dark else "#0056b3"} !important;
+            border-bottom: 2px solid {"rgba(100, 255, 218, 0.3)" if is_dark else "rgba(0, 86, 179, 0.3)"} !important;
         }}
         .stTabs [aria-selected="true"] {{
             background-color: transparent !important;
-            color: #64ffda !important;
-            border-bottom: 2px solid #64ffda !important;
+            color: {"#64ffda" if is_dark else "#0056b3"} !important;
+            border-bottom: 2px solid {"#64ffda" if is_dark else "#0056b3"} !important;
             font-weight: bold !important;
         }}
         /* Loại bỏ gạch chân mặc định của Streamlit */
         .stTabs [data-baseweb="tab-highlight"] {{
-            background-color: #64ffda !important;
+            background-color: {"#64ffda" if is_dark else "#0056b3"} !important;
         }}
 
         /* 6. Hiệu ứng Pulse cho nút Phân tích */
         div[data-testid="stButton"] button:first-child {{
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
             border-radius: 12px !important;
-            border: 1px solid #64ffda !important;
+            border: 1px solid {"#64ffda" if is_dark else "#0056b3"} !important;
             background: transparent !important;
-            color: #64ffda !important;
+            color: {"#64ffda" if is_dark else "#0056b3"} !important;
         }}
         div[data-testid="stButton"] button:first-child:hover {{
-            background: rgba(100, 255, 218, 0.1) !important;
-            box-shadow: 0 0 20px rgba(100, 255, 218, 0.4) !important;
+            background: {"rgba(100, 255, 218, 0.1)" if is_dark else "rgba(0, 86, 179, 0.1)"} !important;
+            box-shadow: 0 0 20px {"rgba(100, 255, 218, 0.4)" if is_dark else "rgba(0, 86, 179, 0.4)"} !important;
             transform: scale(1.02);
         }}
 
