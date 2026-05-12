@@ -58,3 +58,6 @@ temp/*
 !*.txt
 !*.sh
 !*.ps1
+
+# --- Temporary & Scratch ---
+scratch/

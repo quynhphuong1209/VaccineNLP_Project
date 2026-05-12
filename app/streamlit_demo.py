@@ -208,8 +208,22 @@ def load_xai_cache():
     return {}
 
 def find_xai_reasoning(text: str, cache: dict) -> str | None:
-    """Look up XAI reasoning by exact text match."""
-    return cache.get(text)
+    """Look up XAI reasoning with normalized whitespace matching."""
+    if not text or not cache:
+        return None
+    
+    # Chuẩn hóa văn bản đầu vào (xóa khoảng trắng thừa, xuống dòng)
+    input_norm = " ".join(text.split())
+    
+    # Thử tìm kiếm chính xác trước
+    if text.strip() in cache:
+        return cache[text.strip()]
+        
+    # Nếu không thấy, thử tìm kiếm theo nội dung đã chuẩn hóa
+    for k, v in cache.items():
+        if " ".join(k.split()) == input_norm:
+            return v
+    return None
 
 def query_gemma_api(prompt, token):
     """Calls Hugging Face Inference API for dynamic reasoning."""
@@ -223,12 +237,13 @@ def query_gemma_api(prompt, token):
         response = client.text_generation(prompt, max_new_tokens=300, temperature=0.7)
         return response
     except Exception as e:
+        error_msg = str(e)
         # Dự phòng mô hình gốc nếu lỗi
         try:
             client_fb = InferenceClient(model="google/gemma-2b-it", token=token)
             return client_fb.text_generation(prompt, max_new_tokens=300, temperature=0.7)
-        except:
-            return f"❌ Lỗi API: {str(e)}"
+        except Exception as fallback_e:
+            return f"❌ Lỗi API: {error_msg} (Fallback cũng lỗi: {str(fallback_e)})"
 
 @st.cache_data(show_spinner=False)
 def predict_cached(text: str, model_key: str) -> dict:
@@ -258,13 +273,12 @@ def predict_cached(text: str, model_key: str) -> dict:
 
     # Tra cứu giải thích (Ưu tiên cache -> Sau đó gọi Gemma API)
     xai_cache = load_xai_cache()
-    clean_text = text.strip()
-    reasoning = xai_cache.get(clean_text)
+    reasoning = find_xai_reasoning(text, xai_cache)
     
     if not reasoning:
         hf_token = st.secrets.get("HF_TOKEN") or st.secrets.get("VaccineNLP_TOKEN")
         # Rút gọn văn bản nếu quá dài để tránh lỗi API
-        short_text = clean_text[:1000] + "..." if len(clean_text) > 1000 else clean_text
+        short_text = text.strip()[:1000] + "..." if len(text.strip()) > 1000 else text.strip()
         # Prompt trung lập để Gemma giải thích được cả tin đúng và tin sai
         prompt = f"Hãy phân tích nội dung sau về vắc-xin và giải thích tại sao nó được phân loại như vậy: '{short_text}'"
         reasoning = query_gemma_api(prompt, hf_token)
