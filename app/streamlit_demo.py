@@ -588,6 +588,34 @@ def render_evaluation_tab():
     st.markdown("#### 📝 Kết luận Hội đồng")
     st.success(f"Hệ thống đạt trạng thái tối ưu khi kết hợp kiến trúc **Ensemble**: Sử dụng **PhoBERT-v2** để trích xuất đặc trưng và phân loại nhãn thô, sau đó dùng **Gemma-4 QLoRA** để thực hiện Explainable AI (XAI) nhằm minh bạch hóa quyết định của mô hình.")
 
+def render_resources_tab():
+    """Hiển thị danh sách các Notebook Kaggle nghiên cứu của nhóm."""
+    st.markdown("## 📚 Tài liệu & Notebooks Nghiên cứu")
+    st.info("💡 Đây là danh sách các Notebook Kaggle chứa toàn bộ mã nguồn huấn luyện, cấu hình mô hình và quá trình thực nghiệm của nhóm.")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.markdown("### 👨‍💻 1. Kim Mạnh Hưng")
+        st.markdown("""
+        - [Gemma-4 QLoRA Multitask](https://www.kaggle.com/code/kimmnhhng/vaccinenlp-gemma-4-qlora-multitask)
+        - [PhoBERT-v2 Multitask](https://www.kaggle.com/code/kimmnhhng/vaccinenlp-phobert-v2-multitask)
+        - [Gemma E4B-IT Analysis](https://www.kaggle.com/code/kimmnhhng/gemma-e4b-it)
+        - [XLM-R-v1 Multitask Classification](https://www.kaggle.com/code/kimmnhhng/vaccinenlp-xlm-r-v1-multitask-classifi)
+        """)
+
+    with col2:
+        st.markdown("### 👩‍💻 2. Đinh Lê Quỳnh Phương")
+        st.markdown("""
+        - [Gemma-4 QLoRA Multitask (Main)](https://www.kaggle.com/code/inhlqunhphng/vaccinenlp-gemma-4-qlora-multitask)
+        - [XLM-R-v1 Baseline](https://www.kaggle.com/code/inhlqunhphng/vaccinenlp-xlm-r-v1-multitask-classifi)
+        - [PhoBERT Multitask Training (01)](https://www.kaggle.com/code/inhlqunhphng/01-phobert-multitask-training)
+        - [PhoBERT-v2 Classifier](https://www.kaggle.com/code/inhlqunhphng/vaccinenlp-phobert-v2-multitask-classifier)
+        - [Final Evaluation (T4 GPU)](https://www.kaggle.com/code/inhlqunhphng/vaccine-nlp-eval-final-t4)
+        - [Gemma-4 4B Training (02)](https://www.kaggle.com/code/inhlqunhphng/02-gemma4-4b-qlora-training)
+        - [Gemma E4B-IT Insights](https://www.kaggle.com/code/inhlqunhphng/gemma-e4b-it)
+        """)
+
 # ─────────────────────────────────────────────────────────────
 # MAIN APP
 # ─────────────────────────────────────────────────────────────
@@ -991,7 +1019,7 @@ def main():
     </div>
     """, unsafe_allow_html=True)
 
-    tabs = st.tabs(["🔍 Phân tích Real-time", "📊 Thống kê Benchmark", "📈 Đánh giá chuyên sâu"])
+    tabs = st.tabs(["🔍 Phân tích Real-time", "📊 Thống kê Benchmark", "📈 Đánh giá chuyên sâu", "📚 Tài liệu & Notebooks"])
 
     with tabs[0]:
         input_text = SAMPLE_TEXTS[selected_sample] if selected_sample != "Tự nhập" else ""
@@ -1056,6 +1084,9 @@ def main():
 
     with tabs[2]:
         render_evaluation_tab()
+
+    with tabs[3]:
+        render_resources_tab()
 
     hien_thi_footer_chung(is_dark=is_dark)
 
