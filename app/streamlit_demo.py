@@ -51,7 +51,7 @@ MODEL_CONFIGS = {
     },
     "Gemma-4-4B": {
         "type": "gemma",
-        "base_repo": "unsloth/gemma-4b-it", 
+        "base_repo": "unsloth/gemma-4-E4B-it", 
         "repo_id": "quynhphuong1209/gemma-4-E4B-unsloth-vaccine-xai", 
         "description": "LLM Reasoning Engine (Local LoRA)"
     }
