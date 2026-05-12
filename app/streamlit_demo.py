@@ -50,8 +50,10 @@ MODEL_CONFIGS = {
         "type": "xlm-roberta"
     },
     "Gemma-4-4B": {
+        "type": "gemma_api",
+        "base_repo": "google/gemma-1.1-2b-it",
         "repo_id": "quynhphuong1209/gemma-4-E4B-unsloth-vaccine-xai", 
-        "type": "gemma_api" # Chuyển sang dùng API để cứu RAM
+        "description": "LLM Reasoning Engine (Hugging Face API)"
     }
 }
 
