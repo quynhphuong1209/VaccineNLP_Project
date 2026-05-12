@@ -215,39 +215,30 @@ def load_model(model_key="PhoBERT-v2"):
         return None, None, False
 
 def query_gemma_api(prompt, repo_id, token):
-    """Calls Hugging Face Inference API with robust error handling."""
-    import requests
+    """Calls Hugging Face Inference API using the official client."""
+    from huggingface_hub import InferenceClient
     if not token:
         return "❌ Lỗi: Chưa cấu hình HF_TOKEN trong Streamlit Secrets."
         
-    API_URL = f"https://api-inference.huggingface.co/models/{repo_id}"
-    headers = {"Authorization": f"Bearer {token}"}
-    payload = {"inputs": prompt, "parameters": {"max_new_tokens": 512, "temperature": 0.7}}
-    
     try:
-        response = requests.post(API_URL, headers=headers, json=payload, timeout=30)
+        client = InferenceClient(model=repo_id, token=token)
+        # Sử dụng text_generation thay vì post thủ công
+        response = client.text_generation(prompt, max_new_tokens=250, temperature=0.7)
         
-        # Nếu đang nạp mô hình (503)
-        if response.status_code == 503:
-            return "⏳ Mô hình đang khởi động trên Hugging Face. Vui lòng thử lại sau 30 giây."
-            
-        # Kiểm tra nếu không phải 200
-        if response.status_code != 200:
-            return f"❌ Lỗi API (Status {response.status_code}): {response.text[:100]}"
-            
-        # Kiểm tra nếu phản hồi không phải JSON
-        if "application/json" not in response.headers.get("Content-Type", ""):
-            return f"❌ Lỗi: Server trả về định dạng không phải JSON ({response.headers.get('Content-Type')})"
-
-        result = response.json()
-        if isinstance(result, list) and len(result) > 0:
-            return result[0].get("generated_text", "Không có phản hồi từ API.")
-        if isinstance(result, dict) and "error" in result:
-            return f"Hugging Face Error: {result['error']}"
-        return str(result)
+        if not response:
+            return "Không có phản hồi từ mô hình."
+        return response
         
     except Exception as e:
-        return f"❌ Lỗi kết nối API: {str(e)}"
+        # Tự động thử với mô hình dự phòng google/gemma nếu mô hình chính lỗi
+        if "404" in str(e) or "401" in str(e):
+            if repo_id != "google/gemma-1.1-2b-it":
+                try:
+                    client_fb = InferenceClient(model="google/gemma-1.1-2b-it", token=token)
+                    return client_fb.text_generation(prompt, max_new_tokens=250, temperature=0.7)
+                except Exception as e2:
+                    return f"❌ Lỗi API (Thử cả bản gốc vẫn lỗi): {str(e2)}"
+        return f"❌ Lỗi API: {str(e)}"
 
 @st.cache_data
 def load_xai_cache():
