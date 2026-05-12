@@ -16,8 +16,6 @@ import time
 import os
 import sys
 from pathlib import Path
-from transformers import AutoModel, AutoConfig, AutoTokenizer, AutoModelForCausalLM
-from peft import PeftModel
 from underthesea import word_tokenize
 import logging
 
@@ -116,6 +114,7 @@ class VaccineMultitaskModel(nn.Module):
     def __init__(self, model_name="vinai/phobert-base-v2",
                  num_misinfo=3, num_stance=4, num_sentiment=3, token=None):
         super(VaccineMultitaskModel, self).__init__()
+        from transformers import AutoConfig, AutoModel
         self.config = AutoConfig.from_pretrained(model_name, token=token, trust_remote_code=True)
         self.encoder = AutoModel.from_pretrained(model_name, token=token, trust_remote_code=True)
 
@@ -145,6 +144,9 @@ class VaccineMultitaskModel(nn.Module):
 @st.cache_resource
 def load_model(model_key="PhoBERT-v2"):
     """Load selected multitask model + tokenizer (cached)."""
+    from transformers import AutoModel, AutoConfig, AutoTokenizer, AutoModelForCausalLM
+    from peft import PeftModel
+    
     cfg = MODEL_CONFIGS[model_key]
     checkpoint_loaded = False
     
@@ -163,7 +165,8 @@ def load_model(model_key="PhoBERT-v2"):
     try:
         if cfg["type"] == "gemma":
             # Load Gemma as a CausalLM with Peft adapter from Hugging Face
-            from transformers import AutoModelForCausalLM
+            from transformers import AutoModelForCausalLM, AutoTokenizer
+            from peft import PeftModel
             base_model = AutoModelForCausalLM.from_pretrained(
                 cfg["repo_id"], 
                 token=hf_token, 
@@ -177,6 +180,7 @@ def load_model(model_key="PhoBERT-v2"):
         else:
             # Load custom multitask model from Hugging Face (downloads best_model.pt automatically)
             from huggingface_hub import hf_hub_download
+            from transformers import AutoTokenizer
             model_path = hf_hub_download(repo_id=cfg["repo_id"], filename="best_model.pt", token=hf_token)
             
             tokenizer = AutoTokenizer.from_pretrained(cfg["base_repo"], token=hf_token, trust_remote_code=True)
