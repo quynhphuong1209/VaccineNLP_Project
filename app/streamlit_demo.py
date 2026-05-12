@@ -152,17 +152,28 @@ class VaccineMultitaskModel(nn.Module):
 # ─────────────────────────────────────────────────────────────
 # CACHED RESOURCE LOADERS
 # ─────────────────────────────────────────────────────────────
-@st.cache_resource
 def load_model(model_key="PhoBERT-v2"):
-    """Load selected multitask model + tokenizer (cached)."""
-    from transformers import AutoModel, AutoConfig, AutoTokenizer, AutoModelForCausalLM
-    from peft import PeftModel
+    """Load selected multitask model + tokenizer (on-demand to save RAM)."""
+    import gc
     
-    cfg = MODEL_CONFIGS[model_key]
-    checkpoint_loaded = False
-    
-    # Tự động chọn repo_id: Ưu tiên local nếu có, nếu không dùng Cloud
-    repo_id = cfg["repo_id"]
+    # 1. Kiểm tra xem mô hình này đã được nạp chưa
+    if "current_model_key" in st.session_state and st.session_state.current_model_key == model_key:
+        if "model" in st.session_state and "tokenizer" in st.session_state:
+            return st.session_state.model, st.session_state.tokenizer, st.session_state.get("checkpoint_loaded", True)
+
+    # 2. Xóa mô hình cũ khỏi RAM
+    with st.spinner(f"Đang giải phóng RAM và nạp {model_key}..."):
+        if "model" in st.session_state:
+            del st.session_state.model
+        if "tokenizer" in st.session_state:
+            del st.session_state.tokenizer
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+            
+        cfg = MODEL_CONFIGS[model_key]
+        checkpoint_loaded = False
+        repo_id = cfg["repo_id"]
     if "local_repo" in cfg:
         local_path = Path(cfg["local_repo"])
         if local_path.exists():
