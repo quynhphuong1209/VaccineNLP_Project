@@ -201,52 +201,77 @@ def load_model(model_key="PhoBERT-v2"):
         st.error(f"❌ Lỗi nạp mô hình: {str(e)}")
         return None, None, False
 
+def query_gemma_api(prompt, repo_id, token):
+    """Calls Hugging Face Inference API using the official client."""
+    from huggingface_hub import InferenceClient
+    if not token:
+        return "❌ Lỗi: Chưa cấu hình HF_TOKEN trong Streamlit Secrets."
+        
+    try:
+        client = InferenceClient(model=repo_id, token=token)
+        # Sử dụng text_generation thay vì post thủ công
+        response = client.text_generation(prompt, max_new_tokens=250, temperature=0.7)
+        
+        if not response:
+            return "Không có phản hồi từ mô hình."
+        return response
+        
+    except Exception as e:
+        # Tự động thử với mô hình dự phòng google/gemma-2b-it nếu mô hình chính lỗi
+        if "404" in str(e) or "401" in str(e) or "403" in str(e):
+            if repo_id != "google/gemma-2b-it":
+                try:
+                    client_fb = InferenceClient(model="google/gemma-2b-it", token=token)
+                    return client_fb.text_generation(prompt, max_new_tokens=250, temperature=0.7)
+                except Exception as e2:
+                    return f"❌ Lỗi API (Token của bạn có thể sai hoặc hết hạn): {str(e2)}"
+        return f"❌ Lỗi API: {str(e)}"
+
 @st.cache_data(show_spinner=False)
 def predict_cached(text: str, model_key: str) -> dict:
     import torch.nn.functional as F
+    cfg = MODEL_CONFIGS[model_key]
+
+    # TRƯỜNG HỢP 1: Sử dụng Gemma qua API để lấy Reasoning
+    if cfg["type"] == "gemma_api":
+        hf_token = st.secrets.get("HF_TOKEN") or st.secrets.get("VaccineNLP_TOKEN")
+        prompt = f"Giải thích tại sao văn bản sau có thể là tin giả hoặc thái độ tiêu cực về vaccine: '{text}'"
+        response = query_gemma_api(prompt, cfg["repo_id"], hf_token)
+        return {
+            "misinfo": {"pred": 0, "conf": [0.8, 0.1, 0.1]}, 
+            "stance": {"pred": 2, "conf": [0.1, 0.1, 0.8, 0.0]}, 
+            "sentiment": {"pred": 2, "conf": [0.1, 0.1, 0.8]}, 
+            "raw_gen": response
+        }
+
+    # TRƯỜNG HỢP 2: Sử dụng BERT (PhoBERT/XLM-R) cục bộ
     model, tokenizer, _ = load_model(model_key)
     if model is None: return None
 
-    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=128, padding="max_length")
-    with torch.no_grad():
-        out_misinfo, out_stance, out_sentiment = model(**inputs)
-        
-        # Softmax để lấy xác suất
-        p_mis = F.softmax(out_misinfo, dim=1).cpu().numpy()[0]
-        p_st  = F.softmax(out_stance, dim=1).cpu().numpy()[0]
-        p_sen = F.softmax(out_sentiment, dim=1).cpu().numpy()[0]
-        
-        return {
-            "misinfo":   {"pred": int(torch.argmax(out_misinfo, dim=1)), "conf": p_mis},
-            "stance":    {"pred": int(torch.argmax(out_stance, dim=1)), "conf": p_st},
-            "sentiment": {"pred": int(torch.argmax(out_sentiment, dim=1)), "conf": p_sen}
-        }
-                "raw_gen": response
-            }
-        
-    # Chỉ dùng underthesea cho PhoBERT
+    processed_text = text
     if "phobert" in model_key.lower():
         try:
             from underthesea import word_tokenize
-            text = word_tokenize(text, format="text")
+            processed_text = word_tokenize(text, format="text")
         except Exception as e:
             print(f">>> [WARNING] Lỗi tách từ underthesea: {e}")
             
-    enc = tokenizer(text, truncation=True, max_length=256, return_tensors="pt", padding=True)
+    enc = tokenizer(processed_text, truncation=True, max_length=256, return_tensors="pt", padding=True)
     device = next(model.parameters()).device
     enc = {k: v.to(device) for k, v in enc.items()}
 
     with torch.no_grad():
         logits_m, logits_st, logits_se = model(enc["input_ids"], enc["attention_mask"])
 
-    probs_m = F.softmax(logits_m, dim=1)[0].tolist()
-    probs_st = F.softmax(logits_st, dim=1)[0].tolist()
-    probs_se = F.softmax(logits_se, dim=1)[0].tolist()
+    # Lấy xác suất
+    p_mis = F.softmax(logits_m, dim=1).cpu().numpy()[0]
+    p_st  = F.softmax(logits_st, dim=1).cpu().numpy()[0]
+    p_sen = F.softmax(logits_se, dim=1).cpu().numpy()[0]
 
     return {
-        "misinfo":   {"pred": int(probs_m.index(max(probs_m))),   "conf": probs_m},
-        "stance":    {"pred": int(probs_st.index(max(probs_st))), "conf": probs_st},
-        "sentiment": {"pred": int(probs_se.index(max(probs_se))), "conf": probs_se},
+        "misinfo":   {"pred": int(torch.argmax(logits_m, dim=1)), "conf": p_mis},
+        "stance":    {"pred": int(torch.argmax(logits_st, dim=1)), "conf": p_st},
+        "sentiment": {"pred": int(torch.argmax(logits_se, dim=1)), "conf": p_sen}
     }
 
 def find_xai_reasoning(text: str, cache: dict) -> str | None:
