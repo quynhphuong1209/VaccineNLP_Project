@@ -208,21 +208,31 @@ def load_xai_cache():
     return {}
 
 def find_xai_reasoning(text: str, cache: dict) -> str | None:
-    """Look up XAI reasoning with normalized whitespace matching."""
+    """Look up XAI reasoning with ultra-robust alphanumeric normalization."""
     if not text or not cache:
         return None
     
-    # Chuẩn hóa văn bản đầu vào (xóa khoảng trắng thừa, xuống dòng)
-    input_norm = " ".join(text.split())
+    import re
+    def normalize(t):
+        # Chuyển về chữ thường và chỉ giữ lại ký tự chữ và số
+        return re.sub(r'[^a-z0-9àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]', '', t.lower())
     
-    # Thử tìm kiếm chính xác trước
+    input_norm = normalize(text)
+    
+    # 1. Thử tìm kiếm chính xác trước
     if text.strip() in cache:
         return cache[text.strip()]
         
-    # Nếu không thấy, thử tìm kiếm theo nội dung đã chuẩn hóa
+    # 2. Thử tìm kiếm theo nội dung đã chuẩn hóa (bỏ qua dấu câu, emoji, xuống dòng)
     for k, v in cache.items():
-        if " ".join(k.split()) == input_norm:
+        if normalize(k) == input_norm:
             return v
+            
+    # 3. Thử tìm kiếm mờ (nếu đầu văn bản khớp)
+    for k, v in cache.items():
+        if input_norm.startswith(normalize(k)[:100]) or normalize(k).startswith(input_norm[:100]):
+            return v
+            
     return None
 
 def query_gemma_api(prompt, token):
@@ -232,18 +242,20 @@ def query_gemma_api(prompt, token):
         return "❌ Lỗi: Chưa cấu hình HF_TOKEN trong Streamlit Secrets."
         
     try:
-        # Sử dụng mô hình fine-tuned của bạn
+        # Sử dụng mô hình fine-tuned chính
         client = InferenceClient(model=XAI_MODEL_REPO, token=token)
         response = client.text_generation(prompt, max_new_tokens=300, temperature=0.7)
         return response
     except Exception as e:
         error_msg = str(e)
-        # Dự phòng mô hình gốc nếu lỗi
+        # Dự phòng mô hình Mistral-7B (rất ổn định với text-generation)
         try:
-            client_fb = InferenceClient(model="google/gemma-2b-it", token=token)
-            return client_fb.text_generation(prompt, max_new_tokens=300, temperature=0.7)
+            client_fb = InferenceClient(model="mistralai/Mistral-7B-Instruct-v0.3", token=token)
+            # Format prompt theo Mistral
+            mistral_prompt = f"<s>[INST] {prompt} [/INST]"
+            return client_fb.text_generation(mistral_prompt, max_new_tokens=300, temperature=0.7)
         except Exception as fallback_e:
-            return f"❌ Lỗi API: {error_msg} (Fallback cũng lỗi: {str(fallback_e)})"
+            return f"❌ Lỗi API: {error_msg} (Dự phòng cũng lỗi: {str(fallback_e)})"
 
 @st.cache_data(show_spinner=False)
 def predict_cached(text: str, model_key: str) -> dict:
