@@ -51,6 +51,9 @@ MODEL_CONFIGS = {
     }
 }
 
+# Mô hình mặc định cho hệ thống giải thích (XAI Engine)
+XAI_MODEL_REPO = "quynhphuong1209/gemma-4-E4B-unsloth-vaccine-xai"
+
 # ─────────────────────────────────────────────────────────────
 # LABEL TAXONOMY (matches trained checkpoint)
 # ─────────────────────────────────────────────────────────────
@@ -208,6 +211,25 @@ def find_xai_reasoning(text: str, cache: dict) -> str | None:
     """Look up XAI reasoning by exact text match."""
     return cache.get(text)
 
+def query_gemma_api(prompt, token):
+    """Calls Hugging Face Inference API for dynamic reasoning."""
+    from huggingface_hub import InferenceClient
+    if not token:
+        return "❌ Lỗi: Chưa cấu hình HF_TOKEN trong Streamlit Secrets."
+        
+    try:
+        # Sử dụng mô hình fine-tuned của bạn
+        client = InferenceClient(model=XAI_MODEL_REPO, token=token)
+        response = client.text_generation(prompt, max_new_tokens=300, temperature=0.7)
+        return response
+    except Exception as e:
+        # Dự phòng mô hình gốc nếu lỗi
+        try:
+            client_fb = InferenceClient(model="google/gemma-2b-it", token=token)
+            return client_fb.text_generation(prompt, max_new_tokens=300, temperature=0.7)
+        except:
+            return f"❌ Lỗi API: {str(e)}"
+
 @st.cache_data(show_spinner=False)
 def predict_cached(text: str, model_key: str) -> dict:
     import torch.nn.functional as F
@@ -234,38 +256,20 @@ def predict_cached(text: str, model_key: str) -> dict:
     p_st  = F.softmax(logits_st, dim=1).cpu().numpy()[0]
     p_sen = F.softmax(logits_se, dim=1).cpu().numpy()[0]
 
-    return {
-        "misinfo":   {"pred": int(torch.argmax(logits_m, dim=1)), "conf": p_mis},
-        "stance":    {"pred": int(torch.argmax(logits_st, dim=1)), "conf": p_st},
-        "sentiment": {"pred": int(torch.argmax(logits_se, dim=1)), "conf": p_sen}
-    }
-    model, tokenizer, _ = load_model(model_key)
-    if model is None: return None
-
-    processed_text = text
-    if "phobert" in model_key.lower():
-        try:
-            from underthesea import word_tokenize
-            processed_text = word_tokenize(text, format="text")
-        except Exception as e:
-            print(f">>> [WARNING] Lỗi tách từ underthesea: {e}")
-            
-    enc = tokenizer(processed_text, truncation=True, max_length=256, return_tensors="pt", padding=True)
-    device = next(model.parameters()).device
-    enc = {k: v.to(device) for k, v in enc.items()}
-
-    with torch.no_grad():
-        logits_m, logits_st, logits_se = model(enc["input_ids"], enc["attention_mask"])
-
-    # Lấy xác suất
-    p_mis = F.softmax(logits_m, dim=1).cpu().numpy()[0]
-    p_st  = F.softmax(logits_st, dim=1).cpu().numpy()[0]
-    p_sen = F.softmax(logits_se, dim=1).cpu().numpy()[0]
+    # Tra cứu giải thích (Ưu tiên cache -> Sau đó gọi Gemma API)
+    xai_cache = load_xai_cache()
+    reasoning = xai_cache.get(text.strip())
+    
+    if not reasoning:
+        hf_token = st.secrets.get("HF_TOKEN") or st.secrets.get("VaccineNLP_TOKEN")
+        prompt = f"Phân tích lý do tại sao văn bản sau có thể liên quan đến tin giả hoặc thái độ tiêu cực về vắc-xin: '{text}'"
+        reasoning = query_gemma_api(prompt, hf_token)
 
     return {
         "misinfo":   {"pred": int(torch.argmax(logits_m, dim=1)), "conf": p_mis},
         "stance":    {"pred": int(torch.argmax(logits_st, dim=1)), "conf": p_st},
-        "sentiment": {"pred": int(torch.argmax(logits_se, dim=1)), "conf": p_sen}
+        "sentiment": {"pred": int(torch.argmax(logits_se, dim=1)), "conf": p_sen},
+        "reasoning": reasoning
     }
 
 def find_xai_reasoning(text: str, cache: dict) -> str | None:
@@ -817,7 +821,8 @@ def main():
     """, unsafe_allow_html=True)
 
     model, tokenizer, checkpoint_loaded = load_model(model_selection)
-    xai_cache = load_xai_cache()
+    
+    # Ở phiên bản mới, reasoning được lấy trực tiếp từ hàm predict_cached
 
     # Kiểm tra sẵn sàng: Với gemma_api thì model sẽ None nhưng vẫn OK
     is_api = MODEL_CONFIGS[model_selection]["type"] == "gemma_api"
@@ -862,13 +867,9 @@ def main():
 
         if analyze_btn and user_text.strip():
             with st.spinner(f"🧠 {model_selection} đang xử lý..."):
+                # Thực hiện dự đoán và lấy cả nhãn lẫn lời giải thích
                 result = predict_cached(user_text.strip(), model_selection)
-                
-                # Lấy Reasoning từ kết quả (Nếu là Gemma API thì nó nằm trong raw_gen)
-                if result and "raw_gen" in result:
-                    reasoning = result["raw_gen"]
-                else:
-                    reasoning = find_xai_reasoning(user_text.strip(), xai_cache)
+                reasoning = result.get("reasoning") if result else None
                 
                 # Lưu vào session state
                 st.session_state.last_result = {
@@ -897,8 +898,9 @@ def main():
                 if reasoning:
                     st.markdown("<br>", unsafe_allow_html=True)
                     st.markdown("##### 🧠 Hệ thống Giải thích (XAI Engine)")
-                    with st.expander("📖 Xem giải thích chi tiết", expanded=True):
+                    with st.expander("📖 Xem giải thích chi tiết từ Gemma-4 XAI Engine", expanded=True):
                         st.markdown(f"<div style='border-left: 3px solid #007bff; padding-left: 20px; color: {text_color}; opacity: 0.9;'>{reasoning}</div>", unsafe_allow_html=True)
+                        st.caption("💡 Giải thích được tạo tự động bởi mô hình Gemma-4 Reasoning Engine.")
                 else:
                     st.info("💡 Lý luận XAI không khả dụng cho văn bản này. Hãy chọn mẫu từ thanh bên.")
         elif analyze_btn:
