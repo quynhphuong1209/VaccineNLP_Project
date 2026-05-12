@@ -18,13 +18,11 @@ import sys
 from pathlib import Path
 from underthesea import word_tokenize
 import logging
-import torch
-import torch.nn as nn
 import os
 import gc
-from transformers import AutoModel, AutoConfig, AutoTokenizer, AutoModelForCausalLM
-from peft import PeftModel
-from huggingface_hub import hf_hub_download
+import json
+import torch
+import torch.nn as nn
 
 # Ẩn các cảnh báo
 logging.getLogger("transformers").setLevel(logging.ERROR)
@@ -122,6 +120,7 @@ class VaccineMultitaskModel(nn.Module):
 
     def __init__(self, model_name="vinai/phobert-base-v2",
                  num_misinfo=3, num_stance=4, num_sentiment=3, token=None):
+        from transformers import AutoConfig, AutoModel
         super(VaccineMultitaskModel, self).__init__()
         import transformers
         AutoConfig = transformers.AutoConfig
@@ -163,7 +162,17 @@ class VaccineMultitaskModel(nn.Module):
 # ─────────────────────────────────────────────────────────────
 @st.cache_resource(max_entries=1)
 def load_model(model_key="PhoBERT-v2"):
-    """Load selected model with automatic RAM eviction (max_entries=1)."""
+    """Load selected model with extreme RAM protection."""
+    import time
+    import gc
+    from transformers import AutoModel, AutoConfig, AutoTokenizer, AutoModelForCausalLM
+    from peft import PeftModel
+    from huggingface_hub import hf_hub_download
+    
+    # Ép dọn RAM và đợi 2 giây để hệ thống ổn định
+    gc.collect()
+    time.sleep(2)
+    
     cfg = MODEL_CONFIGS[model_key]
     checkpoint_loaded = False
     hf_token = st.secrets.get("HF_TOKEN") or os.environ.get("HF_TOKEN") or st.secrets.get("VaccineNLP_TOKEN")
@@ -188,10 +197,17 @@ def load_model(model_key="PhoBERT-v2"):
             state = torch.load(model_path, map_location="cpu", weights_only=False)
             new_state = { (k.replace("head_", "heads.") if k.startswith("head_") and "heads." not in k else k): v for k, v in state.items() }
             model.load_state_dict(new_state, strict=False)
+            
+            # Giải phóng biến tạm ngay lập tức
+            del state
+            del new_state
+            
+            # Ép mô hình về float16 để tiết kiệm 50% RAM
+            model = model.half() 
             checkpoint_loaded = True
             
         model.eval()
-        gc.collect() # Dọn RAM ngay sau khi nạp xong
+        gc.collect() 
         return model, tokenizer, checkpoint_loaded
         
     except Exception as e:
@@ -232,6 +248,8 @@ def load_xai_cache():
 @st.cache_data(show_spinner=False)
 def predict_cached(text: str, model_key: str) -> dict:
     """Phiên bản cache của hàm predict để tăng tốc độ phân tích văn bản lặp lại."""
+    import torch.nn.functional as F
+    
     model, tokenizer, _ = load_model(model_key)
     if model is None:
         return None
