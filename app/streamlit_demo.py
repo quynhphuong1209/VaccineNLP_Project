@@ -1748,9 +1748,11 @@ def main():
                     if url_input:
                         import requests
                         from bs4 import BeautifulSoup
+                        import urllib3
+                        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
                         try:
                             headers = {'User-Agent': 'Mozilla/5.0'}
-                            res = requests.get(url_input, headers=headers, timeout=10)
+                            res = requests.get(url_input, headers=headers, timeout=10, verify=False)
                             res.encoding = 'utf-8'
                             soup = BeautifulSoup(res.text, 'html.parser')
                             paragraphs = soup.find_all('p')
