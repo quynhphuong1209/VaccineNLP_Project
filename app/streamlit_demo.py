@@ -1606,11 +1606,8 @@ def main():
     </div>
     """, unsafe_allow_html=True)
 
-    tabs = st.tabs(["🔍 PHÂN TÍCH VĂN BẢN", "🌐 QUÉT TIN TỨC (URL)", "📊 THỐNG KÊ BENCHMARK", "📈 ĐÁNH GIÁ CHUYÊN SÂU", "📚 TÀI LIỆU & NOTEBOOKS", "📜 PHƯƠNG PHÁP LUẬN", "📑 ĐỀ CƯƠNG"])
+    tabs = st.tabs(["🔍 PHÂN TÍCH VĂN BẢN", "📊 THỐNG KÊ BENCHMARK", "📈 ĐÁNH GIÁ CHUYÊN SÂU", "📚 TÀI LIỆU & NOTEBOOKS", "📜 PHƯƠNG PHÁP LUẬN", "📑 ĐỀ CƯƠNG"])
     
-    with tabs[1]:
-        render_news_scraper()
-
     with tabs[0]:
         # Nếu chọn Tự nhập, hiển thị thêm bộ quét URL ngay tại đây
         if selected_sample == "Tự nhập":
@@ -1618,6 +1615,7 @@ def main():
             with st.expander("🔗 Gợi ý link báo chí để thử nghiệm (Nhấn để copy)"):
                 st.code("https://vnexpress.net/hon-15-7-trieu-tre-em-da-duoc-tiem-chung-mo-rong-4740150.html")
                 st.code("https://tuoitre.vn/tiem-chung-mo-rong-nhieu-loai-vac-xin-da-co-tro-lai-2024010315362592.htm")
+                st.code("https://moh.gov.vn/chuong-trinh-muc-tieu-quoc-gia/-/asset_publisher/7NG96ezYsl75/content/tiem-chung-mo-rong-la-bien-phap-quan-trong-nhat-e-phong-benh-truyen-nhiem")
             
             sc_col1, sc_col2 = st.columns([4, 1])
             with sc_col1:
@@ -1744,19 +1742,19 @@ def main():
                 else:
                     st.info("💡 Lý luận XAI không khả dụng.")
 
-    with tabs[2]:
+    with tabs[1]:
         render_benchmark_tab()
 
-    with tabs[3]:
+    with tabs[2]:
         render_evaluation_tab()
 
-    with tabs[4]:
+    with tabs[3]:
         render_resources_tab()
 
-    with tabs[5]:
+    with tabs[4]:
         render_methodology_tab()
 
-    with tabs[6]:
+    with tabs[5]:
         render_thesis_outline_tab()
 
     hien_thi_footer_chung(is_dark=is_dark)
