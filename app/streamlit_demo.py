@@ -1365,6 +1365,23 @@ def main():
             opacity: 1 !important;
         }}
 
+        /* Fix Text Input & TextArea theme adaptation (URL & Content) */
+        div[data-testid="stTextInput"] input, 
+        div[data-testid="stTextArea"] textarea {{
+            background-color: {"#112240" if is_dark else "#ffffff"} !important;
+            color: {"#64ffda" if is_dark else "#000000"} !important;
+            border: 1px solid {"rgba(100, 255, 218, 0.2)" if is_dark else "#ced4da"} !important;
+            border-radius: 10px !important;
+            padding: 10px 15px !important;
+        }}
+        
+        /* Focus state for inputs */
+        div[data-testid="stTextInput"] input:focus, 
+        div[data-testid="stTextArea"] textarea:focus {{
+            border-color: #64ffda !important;
+            box-shadow: 0 0 0 2px {"rgba(100, 255, 218, 0.2)" if is_dark else "rgba(0, 123, 255, 0.1)"} !important;
+        }}
+
         div[data-testid="stButton"] button:first-child:hover {{
             background: {"rgba(100, 255, 218, 0.1)" if is_dark else "rgba(0, 86, 179, 0.1)"} !important;
             box-shadow: 0 0 20px {"rgba(100, 255, 218, 0.4)" if is_dark else "rgba(0, 86, 179, 0.4)"} !important;
