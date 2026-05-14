@@ -43,3 +43,6 @@ uvicorn
 streamlit
 plotly
 gTTS
+beautifulsoup4
+requests
+wordcloud

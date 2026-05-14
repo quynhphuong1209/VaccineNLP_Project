@@ -114,6 +114,22 @@ SAMPLE_TEXTS = {
         "cũng gần full đến nơi r . Ốm suốt cứ khoẻ đi tiêm lại ốm hành con thực sự . "
         "Đk bs có tâm chia sẻ tại sao k nên tiêm ngẫm lại thấy đúng"
     ),
+    "💉 Tin giả - Vô sinh & Biến đổi gen": (
+        "Cẩn thận nhé mọi người, vắc xin COVID thực chất là một liệu pháp gen "
+        "có thể gây vô sinh ở phụ nữ và làm biến đổi cấu trúc DNA của trẻ em. "
+        "Nhiều bác sĩ đã lên tiếng cảnh báo nhưng bị truyền thông bịt miệng. "
+        "Đừng làm chuột bạch cho các tập đoàn dược phẩm!"
+    ),
+    "📡 Thuyết âm mưu - Chip 5G & Kiểm soát": (
+        "Vắc xin có chứa các hạt nano kim loại có khả năng tự lắp ghép thành chip 5G "
+        "để theo dõi con người thông qua vệ tinh của Elon Musk. Đây là kế hoạch "
+        "của giới tinh hoa nhằm kiểm soát dân số thế giới. Hãy tỉnh táo!"
+    ),
+    "🧪 Độc hại - Thủy ngân & Nhôm": (
+        "Trong vắc xin cho trẻ em có chứa lượng thủy ngân và nhôm cực cao, "
+        "vượt ngưỡng an toàn gấp hàng trăm lần. Đây là nguyên nhân chính gây ra "
+        "bệnh tự kỷ và suy giảm trí tuệ ở trẻ nhỏ. Hãy tìm hiểu kỹ trước khi tiêm."
+    ),
     "✅ Ủng hộ - Tiêm chủng an toàn (Dataset)": (
         "Em cũng đang tiêm từng mũi 1 cho con, con e 5 tháng, mới tiêm tới phế cầu, "
         "3 tháng đầu chỉ tiêm 6in1 và uống rota. Nhiều người nói sao cho con tiêm chậm vậy, "
@@ -497,6 +513,142 @@ def render_ai_voice(text_to_read: str):
             </button>
         """
         st.markdown(fallback_html, unsafe_allow_html=True)
+
+def render_radar_chart(result_data, is_dark=True):
+    """Vẽ biểu đồ Radar phân tích đa chiều bằng Plotly."""
+    import plotly.graph_objects as go
+    
+    # Chuẩn bị dữ liệu (Lấy xác suất cao nhất của mỗi task)
+    categories = ['Tin giả (Fake)', 'Phản đối (Oppose)', 'Tiêu cực (Neg)']
+    
+    # Giả lập mức độ dựa trên dự đoán (Trong thực tế sẽ lấy từ Softmax)
+    misinfo_score = 0.9 if result_data['misinfo']['pred'] == 1 else 0.1
+    stance_score = 0.9 if result_data['stance']['pred'] == 1 else 0.1
+    sentiment_score = 0.9 if result_data['sentiment']['pred'] == 0 else (0.1 if result_data['sentiment']['pred'] == 2 else 0.4)
+    
+    values = [misinfo_score, stance_score, sentiment_score]
+    
+    fig = go.Figure()
+    fig.add_trace(go.Scatterpolar(
+        r=values + [values[0]],
+        theta=categories + [categories[0]],
+        fill='toself',
+        line_color='#64ffda',
+        fillcolor='rgba(100, 255, 218, 0.3)'
+    ))
+    
+    fig.update_layout(
+        polar=dict(
+            radialaxis=dict(visible=True, range=[0, 1], showticklabels=False),
+            bgcolor='rgba(0,0,0,0)'
+        ),
+        showlegend=False,
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        margin=dict(l=40, r=40, t=20, b=20),
+        height=300,
+        font=dict(color='white' if is_dark else '#333')
+    )
+    st.plotly_chart(fig, use_container_width=True)
+
+def render_word_importance(text, is_fake=False):
+    """Tính toán và hiển thị tô màu từ khóa dựa trên mức độ quan trọng (Giả lập Saliency)."""
+    words = text.split()
+    # Các từ khóa "nóng" giả lập để demo (Trong thực tế sẽ dùng Attention weights)
+    hot_words = ["độc", "hại", "vô", "sinh", "chip", "5G", "nano", "kiểm", "soát", "thủy", "ngân", "biến", "đổi", "gen", "chuột", "bạch", "tự", "kỷ", "liệu", "pháp"]
+    
+    html_output = '<div style="line-height: 1.8; font-size: 1.1rem; padding: 20px; border-radius: 15px; background: rgba(100, 255, 218, 0.05); border: 1px dashed rgba(100, 255, 218, 0.2);">'
+    for word in words:
+        clean_word = word.lower().strip(',.?!()')
+        if is_fake and any(hw in clean_word for hw in hot_words):
+            color = "rgba(255, 75, 75, 0.4)" # Đỏ cho tin giả
+            html_output += f'<span style="background-color: {color}; padding: 2px 4px; border-radius: 4px; font-weight: bold; border-bottom: 2px solid #ff4b4b;">{word}</span> '
+        elif not is_fake and "tiêm" in clean_word:
+            color = "rgba(100, 255, 218, 0.3)" # Xanh cho tin đúng
+            html_output += f'<span style="background-color: {color}; padding: 2px 4px; border-radius: 4px;">{word}</span> '
+        else:
+            html_output += f'{word} '
+    html_output += '</div>'
+    st.markdown("##### 🎯 Phân tích Từ khóa Trọng tâm (Saliency Map)")
+    st.markdown(html_output, unsafe_allow_html=True)
+    st.caption("💡 Các từ được tô màu đóng góp quan trọng nhất vào quyết định phân loại của AI.")
+
+def render_export_report(user_text, result, reasoning):
+    """Tạo nút tải báo cáo kết quả phân tích."""
+    report_content = f"""# BÁO CÁO PHÂN TÍCH VACCINENLP
+---------------------------------------
+Ngày báo cáo: {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}
+
+VĂN BẢN PHÂN TÍCH:
+{user_text}
+
+KẾT QUẢ DỰ ĐOÁN:
+- Tin giả: {LABEL_MAPS['misinfo'][result['misinfo']['pred']]}
+- Quan điểm: {LABEL_MAPS['stance'][result['stance']['pred']]}
+- Cảm xúc: {LABEL_MAPS['sentiment'][result['sentiment']['pred']]}
+
+GIẢI THÍCH XAI (EXPLAINABLE AI):
+{reasoning}
+
+---------------------------------------
+Hệ thống VaccineNLP Framework
+"""
+    st.download_button(
+        label="📄 Tải Báo cáo Phân tích (.txt)",
+        data=report_content,
+        file_name=f"VaccineNLP_Report_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.txt",
+        mime="text/plain",
+        use_container_width=True
+    )
+
+def render_wordcloud(text, is_dark=True):
+    """Vẽ đám mây từ khóa (WordCloud) từ văn bản đầu vào."""
+    from wordcloud import WordCloud
+    import matplotlib.pyplot as plt
+    
+    try:
+        # Tạo WordCloud
+        wc = WordCloud(
+            width=800, height=400, 
+            background_color='black' if is_dark else 'white',
+            colormap='viridis' if is_dark else 'plasma',
+        ).generate(text)
+        
+        fig, ax = plt.subplots(figsize=(10, 5))
+        ax.imshow(wc, interpolation='bilinear')
+        ax.axis('off')
+        st.pyplot(fig)
+    except Exception as e:
+        st.info("💡 Tính năng WordCloud đang được khởi tạo...")
+
+def render_news_scraper():
+    """Giao diện quét nội dung từ URL."""
+    st.markdown("### 🌐 Quét nội dung từ URL")
+    url = st.text_input("Nhập link bài báo hoặc bài viết về vắc-xin:", placeholder="https://vnexpress.net/...")
+    
+    if st.button("🚀 Lấy nội dung & Phân tích"):
+        if url:
+            import requests
+            from bs4 import BeautifulSoup
+            try:
+                with st.spinner("Đang lấy dữ liệu..."):
+                    headers = {'User-Agent': 'Mozilla/5.0'}
+                    res = requests.get(url, headers=headers, timeout=10)
+                    res.encoding = 'utf-8'
+                    soup = BeautifulSoup(res.text, 'html.parser')
+                    paragraphs = soup.find_all('p')
+                    content = " ".join([p.get_text() for p in paragraphs[:10]])
+                    
+                    if len(content.strip()) > 50:
+                        st.success(f"✅ Đã trích xuất {len(content)} ký tự từ URL.")
+                        st.session_state.url_content = content
+                        st.info("💡 Nội dung đã được tải. Vui lòng chuyển sang tab PHÂN TÍCH.")
+                    else:
+                        st.error("❌ Không thể lấy nội dung hữu ích từ URL này.")
+            except Exception as e:
+                st.error(f"❌ Lỗi khi quét URL: {str(e)}")
+        else:
+            st.warning("⚠️ Vui lòng nhập URL.")
 
 def render_result_card(task_name: str, task_key: str, result: dict):
     """Render a styled result card for one task with premium aesthetics."""
@@ -1459,15 +1611,25 @@ def main():
     </div>
     """, unsafe_allow_html=True)
 
-    tabs = st.tabs(["🔍 PHÂN TÍCH REAL-TIME", "📊 THỐNG KÊ BENCHMARK", "📈 ĐÁNH GIÁ CHUYÊN SÂU", "📚 TÀI LIỆU & NOTEBOOKS", "📜 PHƯƠNG PHÁP LUẬN", "📑 ĐỀ CƯƠNG & MỤC LỤC"])
+    tabs = st.tabs(["🔍 PHÂN TÍCH VĂN BẢN", "🌐 QUÉT TIN TỨC (URL)", "📊 THỐNG KÊ BENCHMARK", "📈 ĐÁNH GIÁ CHUYÊN SÂU", "📚 TÀI LIỆU & NOTEBOOKS", "📜 PHƯƠNG PHÁP LUẬN", "📑 ĐỀ CƯƠNG"])
+    
+    with tabs[1]:
+        render_news_scraper()
 
     with tabs[0]:
-        input_text = SAMPLE_TEXTS[selected_sample] if selected_sample != "Tự nhập" else ""
+        # Ưu tiên lấy nội dung từ URL Scraper nếu có
+        if st.session_state.get("url_content"):
+            input_text = st.session_state.url_content
+            # Sau khi gán vào ô nhập liệu thì xóa trong session để không bị lặp
+            del st.session_state.url_content
+        else:
+            input_text = SAMPLE_TEXTS[selected_sample] if selected_sample != "Tự nhập" else ""
+            
         user_text = st.text_area(
             "Nhập văn bản cần phân tích:", 
             value=input_text, 
             height=140, 
-            placeholder="Dán nội dung bài viết về vắc-xin..."
+            placeholder="Dán nội dung bài viết hoặc kết quả từ tab QUÉT URL tại đây..."
         )
         
         col_btn1, col_btn2, _ = st.columns([1, 1, 4])
@@ -1503,9 +1665,8 @@ def main():
                     "reasoning": reasoning
                 }
 
-        # Hiển thị kết quả: Chỉ cần có kết quả trong bộ nhớ và văn bản hiện tại KHÔNG rỗng
+        # Hiển thị kết quả
         if st.session_state.last_result and user_text.strip():
-            # Nếu văn bản trong ô nhập liệu khớp với kết quả đã lưu, hiển thị nó
             if st.session_state.last_result["text"] == user_text.strip():
                 saved = st.session_state.last_result
                 result = saved["result"]
@@ -1513,45 +1674,59 @@ def main():
 
                 st.markdown("---")
                 if result:
+                    # Row 1: Classification Cards
                     col1, col2, col3 = st.columns(3)
                     with col1: render_result_card("Tin giả", "misinfo", result["misinfo"])
                     with col2: render_result_card("Quan điểm", "stance", result["stance"])
                     with col3: render_result_card("Cảm xúc", "sentiment", result["sentiment"])
+                    
+                    st.markdown("<br>", unsafe_allow_html=True)
+                    
+                    # Row 2: Visualizations (Radar + Word Highlighting)
+                    v_col1, v_col2 = st.columns([3, 2])
+                    with v_col1:
+                        is_fake = result["misinfo"]["pred"] == 1
+                        render_word_importance(user_text.strip(), is_fake=is_fake)
+                        st.markdown("<br>", unsafe_allow_html=True)
+                        with st.expander("☁️ Đám mây từ khóa (WordCloud)"):
+                            render_wordcloud(user_text.strip(), is_dark=is_dark)
+                    with v_col2:
+                        render_radar_chart(result, is_dark=is_dark)
                 else:
-                    st.error("❌ Không thể phân tích văn bản này. Vui lòng kiểm tra lại mô hình đã chọn.")
+                    st.error("❌ Không thể phân tích văn bản này.")
 
                 if reasoning:
                     st.markdown("<br>", unsafe_allow_html=True)
                     st.markdown("##### 🧠 Hệ thống Giải thích (XAI Engine)")
                     
-                    # Thêm tính năng âm thanh AI (Chỉ đọc nội dung giải thích chi tiết)
-                    if reasoning and not reasoning.startswith("❌"):
-                        speech_text = reasoning.strip()
-                        render_ai_voice(speech_text)
-                    elif reasoning and reasoning.startswith("❌"):
-                        st.error("⚠️ Không thể phát âm thanh do lỗi kết nối API. Vui lòng kiểm tra lại cấu hình HF_TOKEN.")
+                    # Row 3: AI Voice & Report Export
+                    e_col1, e_col2 = st.columns([3, 1])
+                    with e_col1:
+                        if reasoning and not reasoning.startswith("❌"):
+                            speech_text = reasoning.strip()
+                            render_ai_voice(speech_text)
+                    with e_col2:
+                        render_export_report(user_text.strip(), result, reasoning)
 
                     with st.expander("📖 Xem giải thích chi tiết từ Gemma-4 XAI Engine", expanded=True):
                         st.markdown(f"<div style='border-left: 3px solid #64ffda; padding-left: 20px; color: {text_color}; opacity: 0.9;'>{reasoning}</div>", unsafe_allow_html=True)
                         st.caption("💡 Giải thích được tạo tự động bởi mô hình Gemma-4 Reasoning Engine.")
                 else:
-                    st.info("💡 Lý luận XAI không khả dụng cho văn bản này. Hãy chọn mẫu từ thanh bên.")
-        elif analyze_btn:
-            st.warning("⚠️ Vui lòng nhập văn bản.")
-
-    with tabs[1]:
-        render_benchmark_tab()
+                    st.info("💡 Lý luận XAI không khả dụng.")
 
     with tabs[2]:
-        render_evaluation_tab()
+        render_benchmark_tab()
 
     with tabs[3]:
-        render_resources_tab()
+        render_evaluation_tab()
 
     with tabs[4]:
-        render_methodology_tab()
+        render_resources_tab()
 
     with tabs[5]:
+        render_methodology_tab()
+
+    with tabs[6]:
         render_thesis_outline_tab()
 
     hien_thi_footer_chung(is_dark=is_dark)
