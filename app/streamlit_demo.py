@@ -1919,22 +1919,27 @@ def main():
                 
                 if st.session_state.get(f"run_{case['id']}", False):
                     with st.spinner(f"🤖 {model_selection} đang bóc tách ngôn ngữ..."):
-                        # LOAD MODEL THẬT VÀ PREDICT
+                        # SỬ DỤNG HÀM DỰ ĐOÁN CÓ SẴN TRONG CODE
                         try:
-                            model_data = load_model(model_selection)
-                            if model_data:
-                                model, tokenizer, device = model_data
-                                results = predict_multitask(case['text'], model, tokenizer, device)
+                            result = predict_cached(case['text'], model_selection)
+                            
+                            if result:
+                                # Trích xuất nhãn từ LABEL_MAPS
+                                m_id = result['misinfo']['pred']
+                                st_id = result['stance']['pred']
+                                se_id = result['sentiment']['pred']
                                 
-                                # Trích xuất kết quả thật
-                                misinfo_label = results['Misinformation']['label']
-                                stance_label = results['Stance']['label']
-                                sentiment_label = results['Sentiment']['label']
-                                confidence = results['Misinformation']['confidence']
+                                misinfo_label = LABEL_MAPS['misinfo'][m_id]
+                                stance_label = LABEL_MAPS['stance'][st_id]
+                                sentiment_label = LABEL_MAPS['sentiment'][se_id]
+                                confidence = max(result['misinfo']['conf'])
                                 
-                                # Xác định màu sắc cho badge
-                                m_color = "#ff4b4b" if "Tin giả" in misinfo_label else "#00c853"
-                                st_color = "#ffa500" if "Phản đối" in stance_label else "#00d2ff"
+                                # Lấy màu sắc từ LABEL_COLORS
+                                m_color = LABEL_COLORS['misinfo'][m_id]
+                                st_color = LABEL_COLORS['stance'][st_id]
+                                
+                                # Lấy giải thích (Reasoning) đã có sẵn trong kết quả
+                                reasoning = result.get("reasoning", "Đang cập nhật giải thích...")
                                 
                                 st.markdown(f"""
                                 <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px;">
@@ -1945,13 +1950,13 @@ def main():
                                 </div>
                                 """, unsafe_allow_html=True)
                                 
-                                # Gọi Gemma để giải thích (XAI)
+                                # Hiển thị giải thích từ Gemma
                                 with st.expander("📖 Xem giải thích từ Gemma-4 XAI Engine", expanded=True):
-                                    # Sử dụng hàm generate_xai_reasoning hiện có
-                                    reasoning = generate_xai_reasoning(case['text'], {"Misinformation": misinfo_label, "Stance": stance_label, "Sentiment": sentiment_label})
-                                    st.markdown(f"<div style='border-left: 3px solid #64ffda; padding-left: 15px; font-size: 0.9em; color: #eee;'>{reasoning}</div>", unsafe_allow_html=True)
+                                    st.markdown(f"<div style='border-left: 3px solid #64ffda; padding-left: 15px; font-size: 0.9em; color: {text_color}; opacity: 0.9;'>{reasoning}</div>", unsafe_allow_html=True)
                                 
                                 st.progress(confidence, text=f"Độ tin cậy của mô hình {model_selection}")
+                            else:
+                                st.error("Không nhận được kết quả từ mô hình.")
                         except Exception as e:
                             st.error(f"Lỗi khi chạy mô hình: {e}")
                 
