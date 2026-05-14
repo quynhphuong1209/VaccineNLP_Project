@@ -425,83 +425,78 @@ Trường Đại học Y tế Công Cộng<br>
     st.markdown(footer_html, unsafe_allow_html=True)
 
 def render_ai_voice(text_to_read: str):
-    """Sử dụng Web Speech API để đọc văn bản tiếng Việt trực tiếp từ trình duyệt."""
+    """Sử dụng gTTS để tạo giọng đọc Google chuẩn và nhúng dưới dạng Base64."""
     if not text_to_read:
         return
         
-    # Làm sạch văn bản để đọc mượt hơn
-    clean_text = text_to_read.replace('"', "'").replace('\n', ' ')
-    
-    html_code = f"""
-    <div style="margin-top: 10px;">
-        <button id="speak-btn" style="
-            background: linear-gradient(135deg, #64ffda 0%, #48c6ef 100%);
-            color: #0a192f;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 30px;
-            font-weight: bold;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            box-shadow: 0 4px 15px rgba(100, 255, 218, 0.3);
-            transition: all 0.3s ease;
-        " onclick="speak()">
-            <span style="font-size: 1.2rem;">🔊</span> Nghe AI Đọc Kết Quả
-        </button>
-    </div>
-
-    <script>
-        function speak() {{
-            const btn = document.getElementById('speak-btn');
-            const text = "{clean_text}";
-            
-            // Sử dụng Engine của Google Dịch trực tiếp
-            const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${{encodeURIComponent(text)}}&tl=vi&client=tw-ob`;
-            
-            let audio = document.getElementById('google-tts-audio');
-            if (!audio) {{
-                audio = document.createElement('audio');
-                audio.id = 'google-tts-audio';
-                document.body.appendChild(audio);
-            }}
-            
-            if (!audio.paused) {{
-                audio.pause();
-                btn.innerHTML = '<span style="font-size: 1.2rem;">🔊</span> Nghe AI Đọc Kết Quả';
-                return;
-            }}
-            
-            audio.src = url;
-            audio.onplay = () => {{
-                btn.innerHTML = '<span style="font-size: 1.2rem;">⏹️</span> Đang đọc (Giọng Google chuẩn)...';
-                btn.style.background = 'linear-gradient(135deg, #00c853 0%, #b2ff59 100%)';
-            }};
-            
-            audio.onended = () => {{
-                btn.innerHTML = '<span style="font-size: 1.2rem;">🔊</span> Nghe AI Đọc Lại';
-                btn.style.background = 'linear-gradient(135deg, #64ffda 0%, #48c6ef 100%)';
-            }};
-            
-            audio.onerror = () => {{
-                // Fallback nếu Google chặn truy cập trực tiếp (hiếm gặp với client=tw-ob)
-                alert("Không thể tải giọng đọc từ Google. Đang chuyển sang giọng đọc dự phòng...");
-                window.speechSynthesis.speak(new SpeechSynthesisUtterance(text));
-            }};
-            
-            audio.play().catch(e => {{
-                console.error("Audio play failed:", e);
-                // Fallback
-                const fallbackMsg = new SpeechSynthesisUtterance(text);
-                fallbackMsg.lang = 'vi-VN';
-                window.speechSynthesis.speak(fallbackMsg);
-            }});
-        }}
-    </script>
-    """
-    import streamlit.components.v1 as components
-    components.html(html_code, height=60)
+    import base64
+    from io import BytesIO
+    try:
+        from gtts import gTTS
+        
+        # Tạo âm thanh từ Google TTS
+        tts = gTTS(text=text_to_read, lang='vi')
+        fp = BytesIO()
+        tts.write_to_fp(fp)
+        fp.seek(0)
+        
+        # Mã hóa sang Base64 để nhúng trực tiếp vào HTML
+        audio_b64 = base64.b64encode(fp.read()).decode()
+        audio_html = f"""
+            <div style="margin-top: 10px;">
+                <audio id="google-tts-audio" src="data:audio/mp3;base64,{audio_b64}"></audio>
+                <button id="speak-btn" style="
+                    background: linear-gradient(135deg, #00c853 0%, #b2ff59 100%);
+                    color: #0a192f;
+                    border: none;
+                    padding: 10px 20px;
+                    border-radius: 30px;
+                    font-weight: bold;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    box-shadow: 0 4px 15px rgba(0, 200, 83, 0.3);
+                    transition: all 0.3s ease;
+                " onclick="togglePlay()">
+                    <span style="font-size: 1.2rem;">🔊</span> Nghe Chị Google Giải Thích
+                </button>
+            </div>
+            <script>
+                function togglePlay() {{
+                    const audio = document.getElementById('google-tts-audio');
+                    const btn = document.getElementById('speak-btn');
+                    if (audio.paused) {{
+                        audio.play();
+                        btn.innerHTML = '<span style="font-size: 1.2rem;">⏹️</span> Đang đọc (Giọng Google chuẩn)...';
+                        btn.style.background = 'linear-gradient(135deg, #ff4b4b 0%, #ff8f8f 100%)';
+                    }} else {{
+                        audio.pause();
+                        audio.currentTime = 0;
+                        btn.innerHTML = '<span style="font-size: 1.2rem;">🔊</span> Nghe Chị Google Giải Thích';
+                        btn.style.background = 'linear-gradient(135deg, #00c853 0%, #b2ff59 100%)';
+                    }}
+                    audio.onended = () => {{
+                        btn.innerHTML = '<span style="font-size: 1.2rem;">🔊</span> Nghe Lại';
+                        btn.style.background = 'linear-gradient(135deg, #00c853 0%, #b2ff59 100%)';
+                    }};
+                }}
+            </script>
+        """
+        import streamlit.components.v1 as components
+        components.html(audio_html, height=65)
+        
+    except Exception as e:
+        st.warning("💡 Đang khởi tạo bộ đọc âm thanh... (Nếu lỗi kéo dài, vui lòng cài đặt 'gTTS')")
+        # Fallback sang Web Speech API nếu gTTS chưa sẵn sàng
+        clean_text = text_to_read.replace('"', "'").replace('\n', ' ')
+        fallback_html = f"""
+            <button onclick="window.speechSynthesis.speak(new SpeechSynthesisUtterance('{clean_text}'))" 
+                    style="padding:10px; border-radius:20px; cursor:pointer;">
+                🔊 Phân tích âm thanh (Dự phòng)
+            </button>
+        """
+        st.markdown(fallback_html, unsafe_allow_html=True)
 
 def render_result_card(task_name: str, task_key: str, result: dict):
     """Render a styled result card for one task with premium aesthetics."""
