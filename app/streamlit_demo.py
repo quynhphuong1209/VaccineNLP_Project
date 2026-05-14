@@ -1612,27 +1612,62 @@ def main():
         render_news_scraper()
 
     with tabs[0]:
-        # Ưu tiên lấy nội dung từ URL Scraper nếu có
-        if st.session_state.get("url_content"):
-            input_text = st.session_state.url_content
-            # Sau khi gán vào ô nhập liệu thì xóa trong session để không bị lặp
-            del st.session_state.url_content
+        # Nếu chọn Tự nhập, hiển thị thêm bộ quét URL ngay tại đây
+        if selected_sample == "Tự nhập":
+            st.markdown("##### 🌐 Nhập nhanh từ URL hoặc Tự viết")
+            with st.expander("🔗 Gợi ý link báo chí để thử nghiệm (Nhấn để copy)"):
+                st.code("https://vnexpress.net/hon-15-7-trieu-tre-em-da-duoc-tiem-chung-mo-rong-4740150.html")
+                st.code("https://tuoitre.vn/tiem-chung-mo-rong-nhieu-loai-vac-xin-da-co-tro-lai-2024010315362592.htm")
+            
+            sc_col1, sc_col2 = st.columns([4, 1])
+            with sc_col1:
+                url_input = st.text_input("Dán link báo chí vào đây:", placeholder="https://...", key="tab0_url")
+            with sc_col2:
+                st.write("<div style='height: 28px;'></div>", unsafe_allow_html=True)
+                if st.button("🚀 Lấy tin", use_container_width=True):
+                    if url_input:
+                        import requests
+                        from bs4 import BeautifulSoup
+                        try:
+                            headers = {'User-Agent': 'Mozilla/5.0'}
+                            res = requests.get(url_input, headers=headers, timeout=10)
+                            res.encoding = 'utf-8'
+                            soup = BeautifulSoup(res.text, 'html.parser')
+                            paragraphs = soup.find_all('p')
+                            scraped_text = " ".join([p.get_text() for p in paragraphs[:10]])
+                            if len(scraped_text.strip()) > 50:
+                                st.session_state.scraped_temp = scraped_text
+                                st.success("✅ Đã lấy nội dung!")
+                            else:
+                                st.error("❌ Link không có nội dung.")
+                        except Exception as e:
+                            st.error(f"❌ Lỗi: {str(e)}")
+
+        # Lấy nội dung hiển thị
+        if st.session_state.get("scraped_temp"):
+            input_text = st.session_state.scraped_temp
+            # Giữ lại trong session để người dùng có thể chỉnh sửa tiếp
         else:
             input_text = SAMPLE_TEXTS[selected_sample] if selected_sample != "Tự nhập" else ""
             
         user_text = st.text_area(
-            "Nhập văn bản cần phân tích:", 
+            "Nội dung phân tích:", 
             value=input_text, 
-            height=140, 
-            placeholder="Dán nội dung bài viết hoặc kết quả từ tab QUÉT URL tại đây..."
+            height=160, 
+            placeholder="Nhập hoặc dán văn bản bài viết tại đây..."
         )
         
+        # Nếu người dùng gõ phím trực tiếp vào text_area, chúng ta xóa scraped_temp để đồng bộ
+        if st.session_state.get("scraped_temp") and user_text != st.session_state.scraped_temp:
+             st.session_state.scraped_temp = user_text
+
         col_btn1, col_btn2, _ = st.columns([1, 1, 4])
         with col_btn1:
-            analyze_btn = st.button("🔍 Phân tích", width='stretch')
+            analyze_btn = st.button("🔍 Bắt đầu Phân tích", width='stretch', type="primary")
         with col_btn2:
-            if st.button("🗑️ Reset", width='stretch'):
+            if st.button("🗑️ Làm mới", width='stretch'):
                 st.session_state.last_result = None
+                st.session_state.scraped_temp = ""
                 st.rerun()
         
         # Nút cứu cánh nếu cache bị kẹt lỗi
