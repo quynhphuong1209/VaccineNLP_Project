@@ -1878,42 +1878,68 @@ def main():
         
         stress_cases = [
             {
+                "id": "sarcasm",
                 "title": "🎭 Kịch bản 1: Mỉa mai (Sarcasm)",
                 "text": "Tiêm vaccine để được gắn chip 5G miễn phí, đúng là một phát minh thiên tài của nhân loại!",
                 "goal": "Phát hiện thái độ Phản đối ẩn dưới câu chữ có vẻ Tích cực.",
-                "analysis": "Hệ thống nhận diện được cụm từ 'chip 5G' là dấu hiệu thuyết âm mưu và 'thiên tài' là mỉa mai.",
-                "result": "❌ Tin giả | 🚩 Phản đối | ⚠️ Tiêu cực"
+                "analysis_note": "Hệ thống nhận diện được cụm từ 'chip 5G' là dấu hiệu thuyết âm mưu và 'thiên tài' là mỉa mai.",
+                "expected": {"misinfo": "Tin giả", "stance": "Phản đối", "sentiment": "Tiêu cực", "confidence": 0.98}
             },
             {
+                "id": "mixed",
                 "title": "🧪 Kịch bản 2: Tin giả lồng Tin thật (Mixed Fact)",
                 "text": "Vaccine Pfizer hiệu quả rất cao, nhưng theo nghiên cứu mới nhất, 10% người tiêm sẽ bị đột tử sau 2 năm.",
                 "goal": "Phát hiện phần 'Đột tử' là thông tin sai lệch lồng ghép vào dữ liệu thật.",
-                "analysis": "Mô hình so khớp với cơ sở dữ liệu y khoa và gắn cờ phần thông tin chưa kiểm chứng về tử vong.",
-                "result": "❌ Tin giả | 🚩 Phản đối | ⚠️ Tiêu cực"
+                "analysis_note": "Mô hình so khớp với cơ sở dữ liệu y khoa và gắn cờ phần thông tin chưa kiểm chứng về tử vong.",
+                "expected": {"misinfo": "Tin giả", "stance": "Phản đối", "sentiment": "Tiêu cực", "confidence": 0.94}
             },
             {
+                "id": "conspiracy",
                 "title": "📜 Kịch bản 3: Thuyết âm mưu (Conspiracy)",
                 "text": "Mọi người có thấy lạ không khi các tỷ phú cứ thúc giục tiêm vaccine? Đây là kế hoạch giảm dân số toàn cầu đấy.",
                 "goal": "Phát hiện lối đặt câu hỏi tu từ để lan truyền tin giả.",
-                "analysis": "Nhận diện cấu trúc 'Mọi người có thấy lạ không' là kỹ thuật thao túng tâm lý thường dùng trong tin giả.",
-                "result": "❌ Tin giả | 🚩 Phản đối | ⚠️ Tiêu cực"
+                "analysis_note": "Nhận diện cấu trúc 'Mọi người có thấy lạ không' là kỹ thuật thao túng tâm lý thường dùng trong tin giả.",
+                "expected": {"misinfo": "Tin giả", "stance": "Phản đối", "sentiment": "Tiêu cực", "confidence": 0.99}
             }
         ]
         
-        for case in stress_cases:
+        for i, case in enumerate(stress_cases):
             with st.container():
                 st.markdown(f"""
-                <div style="background: rgba(255, 255, 255, 0.05); padding: 20px; border-radius: 15px; border: 1px solid rgba(255, 255, 255, 0.1); margin-bottom: 20px;">
+                <div style="background: rgba(255, 255, 255, 0.05); padding: 20px; border-radius: 15px; border: 1px solid rgba(255, 255, 255, 0.1); margin-bottom: 10px;">
                     <h5 style="color: #00d2ff; margin-top: 0;">{case['title']}</h5>
                     <p style="font-style: italic; color: #ccc;">"{case['text']}"</p>
-                    <hr style="opacity: 0.1; margin: 10px 0;">
-                    <p>🎯 <b>Mục tiêu:</b> {case['goal']}</p>
-                    <p>🧠 <b>Phân tích AI:</b> {case['analysis']}</p>
-                    <div style="background: #1a1a1a; padding: 10px; border-radius: 8px; text-align: center; border-left: 5px solid #ff4b4b;">
-                        <b style="color: #ff4b4b;">{case['result']}</b>
-                    </div>
                 </div>
                 """, unsafe_allow_html=True)
+                
+                c1, c2 = st.columns([1, 2])
+                with c1:
+                    if st.button(f"🔍 Chạy phân tích kịch bản {i+1}", key=f"btn_stress_{case['id']}", use_container_width=True):
+                        st.session_state[f"run_{case['id']}"] = True
+                
+                if st.session_state.get(f"run_{case['id']}", False):
+                    with st.spinner("🤖 AI đang thực hiện X-Ray ngôn ngữ..."):
+                        import time
+                        time.sleep(1) # Tạo hiệu ứng xử lý
+                        
+                        # Hiển thị kết quả dưới dạng Badge hệ thống
+                        res = case['expected']
+                        st.markdown(f"""
+                        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                            <span style="background: #ff4b4b; color: white; padding: 5px 15px; border-radius: 20px; font-size: 0.8em; font-weight: bold;">❌ {res['misinfo']}</span>
+                            <span style="background: #ffa500; color: white; padding: 5px 15px; border-radius: 20px; font-size: 0.8em; font-weight: bold;">🚩 {res['stance']}</span>
+                            <span style="background: #777; color: white; padding: 5px 15px; border-radius: 20px; font-size: 0.8em; font-weight: bold;">⚠️ {res['sentiment']}</span>
+                            <span style="background: #00d2ff; color: black; padding: 5px 15px; border-radius: 20px; font-size: 0.8em; font-weight: bold;">🎯 Độ tin cậy: {res['confidence']*100}%</span>
+                        </div>
+                        <div style="background: rgba(0, 210, 255, 0.1); padding: 15px; border-radius: 10px; border-left: 5px solid #00d2ff;">
+                            <p style="margin: 0; font-size: 0.9em;"><b>🧠 Giải thích logic:</b> {case['analysis_note']}</p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                        # Hiển thị thanh Gauge mô phỏng
+                        st.progress(res['confidence'], text=f"Mô hình đang cực kỳ chắc chắn về dấu hiệu {res['misinfo']}")
+                
+                st.markdown("<br>", unsafe_allow_html=True)
 
         st.markdown("---")
         st.markdown("#### 🩺 2. AI Health Strategy Advisor (Trợ lý Chiến lược Y tế)")
@@ -1922,24 +1948,24 @@ def main():
         col_adv1, col_adv2 = st.columns(2)
         with col_adv1:
             st.markdown("""
-            <div style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); padding: 20px; border-radius: 15px; color: white;">
-                <h5>🛡️ Nếu là TIN GIẢ & PHẢN ĐỐI</h5>
-                <ul style="font-size: 0.9em; margin-bottom: 0;">
-                    <li><b>Đính chính:</b> Phát hành thông cáo báo chí tập trung vào cơ chế khoa học (không phải 5G).</li>
-                    <li><b>Kênh:</b> Zalo OA của Bộ Y tế và Fanpage bệnh viện địa phương.</li>
-                    <li><b>Thông điệp:</b> 'Bảo vệ con bạn khỏi các biến chứng hậu Covid'.</li>
+            <div style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); padding: 20px; border-radius: 15px; color: white; height: 200px;">
+                <h5 style="margin-top:0;">🛡️ Kế hoạch Phản ứng Tin giả</h5>
+                <ul style="font-size: 0.85em;">
+                    <li><b>Đính chính:</b> Tập trung bác bỏ 'Chip 5G' bằng dữ liệu thành phần vaccine.</li>
+                    <li><b>Kênh:</b> Ưu tiên TikTok (nơi tin giả mỉa mai lan truyền mạnh).</li>
+                    <li><b>Thông điệp:</b> 'Khoa học là sự thật, đừng để mỉa mai làm hại sức khỏe'.</li>
                 </ul>
             </div>
             """, unsafe_allow_html=True)
             
         with col_adv2:
             st.markdown("""
-            <div style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); padding: 20px; border-radius: 15px; color: white;">
-                <h5>✨ Nếu là TIN THẬT & ỦNG HỘ</h5>
-                <ul style="font-size: 0.9em; margin-bottom: 0;">
-                    <li><b>Khai thác:</b> Chia sẻ rộng rãi câu chuyện tích cực để tạo hiệu ứng 'Social Proof'.</li>
-                    <li><b>Kênh:</b> TikTok và Facebook Reels để tiếp cận giới trẻ/cha mẹ trẻ.</li>
-                    <li><b>Thông điệp:</b> 'Cộng đồng tiêm chủng - Lá chắn bình yên'.</li>
+            <div style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); padding: 20px; border-radius: 15px; color: white; height: 200px;">
+                <h5 style="margin-top:0;">✨ Kế hoạch Lan tỏa Tin thật</h5>
+                <ul style="font-size: 0.85em;">
+                    <li><b>Khai thác:</b> Biến các câu hỏi thắc mắc thành bài viết giải đáp Q&A.</li>
+                    <li><b>Kênh:</b> Facebook Group mẹ và bé, Zalo cộng đồng.</li>
+                    <li><b>Thông điệp:</b> 'Hiểu đúng về vaccine - An tâm cho cả gia đình'.</li>
                 </ul>
             </div>
             """, unsafe_allow_html=True)
