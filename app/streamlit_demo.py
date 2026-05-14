@@ -1731,9 +1731,9 @@ def main():
         if selected_sample == "Tự nhập":
             st.markdown("##### 🌐 Nhập nhanh từ URL hoặc Tự viết")
             urls = [
-                "https://moh.gov.vn/tin-lien-quan/-/asset_publisher/vU0799vYfI9e/content/canh-bao-gia-mao-van-ban-cua-bo-y-te-ve-viec-kiem-tra-cac-co-so-san-xuat-kinh-doanh-thuc-pham",
-                "https://vtv.vn/suc-khoe/canh-bao-tin-gia-ve-vac-xin-phong-covid-19-tren-mang-xa-hoi-20210714154247844.htm",
-                "https://tuoitre.vn/tin-gia-ve-vac-xin-nan-nhan-la-nguoi-dan-20210719225726214.htm"
+                "https://www.vietnamplus.vn/nhan-dien-va-xu-ly-tin-gia-xuyen-tac-ve-tiem-chung-vaccine-phong-covid19/726667.vnp",
+                "https://thanhnien.vn/canh-bao-tin-gia-ve-tiem-chung-vaccine-covid-19-1851086435.htm",
+                "https://suckhoedoisong.vn/tin-gia-ve-vaccine-covid-19-hiem-hoa-khon-luong-169210720235544777.htm"
             ]
             
             for url in urls:
