@@ -1914,30 +1914,48 @@ def main():
                 
                 c1, c2 = st.columns([1, 2])
                 with c1:
-                    if st.button(f"🔍 Chạy phân tích kịch bản {i+1}", key=f"btn_stress_{case['id']}", use_container_width=True):
+                    if st.button(f"🚀 Phân tích bằng {selected_model_name}", key=f"btn_stress_{case['id']}", use_container_width=True):
                         st.session_state[f"run_{case['id']}"] = True
                 
                 if st.session_state.get(f"run_{case['id']}", False):
-                    with st.spinner("🤖 AI đang thực hiện X-Ray ngôn ngữ..."):
-                        import time
-                        time.sleep(1) # Tạo hiệu ứng xử lý
-                        
-                        # Hiển thị kết quả dưới dạng Badge hệ thống
-                        res = case['expected']
-                        st.markdown(f"""
-                        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                            <span style="background: #ff4b4b; color: white; padding: 5px 15px; border-radius: 20px; font-size: 0.8em; font-weight: bold;">❌ {res['misinfo']}</span>
-                            <span style="background: #ffa500; color: white; padding: 5px 15px; border-radius: 20px; font-size: 0.8em; font-weight: bold;">🚩 {res['stance']}</span>
-                            <span style="background: #777; color: white; padding: 5px 15px; border-radius: 20px; font-size: 0.8em; font-weight: bold;">⚠️ {res['sentiment']}</span>
-                            <span style="background: #00d2ff; color: black; padding: 5px 15px; border-radius: 20px; font-size: 0.8em; font-weight: bold;">🎯 Độ tin cậy: {res['confidence']*100}%</span>
-                        </div>
-                        <div style="background: rgba(0, 210, 255, 0.1); padding: 15px; border-radius: 10px; border-left: 5px solid #00d2ff;">
-                            <p style="margin: 0; font-size: 0.9em;"><b>🧠 Giải thích logic:</b> {case['analysis_note']}</p>
-                        </div>
-                        """, unsafe_allow_html=True)
-                        
-                        # Hiển thị thanh Gauge mô phỏng
-                        st.progress(res['confidence'], text=f"Mô hình đang cực kỳ chắc chắn về dấu hiệu {res['misinfo']}")
+                    with st.spinner(f"🤖 {selected_model_name} đang bóc tách ngôn ngữ..."):
+                        # LOAD MODEL THẬT VÀ PREDICT
+                        try:
+                            model_data = load_model(selected_model_name)
+                            if model_data:
+                                model, tokenizer, device = model_data
+                                results = predict_multitask(case['text'], model, tokenizer, device)
+                                
+                                # Trích xuất kết quả thật
+                                misinfo_label = results['Misinformation']['label']
+                                stance_label = results['Stance']['label']
+                                sentiment_label = results['Sentiment']['label']
+                                confidence = results['Misinformation']['confidence']
+                                
+                                # Xác định màu sắc cho badge
+                                m_color = "#ff4b4b" if "Tin giả" in misinfo_label else "#00c853"
+                                st_color = "#ffa500" if "Phản đối" in stance_label else "#00d2ff"
+                                
+                                st.markdown(f"""
+                                <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px;">
+                                    <span style="background: {m_color}; color: white; padding: 5px 15px; border-radius: 20px; font-size: 0.8em; font-weight: bold;">🔍 {misinfo_label}</span>
+                                    <span style="background: {st_color}; color: white; padding: 5px 15px; border-radius: 20px; font-size: 0.8em; font-weight: bold;">🚩 {stance_label}</span>
+                                    <span style="background: #777; color: white; padding: 5px 15px; border-radius: 20px; font-size: 0.8em; font-weight: bold;">🎭 {sentiment_label}</span>
+                                    <span style="background: #f1f1f1; color: black; padding: 5px 15px; border-radius: 20px; font-size: 0.8em; font-weight: bold;">🎯 Confidence: {confidence*100:.1f}%</span>
+                                </div>
+                                """, unsafe_allow_html=True)
+                                
+                                # Gọi Gemma để giải thích (XAI)
+                                with st.expander("📖 Xem giải thích từ Gemma-4 XAI Engine", expanded=True):
+                                    # Sử dụng hàm generate_xai_reasoning hiện có
+                                    reasoning = generate_xai_reasoning(case['text'], {"Misinformation": misinfo_label, "Stance": stance_label, "Sentiment": sentiment_label})
+                                    st.markdown(f"<div style='border-left: 3px solid #64ffda; padding-left: 15px; font-size: 0.9em; color: #eee;'>{reasoning}</div>", unsafe_allow_html=True)
+                                
+                                st.progress(confidence, text=f"Độ tin cậy của mô hình {selected_model_name}")
+                        except Exception as e:
+                            st.error(f"Lỗi khi chạy mô hình: {e}")
+                
+                st.markdown("<br>", unsafe_allow_html=True)
                 
                 st.markdown("<br>", unsafe_allow_html=True)
 
