@@ -1840,10 +1840,33 @@ def main():
             color: #007bff !important;
             text-decoration: none;
         }}
-        /* HIỂN THỊ HỆ THỐNG STREAMLIT */
+        /* HIỂN THỊ VÀ TẠO KIỂU NÚT HỆ THỐNG (GIỐNG ẢNH 2) */
         header {{visibility: visible !important;}}
         footer {{visibility: visible !important;}}
         #MainMenu {{visibility: visible !important;}}
+        
+        [data-testid="stToolbar"] {{
+            right: 2rem !important;
+            top: 0.5rem !important;
+        }}
+        
+        [data-testid="stToolbar"] button {{
+            border: 1px solid {"rgba(255, 255, 255, 0.2)" if is_dark else "rgba(0, 0, 0, 0.2)"} !important;
+            border-radius: 10px !important;
+            background: {"rgba(255, 255, 255, 0.05)" if is_dark else "rgba(0, 0, 0, 0.05)"} !important;
+            margin-left: 8px !important;
+            padding: 2px 12px !important;
+            transition: all 0.3s ease !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }}
+        
+        [data-testid="stToolbar"] button:hover {{
+            background: {"rgba(100, 255, 218, 0.1)" if is_dark else "rgba(0, 123, 255, 0.1)"} !important;
+            border-color: #64ffda !important;
+            transform: translateY(-1px);
+        }}
         
         /* CƯỠNG CHẾ GIAO DIỆN ĐỘC LẬP (INDEPENDENT THEME) */
         .stApp {{
