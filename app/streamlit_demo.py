@@ -460,12 +460,32 @@ def render_ai_voice(text_to_read: str):
             
             const msg = new SpeechSynthesisUtterance();
             msg.text = "{clean_text}";
-            msg.lang = 'vi-VN';
-            msg.rate = 1.0;
+            
+            // Tìm giọng đọc tiếng Việt tối ưu nhất
+            let voices = window.speechSynthesis.getVoices();
+            
+            // Hàm chọn giọng
+            const selectVoice = () => {{
+                voices = window.speechSynthesis.getVoices();
+                const viVoice = voices.find(v => v.lang.includes('vi-VN') || v.lang.includes('vi_VN') || v.name.toLowerCase().includes('vietnamese'));
+                if (viVoice) {{
+                    msg.voice = viVoice;
+                }} else {{
+                    msg.lang = 'vi-VN';
+                }}
+            }};
+
+            if (voices.length === 0) {{
+                window.speechSynthesis.onvoiceschanged = selectVoice;
+            }} else {{
+                selectVoice();
+            }}
+            
+            msg.rate = 0.9; // Đọc chậm lại một chút để rõ tiếng Việt hơn
             msg.pitch = 1.0;
             
             msg.onstart = () => {{
-                btn.innerHTML = '<span style="font-size: 1.2rem;">⏹️</span> Đang đọc... (Click để dừng)';
+                btn.innerHTML = '<span style="font-size: 1.2rem;">⏹️</span> Đang đọc tiếng Việt...';
                 btn.style.background = 'linear-gradient(135deg, #ff4b4b 0%, #ff8f8f 100%)';
             }};
             
@@ -476,6 +496,9 @@ def render_ai_voice(text_to_read: str):
             
             window.speechSynthesis.speak(msg);
         }}
+        
+        // Nạp sẵn danh sách giọng đọc
+        window.speechSynthesis.getVoices();
     </script>
     """
     import streamlit.components.v1 as components
