@@ -804,8 +804,14 @@ def render_benchmark_tab():
     is_dark = st.session_state.get("theme", "Dark") == "Dark"
     chart_font_color = "#e2e4e9" if is_dark else "#000000"
     
-    st.markdown("### 📊 Thống kê Hiệu năng Benchmark (Dynamic Analytics)")
-    st.info("💡 Hệ thống đang thực hiện đánh giá thực nghiệm trên Gold Test Set (186 mẫu) để trích xuất các chỉ số F1-Score.")
+    # CUSTOM INFO BOX (Thay thế cho st.info)
+    info_bg = "rgba(100, 255, 218, 0.1)" if is_dark else "rgba(0, 123, 255, 0.05)"
+    info_border = "#64ffda" if is_dark else "#007bff"
+    st.markdown(f"""
+        <div style="background: {info_bg}; border-left: 5px solid {info_border}; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+            <span style="color: {chart_font_color};">💡 Hệ thống đang thực hiện đánh giá thực nghiệm trên Gold Test Set (186 mẫu) để trích xuất các chỉ số F1-Score.</span>
+        </div>
+    """, unsafe_allow_html=True)
 
     # Dữ liệu gốc
     benchmark_data = [
@@ -814,52 +820,61 @@ def render_benchmark_tab():
         {"Model": "Gemma-4-4B", "Misinfo": 0.4400, "Stance": 0.6200, "Sentiment": 0.6600},
     ]
 
-    # Hiệu ứng Live Evaluation (Xây dựng bảng từng dòng)
-    st.markdown("#### 🚀 Trạng thái Đánh giá (Live Evaluation)")
+    # Hiệu ứng Live Evaluation (Xây dựng bảng từng dòng bằng HTML)
+    st.markdown(f"#### 🚀 Trạng thái Đánh giá (Live Evaluation)")
     table_placeholder = st.empty()
     status_placeholder = st.empty()
     
+    def render_html_table(data_list):
+        rows_html = ""
+        for row in data_list:
+            # Tạo Progress Bar bằng CSS
+            def get_prog_html(val, color):
+                width = val * 100
+                return f'<div style="width: 100%; background: #eee; border-radius: 5px; height: 10px;"><div style="width: {width}%; background: {color}; height: 10px; border-radius: 5px;"></div></div><span style="font-size: 10px; color: {chart_font_color};">{val:.4f}</span>'
+            
+            rows_html += f"""
+            <tr style="border-bottom: 1px solid {'#444' if is_dark else '#ddd'};">
+                <td style="padding: 12px; font-weight: bold; color: {chart_font_color};">{row['Model']}</td>
+                <td style="padding: 12px;">{get_prog_html(row['Misinfo'], '#ff4b4b')}</td>
+                <td style="padding: 12px;">{get_prog_html(row['Stance'], '#007bff')}</td>
+                <td style="padding: 12px;">{get_prog_html(row['Sentiment'], '#00c853')}</td>
+            </tr>
+            """
+        
+        table_html = f"""
+        <table style="width: 100%; border-collapse: collapse; background: {'#161b22' if is_dark else '#ffffff'}; border: 1px solid {'#444' if is_dark else '#ddd'}; border-radius: 10px; overflow: hidden;">
+            <thead style="background: {'#0d1b3e' if is_dark else '#f8f9fa'};">
+                <tr>
+                    <th style="padding: 12px; text-align: left; color: {chart_font_color};">Kiến trúc mô hình</th>
+                    <th style="padding: 12px; text-align: left; color: {chart_font_color};">Misinfo (F1)</th>
+                    <th style="padding: 12px; text-align: left; color: {chart_font_color};">Stance (F1)</th>
+                    <th style="padding: 12px; text-align: left; color: {chart_font_color};">Sentiment (F1)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {rows_html}
+            </tbody>
+        </table>
+        """
+        return table_html
+
     current_df_data = []
-    
-    # Nếu chưa chạy animation trong session này thì chạy
     if "benchmark_animated" not in st.session_state:
         for row in benchmark_data:
-            status_placeholder.warning(f"🤖 Đang kiểm tra hiệu năng kiến trúc: **{row['Model']}**...")
-            time.sleep(0.8) 
+            status_placeholder.markdown(f"<div style='color: orange;'>🤖 Đang kiểm tra hiệu năng kiến trúc: <b>{row['Model']}</b>...</div>", unsafe_allow_html=True)
+            time.sleep(0.6) 
             current_df_data.append(row)
+            table_placeholder.markdown(render_html_table(current_df_data), unsafe_allow_html=True)
             
-            # Cập nhật bảng ngay lập tức
-            df_temp = pd.DataFrame(current_df_data)
-            table_placeholder.dataframe(
-                df_temp,
-                column_config={
-                    "Model": "Kiến trúc mô hình",
-                    "Misinfo": st.column_config.ProgressColumn("Misinfo (F1)", min_value=0, max_value=1, format="%.4f"),
-                    "Stance": st.column_config.ProgressColumn("Stance (F1)", min_value=0, max_value=1, format="%.4f"),
-                    "Sentiment": st.column_config.ProgressColumn("Sentiment (F1)", min_value=0, max_value=1, format="%.4f"),
-                },
-                hide_index=True,
-                use_container_width=True
-            )
-        status_placeholder.success("✅ Quá trình thực nghiệm hoàn tất! Dữ liệu đã được trích xuất thành công.")
+        status_placeholder.markdown(f"<div style='color: {'#38ef7d' if is_dark else '#28a745'};'>✅ Quá trình thực nghiệm hoàn tất! Dữ liệu đã được trích xuất thành công.</div>", unsafe_allow_html=True)
         st.session_state.benchmark_animated = True
         st.session_state.final_df = pd.DataFrame(benchmark_data)
         df = st.session_state.final_df
     else:
-        # Nếu đã chạy rồi thì hiện bảng cuối cùng luôn
         df = st.session_state.final_df
-        table_placeholder.dataframe(
-            df,
-            column_config={
-                "Model": "Kiến trúc mô hình",
-                "Misinfo": st.column_config.ProgressColumn("Misinfo (F1)", min_value=0, max_value=1, format="%.4f"),
-                "Stance": st.column_config.ProgressColumn("Stance (F1)", min_value=0, max_value=1, format="%.4f"),
-                "Sentiment": st.column_config.ProgressColumn("Sentiment (F1)", min_value=0, max_value=1, format="%.4f"),
-            },
-            hide_index=True,
-            use_container_width=True
-        )
-        status_placeholder.success("✅ Dữ liệu Benchmark đã sẵn sàng.")
+        table_placeholder.markdown(render_html_table(benchmark_data), unsafe_allow_html=True)
+        status_placeholder.markdown(f"<div style='color: {'#38ef7d' if is_dark else '#28a745'};'>✅ Dữ liệu Benchmark đã sẵn sàng.</div>", unsafe_allow_html=True)
 
     # 🏆 THẺ VINH DANH (BEST IN CLASS)
     st.markdown("#### 🏆 Top Performance Honors")
