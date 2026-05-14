@@ -455,60 +455,49 @@ def render_ai_voice(text_to_read: str):
     <script>
         function speak() {{
             const btn = document.getElementById('speak-btn');
-            if (window.speechSynthesis.speaking) {{
-                window.speechSynthesis.cancel();
+            const text = "{clean_text}";
+            
+            // Sử dụng Engine của Google Dịch trực tiếp
+            const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${{encodeURIComponent(text)}}&tl=vi&client=tw-ob`;
+            
+            let audio = document.getElementById('google-tts-audio');
+            if (!audio) {{
+                audio = document.createElement('audio');
+                audio.id = 'google-tts-audio';
+                document.body.appendChild(audio);
+            }}
+            
+            if (!audio.paused) {{
+                audio.pause();
                 btn.innerHTML = '<span style="font-size: 1.2rem;">🔊</span> Nghe AI Đọc Kết Quả';
                 return;
             }}
             
-            const msg = new SpeechSynthesisUtterance();
-            msg.text = "{clean_text}";
-            
-            // Tìm giọng đọc tiếng Việt chất lượng cao nhất (Ưu tiên Google hoặc Microsoft)
-            let voices = window.speechSynthesis.getVoices();
-            
-            const selectBestVoice = () => {{
-                voices = window.speechSynthesis.getVoices();
-                // 1. Tìm giọng Google Tiếng Việt (Cực kỳ rõ ràng)
-                let bestVoice = voices.find(v => v.name.includes('Google') && (v.lang.includes('vi') || v.lang.includes('VN')));
-                
-                // 2. Nếu không có, tìm giọng Microsoft hoặc giọng có chữ 'Vietnamese'
-                if (!bestVoice) {{
-                    bestVoice = voices.find(v => (v.lang.includes('vi-VN') || v.lang.includes('vi_VN')) && !v.name.includes('eSpeak'));
-                }}
-                
-                if (bestVoice) {{
-                    msg.voice = bestVoice;
-                }} else {{
-                    msg.lang = 'vi-VN';
-                }}
-            }};
-
-            if (voices.length === 0) {{
-                window.speechSynthesis.onvoiceschanged = selectBestVoice;
-            }} else {{
-                selectBestVoice();
-            }}
-            
-            msg.rate = 0.85; // Tốc độ vừa phải để rõ chữ tiếng Việt
-            msg.pitch = 1.0;  // Độ cao tự nhiên
-            msg.volume = 1.0; // Âm lượng tối đa
-            
-            msg.onstart = () => {{
-                btn.innerHTML = '<span style="font-size: 1.2rem;">⏹️</span> Đang đọc giọng Việt chuẩn...';
+            audio.src = url;
+            audio.onplay = () => {{
+                btn.innerHTML = '<span style="font-size: 1.2rem;">⏹️</span> Đang đọc (Giọng Google chuẩn)...';
                 btn.style.background = 'linear-gradient(135deg, #00c853 0%, #b2ff59 100%)';
             }};
             
-            msg.onend = () => {{
+            audio.onended = () => {{
                 btn.innerHTML = '<span style="font-size: 1.2rem;">🔊</span> Nghe AI Đọc Lại';
                 btn.style.background = 'linear-gradient(135deg, #64ffda 0%, #48c6ef 100%)';
             }};
             
-            window.speechSynthesis.speak(msg);
+            audio.onerror = () => {{
+                // Fallback nếu Google chặn truy cập trực tiếp (hiếm gặp với client=tw-ob)
+                alert("Không thể tải giọng đọc từ Google. Đang chuyển sang giọng đọc dự phòng...");
+                window.speechSynthesis.speak(new SpeechSynthesisUtterance(text));
+            }};
+            
+            audio.play().catch(e => {{
+                console.error("Audio play failed:", e);
+                // Fallback
+                const fallbackMsg = new SpeechSynthesisUtterance(text);
+                fallbackMsg.lang = 'vi-VN';
+                window.speechSynthesis.speak(fallbackMsg);
+            }});
         }}
-        
-        // Kích hoạt nạp giọng ngay khi load
-        window.speechSynthesis.getVoices();
     </script>
     """
     import streamlit.components.v1 as components
