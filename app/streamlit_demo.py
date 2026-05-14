@@ -1914,14 +1914,14 @@ def main():
                 
                 c1, c2 = st.columns([1, 2])
                 with c1:
-                    if st.button(f"🚀 Phân tích bằng {selected_model_name}", key=f"btn_stress_{case['id']}", use_container_width=True):
+                    if st.button(f"🚀 Phân tích bằng {model_selection}", key=f"btn_stress_{case['id']}", use_container_width=True):
                         st.session_state[f"run_{case['id']}"] = True
                 
                 if st.session_state.get(f"run_{case['id']}", False):
-                    with st.spinner(f"🤖 {selected_model_name} đang bóc tách ngôn ngữ..."):
+                    with st.spinner(f"🤖 {model_selection} đang bóc tách ngôn ngữ..."):
                         # LOAD MODEL THẬT VÀ PREDICT
                         try:
-                            model_data = load_model(selected_model_name)
+                            model_data = load_model(model_selection)
                             if model_data:
                                 model, tokenizer, device = model_data
                                 results = predict_multitask(case['text'], model, tokenizer, device)
@@ -1951,7 +1951,7 @@ def main():
                                     reasoning = generate_xai_reasoning(case['text'], {"Misinformation": misinfo_label, "Stance": stance_label, "Sentiment": sentiment_label})
                                     st.markdown(f"<div style='border-left: 3px solid #64ffda; padding-left: 15px; font-size: 0.9em; color: #eee;'>{reasoning}</div>", unsafe_allow_html=True)
                                 
-                                st.progress(confidence, text=f"Độ tin cậy của mô hình {selected_model_name}")
+                                st.progress(confidence, text=f"Độ tin cậy của mô hình {model_selection}")
                         except Exception as e:
                             st.error(f"Lỗi khi chạy mô hình: {e}")
                 
