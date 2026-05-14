@@ -828,10 +828,9 @@ def render_benchmark_tab():
     def render_html_table(data_list):
         rows_html = ""
         for row in data_list:
-            # Tạo Progress Bar bằng CSS
             def get_prog_html(val, color):
                 width = val * 100
-                return f'<div style="width: 100%; background: #eee; border-radius: 5px; height: 10px;"><div style="width: {width}%; background: {color}; height: 10px; border-radius: 5px;"></div></div><span style="font-size: 10px; color: {chart_font_color};">{val:.4f}</span>'
+                return f'<div style="width: 100%; background: #eee; border-radius: 5px; height: 10px; margin-bottom: 3px;"><div style="width: {width}%; background: {color}; height: 10px; border-radius: 5px;"></div></div><span style="font-size: 11px; font-weight: bold; color: {chart_font_color};">{val:.4f}</span>'
             
             rows_html += f"""
             <tr style="border-bottom: 1px solid {'#444' if is_dark else '#ddd'};">
@@ -839,42 +838,36 @@ def render_benchmark_tab():
                 <td style="padding: 12px;">{get_prog_html(row['Misinfo'], '#ff4b4b')}</td>
                 <td style="padding: 12px;">{get_prog_html(row['Stance'], '#007bff')}</td>
                 <td style="padding: 12px;">{get_prog_html(row['Sentiment'], '#00c853')}</td>
-            </tr>
-            """
+            </tr>"""
         
-        table_html = f"""
-        <table style="width: 100%; border-collapse: collapse; background: {'#161b22' if is_dark else '#ffffff'}; border: 1px solid {'#444' if is_dark else '#ddd'}; border-radius: 10px; overflow: hidden;">
+        return f"""<table style="width: 100%; border-collapse: collapse; background: {'#161b22' if is_dark else '#ffffff'}; border: 1px solid {'#444' if is_dark else '#ddd'}; border-radius: 10px; overflow: hidden; font-family: 'Times New Roman', serif;">
             <thead style="background: {'#0d1b3e' if is_dark else '#f8f9fa'};">
                 <tr>
-                    <th style="padding: 12px; text-align: left; color: {chart_font_color};">Kiến trúc mô hình</th>
-                    <th style="padding: 12px; text-align: left; color: {chart_font_color};">Misinfo (F1)</th>
-                    <th style="padding: 12px; text-align: left; color: {chart_font_color};">Stance (F1)</th>
-                    <th style="padding: 12px; text-align: left; color: {chart_font_color};">Sentiment (F1)</th>
+                    <th style="padding: 12px; text-align: left; color: {chart_font_color}; border-bottom: 2px solid {info_border};">Kiến trúc mô hình</th>
+                    <th style="padding: 12px; text-align: left; color: {chart_font_color}; border-bottom: 2px solid {info_border};">Misinfo (F1)</th>
+                    <th style="padding: 12px; text-align: left; color: {chart_font_color}; border-bottom: 2px solid {info_border};">Stance (F1)</th>
+                    <th style="padding: 12px; text-align: left; color: {chart_font_color}; border-bottom: 2px solid {info_border};">Sentiment (F1)</th>
                 </tr>
             </thead>
-            <tbody>
-                {rows_html}
-            </tbody>
-        </table>
-        """
-        return table_html
+            <tbody>{rows_html}</tbody>
+        </table>"""
 
     current_df_data = []
     if "benchmark_animated" not in st.session_state:
         for row in benchmark_data:
-            status_placeholder.markdown(f"<div style='color: orange;'>🤖 Đang kiểm tra hiệu năng kiến trúc: <b>{row['Model']}</b>...</div>", unsafe_allow_html=True)
+            status_placeholder.write(f"<div style='color: orange; font-weight: bold;'>🤖 Đang kiểm tra hiệu năng kiến trúc: {row['Model']}...</div>", unsafe_allow_html=True)
             time.sleep(0.6) 
             current_df_data.append(row)
-            table_placeholder.markdown(render_html_table(current_df_data), unsafe_allow_html=True)
+            table_placeholder.write(render_html_table(current_df_data), unsafe_allow_html=True)
             
-        status_placeholder.markdown(f"<div style='color: {'#38ef7d' if is_dark else '#28a745'};'>✅ Quá trình thực nghiệm hoàn tất! Dữ liệu đã được trích xuất thành công.</div>", unsafe_allow_html=True)
+        status_placeholder.write(f"<div style='color: {'#38ef7d' if is_dark else '#28a745'}; font-weight: bold;'>✅ Quá trình thực nghiệm hoàn tất! Dữ liệu đã được trích xuất thành công.</div>", unsafe_allow_html=True)
         st.session_state.benchmark_animated = True
         st.session_state.final_df = pd.DataFrame(benchmark_data)
         df = st.session_state.final_df
     else:
         df = st.session_state.final_df
-        table_placeholder.markdown(render_html_table(benchmark_data), unsafe_allow_html=True)
-        status_placeholder.markdown(f"<div style='color: {'#38ef7d' if is_dark else '#28a745'};'>✅ Dữ liệu Benchmark đã sẵn sàng.</div>", unsafe_allow_html=True)
+        table_placeholder.write(render_html_table(benchmark_data), unsafe_allow_html=True)
+        status_placeholder.write(f"<div style='color: {'#38ef7d' if is_dark else '#28a745'}; font-weight: bold;'>✅ Dữ liệu Benchmark đã sẵn sàng.</div>", unsafe_allow_html=True)
 
     # 🏆 THẺ VINH DANH (BEST IN CLASS)
     st.markdown("#### 🏆 Top Performance Honors")
