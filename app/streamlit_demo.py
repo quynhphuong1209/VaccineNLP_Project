@@ -899,16 +899,15 @@ def render_benchmark_tab():
         plot_bgcolor='rgba(0,0,0,0)', 
         font=dict(family='Times New Roman', color=chart_font_color, size=14),
         xaxis=dict(
-            title="F1-Score", 
+            title=dict(text="F1-Score", font=dict(color=chart_font_color)), 
             range=[0, 0.85], 
             gridcolor='rgba(128,128,128,0.1)',
-            tickfont=dict(color=chart_font_color),
-            titlefont=dict(color=chart_font_color)
+            tickfont=dict(color=chart_font_color)
         ),
         yaxis=dict(
             autorange="reversed", 
             tickfont=dict(color=chart_font_color)
-        ), # Đảo ngược để PhoBERT lên đầu
+        ),
         height=400,
         margin=dict(l=20, r=20, t=20, b=20),
         legend=dict(
@@ -917,7 +916,7 @@ def render_benchmark_tab():
             y=1.02, 
             xanchor="right", 
             x=1,
-            font=dict(color=chart_font_color) # Ép màu chữ Legend Bar Chart
+            font=dict(color=chart_font_color)
         )
     )
     st.plotly_chart(fig_bar, use_container_width=True)
@@ -946,7 +945,7 @@ def render_benchmark_tab():
                 visible=True, 
                 range=[0, 0.8], 
                 gridcolor='rgba(128,128,128,0.2)',
-                tickfont=dict(color=chart_font_color) # Màu số trên trục
+                tickfont=dict(color=chart_font_color)
             ),
             bgcolor='rgba(0,0,0,0)'
         ),
@@ -956,7 +955,7 @@ def render_benchmark_tab():
         legend=dict(
             orientation="h", 
             y=-0.1,
-            font=dict(color=chart_font_color) # Ép màu chữ Legend
+            font=dict(color=chart_font_color)
         )
     )
     st.plotly_chart(fig_radar, use_container_width=True)
