@@ -1730,10 +1730,14 @@ def main():
         # Nếu chọn Tự nhập, hiển thị thêm bộ quét URL ngay tại đây
         if selected_sample == "Tự nhập":
             st.markdown("##### 🌐 Nhập nhanh từ URL hoặc Tự viết")
-            with st.expander("🔗 Gợi ý link báo chí để thử nghiệm (Nhấn để copy)"):
-                st.code("https://vnexpress.net/hon-15-7-trieu-tre-em-da-duoc-tiem-chung-mo-rong-4740150.html")
-                st.code("https://tuoitre.vn/tiem-chung-mo-rong-nhieu-loai-vac-xin-da-co-tro-lai-2024010315362592.htm")
-                st.code("https://moh.gov.vn/chuong-trinh-muc-tieu-quoc-gia/-/asset_publisher/7NG96ezYsl75/content/tiem-chung-mo-rong-la-bien-phap-quan-trong-nhat-e-phong-benh-truyen-nhiem")
+            urls = [
+                "https://moh.gov.vn/tin-lien-quan/-/asset_publisher/vU0799vYfI9e/content/canh-bao-gia-mao-van-ban-cua-bo-y-te-ve-viec-kiem-tra-cac-co-so-san-xuat-kinh-doanh-thuc-pham",
+                "https://vtv.vn/suc-khoe/canh-bao-tin-gia-ve-vac-xin-phong-covid-19-tren-mang-xa-hoi-20210714154247844.htm",
+                "https://tuoitre.vn/tin-gia-ve-vac-xin-nan-nhan-la-nguoi-dan-20210719225726214.htm"
+            ]
+            
+            for url in urls:
+                st.code(url, language=None)
             
             sc_col1, sc_col2 = st.columns([4, 1])
             with sc_col1:
