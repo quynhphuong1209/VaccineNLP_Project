@@ -1840,6 +1840,11 @@ def main():
             color: #007bff !important;
             text-decoration: none;
         }}
+        /* ẨN HEADER VÀ FOOTER MẶC ĐỊNH CỦA STREAMLIT */
+        header {visibility: hidden;}
+        footer {visibility: hidden;}
+        #MainMenu {visibility: hidden;}
+        
         /* CƯỠNG CHẾ GIAO DIỆN ĐỘC LẬP (INDEPENDENT THEME) */
         .stApp {{
             background-color: {"#0e1117" if is_dark else "#f0f2f6"} !important;
