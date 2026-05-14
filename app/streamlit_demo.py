@@ -800,6 +800,10 @@ def render_benchmark_tab():
     import plotly.graph_objects as go
     import time
     
+    # Khởi tạo các biến cấu hình giao diện
+    is_dark = st.session_state.get("theme", "Dark") == "Dark"
+    chart_font_color = "#e2e4e9" if is_dark else "#000000"
+    
     st.markdown("### 📊 Thống kê Hiệu năng Benchmark (Dynamic Analytics)")
     st.info("💡 Hệ thống đang thực hiện đánh giá thực nghiệm trên Gold Test Set (186 mẫu) để trích xuất các chỉ số F1-Score.")
 
@@ -821,7 +825,7 @@ def render_benchmark_tab():
     if "benchmark_animated" not in st.session_state:
         for row in benchmark_data:
             status_placeholder.warning(f"🤖 Đang kiểm tra hiệu năng kiến trúc: **{row['Model']}**...")
-            time.sleep(0.8) # Giả lập thời gian mô hình suy luận
+            time.sleep(0.8) 
             current_df_data.append(row)
             
             # Cập nhật bảng ngay lập tức
@@ -840,10 +844,12 @@ def render_benchmark_tab():
         status_placeholder.success("✅ Quá trình thực nghiệm hoàn tất! Dữ liệu đã được trích xuất thành công.")
         st.session_state.benchmark_animated = True
         st.session_state.final_df = pd.DataFrame(benchmark_data)
+        df = st.session_state.final_df
     else:
         # Nếu đã chạy rồi thì hiện bảng cuối cùng luôn
+        df = st.session_state.final_df
         table_placeholder.dataframe(
-            st.session_state.final_df,
+            df,
             column_config={
                 "Model": "Kiến trúc mô hình",
                 "Misinfo": st.column_config.ProgressColumn("Misinfo (F1)", min_value=0, max_value=1, format="%.4f"),
