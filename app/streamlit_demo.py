@@ -109,6 +109,22 @@ SAMPLE_TEXTS = {
         "Phong: https://www.youtube.com/watch?v=kv6XnfuPyII\n --------\n\nĐọc blog mình viết "
         "tại: https://kimisgonnabeanadult.blogspot.com/"
     ),
+    "⚠️ Nghi vấn - Tin đồn sai lệch (Dataset)": (
+        "Gô Sen chuẩn luôn ạ h e đang thấy mk sai lầm đây con thì hay ốm nhăm nhe đi tiêm "
+        "cũng gần full đến nơi r . Ốm suốt cứ khoẻ đi tiêm lại ốm hành con thực sự . "
+        "Đk bs có tâm chia sẻ tại sao k nên tiêm ngẫm lại thấy đúng"
+    ),
+    "✅ Ủng hộ - Tiêm chủng an toàn (Dataset)": (
+        "Em cũng đang tiêm từng mũi 1 cho con, con e 5 tháng, mới tiêm tới phế cầu, "
+        "3 tháng đầu chỉ tiêm 6in1 và uống rota. Nhiều người nói sao cho con tiêm chậm vậy, "
+        "e nói kệ, chậm mà đủ và an toàn cho con là được. Trộm vía bé e chưa sốt, chưa hành mũi nào ❤️"
+    ),
+    "🔍 Nghi ngờ - Dẫn dắt dư luận (Dataset)": (
+        "Ghê vậy, có thiệt không hay chỉ muốn dẫn về vắc xin Trung Quốc?"
+    ),
+    "💬 Hỏi đáp - Tư vấn y tế (Dataset)": (
+        "2 tháng tuổi thì cần tiêm mui gì bác si oi"
+    ),
 }
 
 # ─────────────────────────────────────────────────────────────
@@ -404,6 +420,66 @@ Trường Đại học Y tế Công Cộng<br>
 </div>
 </div>"""
     st.markdown(footer_html, unsafe_allow_html=True)
+
+def render_ai_voice(text_to_read: str):
+    """Sử dụng Web Speech API để đọc văn bản tiếng Việt trực tiếp từ trình duyệt."""
+    if not text_to_read:
+        return
+        
+    # Làm sạch văn bản để đọc mượt hơn
+    clean_text = text_to_read.replace('"', "'").replace('\n', ' ')
+    
+    html_code = f"""
+    <div style="margin-top: 10px;">
+        <button id="speak-btn" style="
+            background: linear-gradient(135deg, #64ffda 0%, #48c6ef 100%);
+            color: #0a192f;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 15px rgba(100, 255, 218, 0.3);
+            transition: all 0.3s ease;
+        " onclick="speak()">
+            <span style="font-size: 1.2rem;">🔊</span> Nghe AI Đọc Kết Quả
+        </button>
+    </div>
+
+    <script>
+        function speak() {{
+            const btn = document.getElementById('speak-btn');
+            if (window.speechSynthesis.speaking) {{
+                window.speechSynthesis.cancel();
+                btn.innerHTML = '<span style="font-size: 1.2rem;">🔊</span> Nghe AI Đọc Kết Quả';
+                return;
+            }}
+            
+            const msg = new SpeechSynthesisUtterance();
+            msg.text = "{clean_text}";
+            msg.lang = 'vi-VN';
+            msg.rate = 1.0;
+            msg.pitch = 1.0;
+            
+            msg.onstart = () => {{
+                btn.innerHTML = '<span style="font-size: 1.2rem;">⏹️</span> Đang đọc... (Click để dừng)';
+                btn.style.background = 'linear-gradient(135deg, #ff4b4b 0%, #ff8f8f 100%)';
+            }};
+            
+            msg.onend = () => {{
+                btn.innerHTML = '<span style="font-size: 1.2rem;">🔊</span> Nghe AI Đọc Lại';
+                btn.style.background = 'linear-gradient(135deg, #64ffda 0%, #48c6ef 100%)';
+            }};
+            
+            window.speechSynthesis.speak(msg);
+        }}
+    </script>
+    """
+    import streamlit.components.v1 as components
+    components.html(html_code, height=60)
 
 def render_result_card(task_name: str, task_key: str, result: dict):
     """Render a styled result card for one task with premium aesthetics."""
@@ -1418,6 +1494,15 @@ def main():
                 if reasoning:
                     st.markdown("<br>", unsafe_allow_html=True)
                     st.markdown("##### 🧠 Hệ thống Giải thích (XAI Engine)")
+                    
+                    # Thêm tính năng âm thanh AI
+                    misinfo_label = LABEL_MAPS["misinfo"][result["misinfo"]["pred"]]
+                    stance_label = LABEL_MAPS["stance"][result["stance"]["pred"]]
+                    sentiment_label = LABEL_MAPS["sentiment"][result["sentiment"]["pred"]]
+                    
+                    speech_text = f"Kết quả phân tích: Đây là {misinfo_label}. Quan điểm: {stance_label}. Cảm xúc: {sentiment_label}. Giải thích chi tiết: {reasoning}"
+                    render_ai_voice(speech_text)
+
                     with st.expander("📖 Xem giải thích chi tiết từ Gemma-4 XAI Engine", expanded=True):
                         st.markdown(f"<div style='border-left: 3px solid #64ffda; padding-left: 20px; color: {text_color}; opacity: 0.9;'>{reasoning}</div>", unsafe_allow_html=True)
                         st.caption("💡 Giải thích được tạo tự động bởi mô hình Gemma-4 Reasoning Engine.")
