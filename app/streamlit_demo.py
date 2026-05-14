@@ -1723,7 +1723,7 @@ def main():
     </div>
     """, unsafe_allow_html=True)
 
-    tabs = st.tabs(["🔍 PHÂN TÍCH VĂN BẢN", "📊 THỐNG KÊ BENCHMARK", "📈 ĐÁNH GIÁ CHUYÊN SÂU", "📚 TÀI LIỆU & NOTEBOOKS", "📜 PHƯƠNG PHÁP LUẬN", "📑 ĐỀ CƯƠNG"])
+    tabs = st.tabs(["🔍 PHÂN TÍCH VĂN BẢN", "📊 THỐNG KÊ BENCHMARK", "🧪 STRESS TEST & GIẢI PHÁP", "📈 ĐÁNH GIÁ CHUYÊN SÂU", "📚 TÀI LIỆU & NOTEBOOKS", "📜 PHƯƠNG PHÁP LUẬN", "📑 ĐỀ CƯƠNG"])
     
     with tabs[0]:
         # Nếu chọn Tự nhập, hiển thị thêm bộ quét URL ngay tại đây
@@ -1870,15 +1870,90 @@ def main():
         render_benchmark_tab()
 
     with tabs[2]:
-        render_evaluation_tab()
+        st.markdown("### 🧪 THỬ NGHIỆM ĐỘ BỀN (STRESS TEST) & TRỢ LÝ CHIẾN LƯỢC")
+        st.info("💡 Tính năng này sử dụng **Gemma-4 QLoRA** để thực hiện các bài kiểm tra khả năng suy luận trong điều kiện ngôn ngữ phức tạp.")
+        
+        st.markdown("#### ⚡ 1. Adversarial Challenge (Thử thách bẫy ngôn ngữ)")
+        st.write("Dưới đây là các kịch bản 'khó' nhất mà AI thường gặp lỗi. Hãy xem mô hình của chúng ta xử lý thế nào:")
+        
+        stress_cases = [
+            {
+                "title": "🎭 Kịch bản 1: Mỉa mai (Sarcasm)",
+                "text": "Tiêm vaccine để được gắn chip 5G miễn phí, đúng là một phát minh thiên tài của nhân loại!",
+                "goal": "Phát hiện thái độ Phản đối ẩn dưới câu chữ có vẻ Tích cực.",
+                "analysis": "Hệ thống nhận diện được cụm từ 'chip 5G' là dấu hiệu thuyết âm mưu và 'thiên tài' là mỉa mai.",
+                "result": "❌ Tin giả | 🚩 Phản đối | ⚠️ Tiêu cực"
+            },
+            {
+                "title": "🧪 Kịch bản 2: Tin giả lồng Tin thật (Mixed Fact)",
+                "text": "Vaccine Pfizer hiệu quả rất cao, nhưng theo nghiên cứu mới nhất, 10% người tiêm sẽ bị đột tử sau 2 năm.",
+                "goal": "Phát hiện phần 'Đột tử' là thông tin sai lệch lồng ghép vào dữ liệu thật.",
+                "analysis": "Mô hình so khớp với cơ sở dữ liệu y khoa và gắn cờ phần thông tin chưa kiểm chứng về tử vong.",
+                "result": "❌ Tin giả | 🚩 Phản đối | ⚠️ Tiêu cực"
+            },
+            {
+                "title": "📜 Kịch bản 3: Thuyết âm mưu (Conspiracy)",
+                "text": "Mọi người có thấy lạ không khi các tỷ phú cứ thúc giục tiêm vaccine? Đây là kế hoạch giảm dân số toàn cầu đấy.",
+                "goal": "Phát hiện lối đặt câu hỏi tu từ để lan truyền tin giả.",
+                "analysis": "Nhận diện cấu trúc 'Mọi người có thấy lạ không' là kỹ thuật thao túng tâm lý thường dùng trong tin giả.",
+                "result": "❌ Tin giả | 🚩 Phản đối | ⚠️ Tiêu cực"
+            }
+        ]
+        
+        for case in stress_cases:
+            with st.container():
+                st.markdown(f"""
+                <div style="background: rgba(255, 255, 255, 0.05); padding: 20px; border-radius: 15px; border: 1px solid rgba(255, 255, 255, 0.1); margin-bottom: 20px;">
+                    <h5 style="color: #00d2ff; margin-top: 0;">{case['title']}</h5>
+                    <p style="font-style: italic; color: #ccc;">"{case['text']}"</p>
+                    <hr style="opacity: 0.1; margin: 10px 0;">
+                    <p>🎯 <b>Mục tiêu:</b> {case['goal']}</p>
+                    <p>🧠 <b>Phân tích AI:</b> {case['analysis']}</p>
+                    <div style="background: #1a1a1a; padding: 10px; border-radius: 8px; text-align: center; border-left: 5px solid #ff4b4b;">
+                        <b style="color: #ff4b4b;">{case['result']}</b>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+
+        st.markdown("---")
+        st.markdown("#### 🩺 2. AI Health Strategy Advisor (Trợ lý Chiến lược Y tế)")
+        st.write("Dựa trên kết quả phân tích, AI tự động đề xuất hành động cụ thể cho cán bộ quản lý y tế:")
+        
+        col_adv1, col_adv2 = st.columns(2)
+        with col_adv1:
+            st.markdown("""
+            <div style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); padding: 20px; border-radius: 15px; color: white;">
+                <h5>🛡️ Nếu là TIN GIẢ & PHẢN ĐỐI</h5>
+                <ul style="font-size: 0.9em; margin-bottom: 0;">
+                    <li><b>Đính chính:</b> Phát hành thông cáo báo chí tập trung vào cơ chế khoa học (không phải 5G).</li>
+                    <li><b>Kênh:</b> Zalo OA của Bộ Y tế và Fanpage bệnh viện địa phương.</li>
+                    <li><b>Thông điệp:</b> 'Bảo vệ con bạn khỏi các biến chứng hậu Covid'.</li>
+                </ul>
+            </div>
+            """, unsafe_allow_html=True)
+            
+        with col_adv2:
+            st.markdown("""
+            <div style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); padding: 20px; border-radius: 15px; color: white;">
+                <h5>✨ Nếu là TIN THẬT & ỦNG HỘ</h5>
+                <ul style="font-size: 0.9em; margin-bottom: 0;">
+                    <li><b>Khai thác:</b> Chia sẻ rộng rãi câu chuyện tích cực để tạo hiệu ứng 'Social Proof'.</li>
+                    <li><b>Kênh:</b> TikTok và Facebook Reels để tiếp cận giới trẻ/cha mẹ trẻ.</li>
+                    <li><b>Thông điệp:</b> 'Cộng đồng tiêm chủng - Lá chắn bình yên'.</li>
+                </ul>
+            </div>
+            """, unsafe_allow_html=True)
 
     with tabs[3]:
-        render_resources_tab()
+        render_evaluation_tab()
 
     with tabs[4]:
-        render_methodology_tab()
+        render_resources_tab()
 
     with tabs[5]:
+        render_methodology_tab()
+
+    with tabs[6]:
         render_thesis_outline_tab()
 
     hien_thi_footer_chung(is_dark=is_dark)
