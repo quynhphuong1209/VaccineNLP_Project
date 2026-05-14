@@ -218,7 +218,6 @@ def load_model(model_key="PhoBERT-v2"):
         gc.collect()
         return None, None, False
 
-@st.cache_data
 def load_xai_cache():
     """Load pre-built XAI reasoning cache (text → reasoning)."""
     if XAI_CACHE_PATH.exists():
