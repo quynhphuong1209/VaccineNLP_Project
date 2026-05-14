@@ -110,37 +110,26 @@ SAMPLE_TEXTS = {
         "Phong: https://www.youtube.com/watch?v=kv6XnfuPyII\n --------\n\nĐọc blog mình viết "
         "tại: https://kimisgonnabeanadult.blogspot.com/"
     ),
-    "⚠️ Nghi vấn - Tin đồn sai lệch (Dataset)": (
+    "🔴 Tin giả - Phản đối (VNLP_V6_1773)": (
         "Gô Sen chuẩn luôn ạ h e đang thấy mk sai lầm đây con thì hay ốm nhăm nhe đi tiêm "
         "cũng gần full đến nơi r . Ốm suốt cứ khoẻ đi tiêm lại ốm hành con thực sự . "
         "Đk bs có tâm chia sẻ tại sao k nên tiêm ngẫm lại thấy đúng"
     ),
-    "💉 Tin giả - Vô sinh & Biến đổi gen": (
-        "Cẩn thận nhé mọi người, vắc xin COVID thực chất là một liệu pháp gen "
-        "có thể gây vô sinh ở phụ nữ và làm biến đổi cấu trúc DNA của trẻ em. "
-        "Nhiều bác sĩ đã lên tiếng cảnh báo nhưng bị truyền thông bịt miệng. "
-        "Đừng làm chuột bạch cho các tập đoàn dược phẩm!"
+    "🟡 Thái độ - Nghi ngại (VNLP_V6_1170)": (
+        "Cún mình chỉ tiêm mũi ở viện về nhà là ko tiêm gì nữa. Bây giờ 2 tuổi rồi. "
+        "Ai hỏi t vẫn nói tiêm đủ. K đủ khả năng giải thích thì nên im lặng."
     ),
-    "📡 Thuyết âm mưu - Chip 5G & Kiểm soát": (
-        "Vắc xin có chứa các hạt nano kim loại có khả năng tự lắp ghép thành chip 5G "
-        "để theo dõi con người thông qua vệ tinh của Elon Musk. Đây là kế hoạch "
-        "của giới tinh hoa nhằm kiểm soát dân số thế giới. Hãy tỉnh táo!"
-    ),
-    "🧪 Độc hại - Thủy ngân & Nhôm": (
-        "Trong vắc xin cho trẻ em có chứa lượng thủy ngân và nhôm cực cao, "
-        "vượt ngưỡng an toàn gấp hàng trăm lần. Đây là nguyên nhân chính gây ra "
-        "bệnh tự kỷ và suy giảm trí tuệ ở trẻ nhỏ. Hãy tìm hiểu kỹ trước khi tiêm."
-    ),
-    "✅ Ủng hộ - Tiêm chủng an toàn (Dataset)": (
+    "🟢 Thái độ - Ủng hộ (VNLP_V6_1339)": (
         "Em cũng đang tiêm từng mũi 1 cho con, con e 5 tháng, mới tiêm tới phế cầu, "
         "3 tháng đầu chỉ tiêm 6in1 và uống rota. Nhiều người nói sao cho con tiêm chậm vậy, "
         "e nói kệ, chậm mà đủ và an toàn cho con là được. Trộm vía bé e chưa sốt, chưa hành mũi nào ❤️"
     ),
-    "🔍 Nghi ngờ - Dẫn dắt dư luận (Dataset)": (
-        "Ghê vậy, có thiệt không hay chỉ muốn dẫn về vắc xin Trung Quốc?"
+    "🔵 Câu hỏi - Tư vấn (VNLP_V6_1202)": (
+        "Trâm Trần ví dụ như Ko có tiêm 6in1 hay 5in1, mà tiêm từng mũi từng bệnh phải không ạ?"
     ),
-    "💬 Hỏi đáp - Tư vấn y tế (Dataset)": (
-        "2 tháng tuổi thì cần tiêm mui gì bác si oi"
+    "💉 Tin giả - Vô sinh (VNLP_V6_0234)": (
+        "Cảnh báo: vắc xin COVID có thể gây vô sinh ở phụ nữ và biến đổi gen ở trẻ em. "
+        "Mọi người nên tìm hiểu kỹ trước khi làm chuột bạch cho các tập đoàn dược phẩm."
     ),
 }
 
