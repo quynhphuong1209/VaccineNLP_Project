@@ -61,19 +61,19 @@ XAI_MODEL_REPO = "quynhphuong1209/gemma-4-E4B-unsloth-vaccine-xai"
 LABEL_MAPS = {
     "misinfo": {0: "Không phải tin giả", 1: "Tin giả", 2: "Ranh giới"},
     "stance":  {0: "Ủng hộ", 1: "Phản đối", 2: "Trung lập", 3: "Không liên quan"},
-    "sentiment": {0: "Tích cực", 1: "Tiêu cực", 2: "Trung lập"},
+    "sentiment": {0: "Tiêu cực", 1: "Tích cực", 2: "Trung lập"},
 }
 
 LABEL_COLORS = {
     "misinfo": {0: "#3db882", 1: "#e8504a", 2: "#d48f35"},
     "stance":  {0: "#3db882", 1: "#e8504a", 2: "#4a9eed", 3: "#9e9e9e"},
-    "sentiment": {0: "#3db882", 1: "#e8504a", 2: "#4a9eed"},
+    "sentiment": {0: "#e8504a", 1: "#3db882", 2: "#4a9eed"},
 }
 
 LABEL_ICONS = {
     "misinfo": {0: "✅", 1: "🚨", 2: "⚠️"},
     "stance":  {0: "👍", 1: "👎", 2: "🤝", 3: "⚪"},
-    "sentiment": {0: "😊", 1: "😠", 2: "😐"},
+    "sentiment": {0: "😠", 1: "😊", 2: "😐"},
 }
 
 # ─────────────────────────────────────────────────────────────
