@@ -931,7 +931,13 @@ def render_benchmark_tab():
 
     # 🧬 BIỂU ĐỒ RADAR SO SÁNH SỰ TOÀN DIỆN
     st.markdown("#### 🧬 Bản đồ Năng lực Mô hình (Capability Radar)")
-    st.caption("💡 Biểu đồ thể hiện mức độ cân bằng giữa các nhiệm vụ. Diện tích càng lớn và càng đều thể hiện mô hình càng toàn diện.")
+    st.markdown(f"""
+        <div style="margin-top: -10px; margin-bottom: 20px;">
+            <span style="color: {chart_font_color} !important; font-style: italic; font-size: 0.95rem; opacity: 0.85;">
+                💡 Biểu đồ thể hiện mức độ cân bằng giữa các nhiệm vụ. Diện tích càng lớn và càng đều thể hiện mô hình càng toàn diện.
+            </span>
+        </div>
+    """, unsafe_allow_html=True)
     
     fig_radar = go.Figure()
     radar_colors = ["rgba(0, 200, 83, 0.3)", "rgba(0, 210, 255, 0.3)", "rgba(255, 75, 75, 0.3)"]
@@ -979,7 +985,14 @@ def render_evaluation_tab():
     accent_color = "#64ffda" if is_dark else "#007bff"
 
     st.markdown("## 📈 Đánh giá Chuyên sâu & Phân tích Tương quan")
-    st.info("💡 Tab này cung cấp cái nhìn đa chiều về hiệu năng mô hình và mối tương quan giữa các nhãn dữ liệu trong tập Gold Test Set.")
+    # CUSTOM INFO BOX (Thay thế st.info)
+    info_bg = "rgba(100, 255, 218, 0.1)" if is_dark else "rgba(0, 123, 255, 0.05)"
+    info_border = "#64ffda" if is_dark else "#007bff"
+    st.markdown(f"""
+        <div style="background: {info_bg}; border-left: 5px solid {info_border}; padding: 15px; border-radius: 5px; margin-bottom: 25px;">
+            <span style="color: {text_color} !important; font-family: 'Times New Roman', serif;">💡 Tab này cung cấp cái nhìn đa chiều về hiệu năng mô hình và mối tương quan giữa các nhãn dữ liệu trong tập Gold Test Set.</span>
+        </div>
+    """, unsafe_allow_html=True)
 
     # 1. Biểu đồ Radar so sánh sức mạnh tổng thể của 3 kiến trúc
     st.markdown("### 🕸️ 1. So sánh Sức mạnh Tổng thể (Model Capability Radar)")
@@ -1020,10 +1033,23 @@ def render_evaluation_tab():
         margin=dict(l=80, r=80, t=40, b=40)
     )
     st.plotly_chart(fig_radar, use_container_width=True)
+    st.markdown(f"""
+        <div style="text-align: center; margin-top: -20px; margin-bottom: 30px;">
+            <span style="color: {text_color} !important; font-style: italic; font-size: 0.95rem; opacity: 0.85;">
+                💡 Biểu đồ Radar thể hiện sự cân bằng giữa 5 tiêu chí đánh giá cốt lõi của các mô hình.
+            </span>
+        </div>
+    """, unsafe_allow_html=True)
 
     # 2. Biểu đồ Sankey: Dòng chảy tương quan Cảm xúc -> Quan điểm
     st.markdown("### 🌀 2. Dòng chảy Tương quan (Sentiment ➔ Stance Flow)")
-    st.caption("💡 Biểu đồ Sankey thể hiện cách các sắc thái cảm xúc chuyển hóa thành lập trường về vắc-xin.")
+    st.markdown(f"""
+        <div style="text-align: center; margin-top: -10px; margin-bottom: 30px;">
+            <span style="color: {text_color} !important; font-style: italic; font-size: 0.95rem; opacity: 0.85;">
+                💡 Biểu đồ Sankey thể hiện cách các sắc thái cảm xúc chuyển hóa thành lập trường về vắc-xin.
+            </span>
+        </div>
+    """, unsafe_allow_html=True)
     
     nodes = ["Tiêu cực", "Trung lập", "Tích cực", "Phản đối", "Nghi ngờ", "Ủng hộ"]
     # Links: [Source_Idx, Target_Idx, Value]
@@ -1054,6 +1080,13 @@ def render_evaluation_tab():
         height=450
     )
     st.plotly_chart(fig_sankey, use_container_width=True)
+    st.markdown(f"""
+        <div style="text-align: center; margin-top: -10px; margin-bottom: 30px;">
+            <span style="color: {text_color} !important; font-style: italic; font-size: 0.95rem; opacity: 0.85;">
+                💡 Biểu đồ Sankey thể hiện cách các sắc thái cảm xúc chuyển hóa thành lập trường về vắc-xin.
+            </span>
+        </div>
+    """, unsafe_allow_html=True)
 
     col_left, col_right = st.columns(2)
     
