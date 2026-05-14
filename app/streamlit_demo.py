@@ -231,25 +231,27 @@ def find_xai_reasoning(text: str, cache: dict) -> str | None:
     if not text or not cache:
         return None
     
+    t_strip = text.strip()
+    # 1. Thử khớp chính xác tuyệt đối
+    if t_strip in cache:
+        return cache[t_strip]
+    
     import re
     def normalize(t):
-        # Chuyển về chữ thường và chỉ giữ lại ký tự chữ và số
-        return re.sub(r'[^a-z0-9àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]', '', t.lower())
+        # Giữ lại chữ, số và khoảng trắng để so sánh chính xác hơn
+        return re.sub(r'[^a-z0-9àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ\s]', '', t.lower()).strip()
     
-    input_norm = normalize(text)
+    input_norm = normalize(t_strip)
     
-    # 1. Thử tìm kiếm chính xác trước
-    if text.strip() in cache:
-        return cache[text.strip()]
-        
-    # 2. Thử tìm kiếm theo nội dung đã chuẩn hóa (bỏ qua dấu câu, emoji, xuống dòng)
+    # 2. Thử tìm kiếm theo nội dung đã chuẩn hóa
     for k, v in cache.items():
         if normalize(k) == input_norm:
             return v
             
-    # 3. Thử tìm kiếm mờ (nếu đầu văn bản khớp)
+    # 3. Thử tìm kiếm mờ (nếu khớp 100 ký tự đầu)
     for k, v in cache.items():
-        if input_norm.startswith(normalize(k)[:100]) or normalize(k).startswith(input_norm[:100]):
+        k_norm = normalize(k)
+        if len(input_norm) > 50 and (input_norm[:100] in k_norm or k_norm[:100] in input_norm):
             return v
             
     return None
@@ -260,17 +262,18 @@ def query_gemma_api(prompt, token):
     if not token:
         return "❌ Lỗi: Chưa cấu hình HF_TOKEN trong Streamlit Secrets."
         
+    messages = [{"role": "user", "content": prompt}]
+    
     try:
-        # Sử dụng mô hình fine-tuned chính
+        # 1. Thử mô hình fine-tuned chính (Sử dụng chat_completion cho tính tương thích cao)
         client = InferenceClient(model=XAI_MODEL_REPO, token=token)
-        response = client.text_generation(prompt, max_new_tokens=300, temperature=0.7)
-        return response
+        response = client.chat_completion(messages, max_tokens=300, temperature=0.7)
+        return response.choices[0].message.content
     except Exception as e:
         error_msg = str(e)
-        # Dự phòng mô hình Mistral-7B (Sử dụng chat_completion để tương thích tốt hơn)
+        # 2. Dự phòng mô hình Mistral-7B (Rất ổn định với conversational task)
         try:
             client_fb = InferenceClient(model="mistralai/Mistral-7B-Instruct-v0.3", token=token)
-            messages = [{"role": "user", "content": prompt}]
             response = client_fb.chat_completion(messages, max_tokens=300, temperature=0.7)
             return response.choices[0].message.content
         except Exception as fallback_e:
