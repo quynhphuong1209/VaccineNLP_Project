@@ -1350,6 +1350,21 @@ def main():
             background: transparent !important;
             color: {"#64ffda" if is_dark else "#0056b3"} !important;
         }}
+        
+        /* Fix Code block (URL Suggestions) theme adaptation */
+        code, pre {{
+            background-color: {"#112240" if is_dark else "#f5f7f9"} !important;
+            color: {"#64ffda" if is_dark else "#1f2937"} !important;
+            border: 1px solid {"rgba(100, 255, 218, 0.2)" if is_dark else "rgba(0, 0, 0, 0.1)"} !important;
+            border-radius: 8px !important;
+        }}
+        
+        /* Fix Textarea Placeholder color */
+        textarea::placeholder {{
+            color: {"#666" if is_dark else "#999"} !important;
+            opacity: 1 !important;
+        }}
+
         div[data-testid="stButton"] button:first-child:hover {{
             background: {"rgba(100, 255, 218, 0.1)" if is_dark else "rgba(0, 86, 179, 0.1)"} !important;
             box-shadow: 0 0 20px {"rgba(100, 255, 218, 0.4)" if is_dark else "rgba(0, 86, 179, 0.4)"} !important;
