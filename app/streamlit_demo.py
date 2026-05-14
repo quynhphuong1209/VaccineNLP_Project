@@ -1308,6 +1308,7 @@ def render_thesis_outline_tab():
 # MAIN APP
 # ─────────────────────────────────────────────────────────────
 def main():
+    is_dark = st.session_state.get("theme", "Dark") == "Dark"
     # ─────────────────────────────────────────────────────────────
     # THEME STATE & TOGGLE
     # ─────────────────────────────────────────────────────────────
@@ -1787,25 +1788,25 @@ def main():
             text-decoration: none;
         }}
         /* CƯỠNG CHẾ GIAO DIỆN ĐỘC LẬP (INDEPENDENT THEME) */
-        .stApp {
+        .stApp {{
             background-color: {"#0e1117" if is_dark else "#f0f2f6"} !important;
             color: {"#e2e4e9" if is_dark else "#000000"} !important;
-        }
+        }}
         /* Ép mọi loại văn bản chính về màu tương ứng */
-        .stApp p, .stApp span, .stApp label, .stApp li, .stApp h1, .stApp h2, .stApp h3, .stApp h4, .stApp h5, .stApp h6 {
+        .stApp p, .stApp span, .stApp label, .stApp li, .stApp h1, .stApp h2, .stApp h3, .stApp h4, .stApp h5, .stApp h6 {{
             color: {"#e2e4e9" if is_dark else "#000000"} !important;
-        }
+        }}
         /* Khóa màu cho Sidebar */
-        section[data-testid="stSidebar"] {
+        section[data-testid="stSidebar"] {{
             background-color: {"#161b22" if is_dark else "#ffffff"} !important;
-        }
+        }}
         /* Khóa màu cho các Tab */
-        .stTabs [data-baseweb="tab"] {
+        .stTabs [data-baseweb="tab"] {{
             color: {"#888" if is_dark else "#555"} !important;
-        }
-        .stTabs [aria-selected="true"] {
+        }}
+        .stTabs [aria-selected="true"] {{
             color: {"#64ffda" if is_dark else "#007bff"} !important;
-        }
+        }}
     </style>
     """, unsafe_allow_html=True)
 
