@@ -1729,14 +1729,15 @@ def main():
         # Nếu chọn Tự nhập, hiển thị thêm bộ quét URL ngay tại đây
         if selected_sample == "Tự nhập":
             st.markdown("##### 🌐 Nhập nhanh từ URL hoặc Tự viết")
-            urls = [
-                "https://www.vietnamplus.vn/nhan-dien-va-xu-ly-tin-gia-xuyen-tac-ve-tiem-chung-vaccine-phong-covid19/726667.vnp",
-                "https://thanhnien.vn/canh-bao-tin-gia-ve-tiem-chung-vaccine-covid-19-1851086435.htm",
-                "https://suckhoedoisong.vn/tin-gia-ve-vaccine-covid-19-hiem-hoa-khon-luong-169210720235544777.htm"
-            ]
-            
-            for url in urls:
-                st.code(url, language=None)
+            with st.expander("📌 Xem danh sách URL gợi ý", expanded=False):
+                st.caption("Bạn có thể copy các đường link dưới đây để thử nghiệm tính năng quét tin tự động:")
+                urls = [
+                    "https://www.vietnamplus.vn/nhan-dien-va-xu-ly-tin-gia-xuyen-tac-ve-tiem-chung-vaccine-phong-covid19/726667.vnp",
+                    "https://thanhnien.vn/canh-bao-tin-gia-ve-tiem-chung-vaccine-covid-19-1851086435.htm",
+                    "https://suckhoedoisong.vn/tin-gia-ve-vaccine-covid-19-hiem-hoa-khon-luong-169210720235544777.htm"
+                ]
+                for url in urls:
+                    st.code(url, language=None)
             
             sc_col1, sc_col2 = st.columns([4, 1])
             with sc_col1:
