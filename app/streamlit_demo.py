@@ -2050,11 +2050,24 @@ def main():
                                 
                                 # 🩺 CHIẾN LƯỢC ĐỀ XUẤT ĐỘNG (DYNAMIC AI STRATEGY)
                                 st.markdown("##### 🩺 Chiến lược Hành động (AI Strategy Advisor)")
+                                
+                                # Cấu hình style theo Theme
+                                if is_dark:
+                                    m_card_style = "background: linear-gradient(135deg, #441111 0%, #1a0a0a 100%); border-left: 5px solid #ff4b4b; color: #eee;"
+                                    m_title_style = "color: #ff8f8f;"
+                                    p_card_style = "background: linear-gradient(135deg, #113322 0%, #0a1a14 100%); border-left: 5px solid #38ef7d; color: #eee;"
+                                    p_title_style = "color: #38ef7d;"
+                                else:
+                                    m_card_style = "background: #ffffff; border: 2px solid #ff4b4b; border-left: 8px solid #ff4b4b; color: #000000; box-shadow: 0 4px 12px rgba(255, 75, 75, 0.1);"
+                                    m_title_style = "color: #ff4b4b;"
+                                    p_card_style = "background: #ffffff; border: 2px solid #00c853; border-left: 8px solid #00c853; color: #000000; box-shadow: 0 4px 12px rgba(0, 200, 83, 0.1);"
+                                    p_title_style = "color: #00c853;"
+
                                 if "Tin giả" in misinfo_label:
                                     st.markdown(f"""
-                                    <div style="background: linear-gradient(135deg, #441111 0%, #1a0a0a 100%); padding: 20px; border-radius: 15px; border-left: 5px solid #ff4b4b; color: #ff8f8f;">
-                                        <b style="font-size: 1.1rem;">🛡️ Kế hoạch Phản ứng Tin giả (Urgent)</b><br>
-                                        <ul style="font-size: 0.9em; margin-top: 10px; color: #eee;">
+                                    <div style="{m_card_style} padding: 20px; border-radius: 15px;">
+                                        <b style="font-size: 1.1rem; {m_title_style}">🛡️ Kế hoạch Phản ứng Tin giả (Urgent)</b><br>
+                                        <ul style="font-size: 0.95em; margin-top: 10px;">
                                             <li><b>Đính chính:</b> AI đề xuất bác bỏ trực tiếp nội dung về <i>"{case['text'][:30]}..."</i> bằng dữ liệu khoa học chính thống.</li>
                                             <li><b>Kênh truyền thông:</b> Ưu tiên các nền tảng MXH có độ lan tỏa nhanh (TikTok, Facebook Group).</li>
                                             <li><b>Thông điệp mục tiêu:</b> Đánh vào tâm lý bảo vệ sức khỏe gia đình để trung hòa sự tiêu cực.</li>
@@ -2063,9 +2076,9 @@ def main():
                                     """, unsafe_allow_html=True)
                                 else:
                                     st.markdown(f"""
-                                    <div style="background: linear-gradient(135deg, #113322 0%, #0a1a14 100%); padding: 20px; border-radius: 15px; border-left: 5px solid #38ef7d; color: #38ef7d;">
-                                        <b style="font-size: 1.1rem;">✨ Kế hoạch Lan tỏa Tin tích cực</b><br>
-                                        <ul style="font-size: 0.9em; margin-top: 10px; color: #eee;">
+                                    <div style="{p_card_style} padding: 20px; border-radius: 15px;">
+                                        <b style="font-size: 1.1rem; {p_title_style}">✨ Kế hoạch Lan tỏa Tin tích cực</b><br>
+                                        <ul style="font-size: 0.95em; margin-top: 10px;">
                                             <li><b>Khai thác:</b> Sử dụng nội dung này làm ví dụ điển hình (Social Proof) để củng cố niềm tin cộng đồng.</li>
                                             <li><b>Kênh truyền thông:</b> Zalo OA, Website bệnh viện và các bảng tin cộng đồng.</li>
                                             <li><b>Thông điệp mục tiêu:</b> Khuyến khích sự an tâm và lan tỏa tinh thần trách nhiệm với sức khỏe.</li>
