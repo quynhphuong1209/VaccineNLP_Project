@@ -267,12 +267,12 @@ def query_gemma_api(prompt, token):
         return response
     except Exception as e:
         error_msg = str(e)
-        # Dự phòng mô hình Mistral-7B (rất ổn định với text-generation)
+        # Dự phòng mô hình Mistral-7B (Sử dụng chat_completion để tương thích tốt hơn)
         try:
             client_fb = InferenceClient(model="mistralai/Mistral-7B-Instruct-v0.3", token=token)
-            # Format prompt theo Mistral
-            mistral_prompt = f"<s>[INST] {prompt} [/INST]"
-            return client_fb.text_generation(mistral_prompt, max_new_tokens=300, temperature=0.7)
+            messages = [{"role": "user", "content": prompt}]
+            response = client_fb.chat_completion(messages, max_tokens=300, temperature=0.7)
+            return response.choices[0].message.content
         except Exception as fallback_e:
             return f"❌ Lỗi API: {error_msg} (Dự phòng cũng lỗi: {str(fallback_e)})"
 
