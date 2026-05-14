@@ -855,37 +855,80 @@ def render_benchmark_tab():
         )
         status_placeholder.success("✅ Dữ liệu Benchmark đã sẵn sàng.")
 
-    # Biểu đồ Bar Chart động bên dưới
-    df = st.session_state.final_df
-    is_dark = st.session_state.get("theme", "Dark") == "Dark"
-    chart_font_color = "#e2e4e9" if is_dark else "#000000"
+    # 🏆 THẺ VINH DANH (BEST IN CLASS)
+    st.markdown("#### 🏆 Top Performance Honors")
+    m_col1, m_col2, m_col3 = st.columns(3)
+    with m_col1:
+        st.metric("🚨 Best Misinfo", "XLM-R-v1", "0.4572", delta_color="normal")
+    with m_col2:
+        st.metric("🚩 Best Stance", "PhoBERT-v2", "0.6608", delta_color="normal")
+    with m_col3:
+        st.metric("🎭 Best Sentiment", "PhoBERT-v2", "0.7325", delta_color="normal")
+
+    # 📊 BIỂU ĐỒ BAR CHART NGANG CAO CẤP
+    st.markdown("#### 📊 So sánh chi tiết F1-Score (Horizontal Analysis)")
     
-    fig = go.Figure()
+    fig_bar = go.Figure()
     tasks = ["Misinfo", "Stance", "Sentiment"]
-    colors = ["#3db882", "#4a9eed", "#e8504a"]
+    colors = ["#00c853", "#00d2ff", "#ff4b4b"]
     
     for i, task in enumerate(tasks):
-        fig.add_trace(go.Bar(
-            x=df["Model"], 
-            y=df[task], 
+        fig_bar.add_trace(go.Bar(
+            y=df["Model"], 
+            x=df[task], 
             name=task, 
-            marker_color=colors[i],
-            text=df[task],
-            texttemplate='%{text:.4f}',
-            textposition='outside'
+            orientation='h',
+            marker=dict(
+                color=colors[i],
+                line=dict(color='rgba(255, 255, 255, 0.2)', width=1)
+            ),
+            text=df[task].apply(lambda x: f"{x:.4f}"),
+            textposition='inside',
+            insidetextanchor='middle',
         ))
     
-    fig.update_layout(
-        title=f"So sánh F1-Score giữa các tác vụ (Dữ liệu thời gian thực)",
-        barmode='group', 
+    fig_bar.update_layout(
+        barmode='group',
         paper_bgcolor='rgba(0,0,0,0)', 
         plot_bgcolor='rgba(0,0,0,0)', 
         font=dict(family='Times New Roman', color=chart_font_color, size=14),
-        xaxis=dict(tickfont=dict(color=chart_font_color)),
-        yaxis=dict(range=[0, 1.0], gridcolor='rgba(128,128,128,0.2)'),
-        height=450
+        xaxis=dict(title="F1-Score", range=[0, 0.85], gridcolor='rgba(128,128,128,0.1)'),
+        yaxis=dict(autorange="reversed"), # Đảo ngược để PhoBERT lên đầu
+        height=400,
+        margin=dict(l=20, r=20, t=20, b=20),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
     )
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig_bar, use_container_width=True)
+
+    # 🧬 BIỂU ĐỒ RADAR SO SÁNH SỰ TOÀN DIỆN
+    st.markdown("#### 🧬 Bản đồ Năng lực Mô hình (Capability Radar)")
+    st.caption("💡 Biểu đồ thể hiện mức độ cân bằng giữa các nhiệm vụ. Diện tích càng lớn và càng đều thể hiện mô hình càng toàn diện.")
+    
+    fig_radar = go.Figure()
+    radar_colors = ["rgba(0, 200, 83, 0.3)", "rgba(0, 210, 255, 0.3)", "rgba(255, 75, 75, 0.3)"]
+    line_colors = ["#00c853", "#00d2ff", "#ff4b4b"]
+    
+    for idx, row in df.iterrows():
+        fig_radar.add_trace(go.Scatterpolar(
+            r=[row["Misinfo"], row["Stance"], row["Sentiment"], row["Misinfo"]],
+            theta=tasks + [tasks[0]],
+            fill='toself',
+            name=row["Model"],
+            fillcolor=radar_colors[idx % len(radar_colors)],
+            line=dict(color=line_colors[idx % len(line_colors)], width=2)
+        ))
+    
+    fig_radar.update_layout(
+        polar=dict(
+            radialaxis=dict(visible=True, range=[0, 0.8], gridcolor='rgba(128,128,128,0.2)'),
+            bgcolor='rgba(0,0,0,0)'
+        ),
+        paper_bgcolor='rgba(0,0,0,0)',
+        font=dict(family='Times New Roman', color=chart_font_color, size=13),
+        height=500,
+        legend=dict(orientation="h", y=-0.1)
+    )
+    st.plotly_chart(fig_radar, use_container_width=True)
 
 def render_evaluation_tab():
     """Báo cáo đánh giá chuyên sâu với các biểu đồ sáng tạo và trực quan cao."""
