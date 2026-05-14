@@ -1841,9 +1841,9 @@ def main():
             text-decoration: none;
         }}
         /* ẨN HEADER VÀ FOOTER MẶC ĐỊNH CỦA STREAMLIT */
-        header {visibility: hidden;}
-        footer {visibility: hidden;}
-        #MainMenu {visibility: hidden;}
+        header {{visibility: hidden;}}
+        footer {{visibility: hidden;}}
+        #MainMenu {{visibility: hidden;}}
         
         /* CƯỠNG CHẾ GIAO DIỆN ĐỘC LẬP (INDEPENDENT THEME) */
         .stApp {{
