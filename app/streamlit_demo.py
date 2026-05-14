@@ -1486,6 +1486,18 @@ def main():
             if st.button("🗑️ Reset", width='stretch'):
                 st.session_state.last_result = None
                 st.rerun()
+        
+        # Nút cứu cánh nếu cache bị kẹt lỗi
+        with st.sidebar:
+            st.divider()
+            st.subheader("🛠️ Quản trị hệ thống")
+            if st.button("♻️ Xóa Cache & Khởi động lại"):
+                st.cache_data.clear()
+                st.session_state.last_result = None
+                st.success("Đã xóa bộ nhớ đệm! Đang khởi động lại...")
+                st.rerun()
+            
+            st.info("💡 **Lưu ý:** Nếu gặp lỗi 403 Forbidden, vui lòng kiểm tra lại quyền 'Inference' của Token trên Hugging Face.")
 
         if analyze_btn and user_text.strip():
             with st.spinner(f"🧠 {model_selection} đang xử lý..."):
