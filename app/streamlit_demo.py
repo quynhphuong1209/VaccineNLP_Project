@@ -464,32 +464,39 @@ def render_ai_voice(text_to_read: str):
             const msg = new SpeechSynthesisUtterance();
             msg.text = "{clean_text}";
             
-            // Tìm giọng đọc tiếng Việt tối ưu nhất
+            // Tìm giọng đọc tiếng Việt chất lượng cao nhất (Ưu tiên Google hoặc Microsoft)
             let voices = window.speechSynthesis.getVoices();
             
-            // Hàm chọn giọng
-            const selectVoice = () => {{
+            const selectBestVoice = () => {{
                 voices = window.speechSynthesis.getVoices();
-                const viVoice = voices.find(v => v.lang.includes('vi-VN') || v.lang.includes('vi_VN') || v.name.toLowerCase().includes('vietnamese'));
-                if (viVoice) {{
-                    msg.voice = viVoice;
+                // 1. Tìm giọng Google Tiếng Việt (Cực kỳ rõ ràng)
+                let bestVoice = voices.find(v => v.name.includes('Google') && (v.lang.includes('vi') || v.lang.includes('VN')));
+                
+                // 2. Nếu không có, tìm giọng Microsoft hoặc giọng có chữ 'Vietnamese'
+                if (!bestVoice) {{
+                    bestVoice = voices.find(v => (v.lang.includes('vi-VN') || v.lang.includes('vi_VN')) && !v.name.includes('eSpeak'));
+                }}
+                
+                if (bestVoice) {{
+                    msg.voice = bestVoice;
                 }} else {{
                     msg.lang = 'vi-VN';
                 }}
             }};
 
             if (voices.length === 0) {{
-                window.speechSynthesis.onvoiceschanged = selectVoice;
+                window.speechSynthesis.onvoiceschanged = selectBestVoice;
             }} else {{
-                selectVoice();
+                selectBestVoice();
             }}
             
-            msg.rate = 0.9; // Đọc chậm lại một chút để rõ tiếng Việt hơn
-            msg.pitch = 1.0;
+            msg.rate = 0.85; // Tốc độ vừa phải để rõ chữ tiếng Việt
+            msg.pitch = 1.0;  // Độ cao tự nhiên
+            msg.volume = 1.0; // Âm lượng tối đa
             
             msg.onstart = () => {{
-                btn.innerHTML = '<span style="font-size: 1.2rem;">⏹️</span> Đang đọc tiếng Việt...';
-                btn.style.background = 'linear-gradient(135deg, #ff4b4b 0%, #ff8f8f 100%)';
+                btn.innerHTML = '<span style="font-size: 1.2rem;">⏹️</span> Đang đọc giọng Việt chuẩn...';
+                btn.style.background = 'linear-gradient(135deg, #00c853 0%, #b2ff59 100%)';
             }};
             
             msg.onend = () => {{
@@ -500,7 +507,7 @@ def render_ai_voice(text_to_read: str):
             window.speechSynthesis.speak(msg);
         }}
         
-        // Nạp sẵn danh sách giọng đọc
+        // Kích hoạt nạp giọng ngay khi load
         window.speechSynthesis.getVoices();
     </script>
     """
