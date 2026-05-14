@@ -459,7 +459,7 @@ def render_ai_voice(text_to_read: str):
                     box-shadow: 0 4px 15px rgba(0, 200, 83, 0.3);
                     transition: all 0.3s ease;
                 " onclick="togglePlay()">
-                    <span style="font-size: 1.2rem;">🔊</span> Nghe Chị Google Giải Thích
+                    <span style="font-size: 1.2rem;">🔊</span> Nghe AI Giải Thích
                 </button>
             </div>
             <script>
@@ -468,12 +468,12 @@ def render_ai_voice(text_to_read: str):
                     const btn = document.getElementById('speak-btn');
                     if (audio.paused) {{
                         audio.play();
-                        btn.innerHTML = '<span style="font-size: 1.2rem;">⏹️</span> Đang đọc (Giọng Google chuẩn)...';
+                        btn.innerHTML = '<span style="font-size: 1.2rem;">⏹️</span> Đang đọc giải thích...';
                         btn.style.background = 'linear-gradient(135deg, #ff4b4b 0%, #ff8f8f 100%)';
                     }} else {{
                         audio.pause();
                         audio.currentTime = 0;
-                        btn.innerHTML = '<span style="font-size: 1.2rem;">🔊</span> Nghe Chị Google Giải Thích';
+                        btn.innerHTML = '<span style="font-size: 1.2rem;">🔊</span> Nghe AI Giải Thích';
                         btn.style.background = 'linear-gradient(135deg, #00c853 0%, #b2ff59 100%)';
                     }}
                     audio.onended = () => {{
