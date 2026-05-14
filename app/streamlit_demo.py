@@ -623,9 +623,17 @@ def render_wordcloud(text, is_dark=True):
         st.info("💡 Tính năng WordCloud đang được khởi tạo...")
 
 def render_news_scraper():
-    """Giao diện quét nội dung từ URL."""
+    """Giao diện quét nội dung từ URL với gợi ý link."""
     st.markdown("### 🌐 Quét nội dung từ URL")
-    url = st.text_input("Nhập link bài báo hoặc bài viết về vắc-xin:", placeholder="https://vnexpress.net/...")
+    st.info("💡 Tính năng này cho phép bạn dán một đường link bài báo. AI sẽ tự trích xuất nội dung và phân tích.")
+    
+    # Gợi ý một số link để user dễ test
+    with st.expander("🔗 Gợi ý link báo chí để thử nghiệm (Copy & Paste)"):
+        st.code("https://vnexpress.net/hon-15-7-trieu-tre-em-da-duoc-tiem-chung-mo-rong-4740150.html")
+        st.code("https://tuoitre.vn/tiem-chung-mo-rong-nhieu-loai-vac-xin-da-co-tro-lai-2024010315362592.htm")
+        st.code("https://moh.gov.vn/chuong-trinh-muc-tieu-quoc-gia/-/asset_publisher/7NG96ezYsl75/content/tiem-chung-mo-rong-la-bien-phap-quan-trong-nhat-e-phong-benh-truyen-nhiem")
+
+    url = st.text_input("Nhập link bài báo hoặc bài viết về vắc-xin:", placeholder="Dán link vào đây...")
     
     if st.button("🚀 Lấy nội dung & Phân tích"):
         if url:
