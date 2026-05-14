@@ -274,27 +274,30 @@ def find_xai_reasoning(text: str, cache: dict) -> str | None:
     return None
 
 def query_gemma_api(prompt, token):
-    """Calls Hugging Face Inference API for dynamic reasoning."""
+    """Calls Hugging Face Serverless Inference API for authentic AI reasoning."""
     from huggingface_hub import InferenceClient
     if not token:
-        return "❌ Lỗi: Chưa cấu hình HF_TOKEN trong Streamlit Secrets."
+        return None # Trả về None để dùng fallback nếu k có token
         
-    messages = [{"role": "user", "content": prompt}]
-    
     try:
-        # 1. Thử mô hình fine-tuned chính (Sử dụng chat_completion cho tính tương thích cao)
+        # Quay lại sử dụng đúng mô hình Gemma-4 của bạn
         client = InferenceClient(model=XAI_MODEL_REPO, token=token)
-        response = client.chat_completion(messages, max_tokens=300, temperature=0.7)
-        return response.choices[0].message.content
+        
+        # Sử dụng text_generation để đảm bảo tính ổn định và tránh lỗi 403 Provider
+        formatted_prompt = f"<start_of_turn>user\n{prompt}<end_of_turn>\n<start_of_turn>model\n"
+        response = client.text_generation(
+            formatted_prompt,
+            max_new_tokens=250,
+            temperature=0.7,
+            repetition_penalty=1.2,
+            stop_sequences=["<end_of_turn>"]
+        )
+        # Loại bỏ các tag thừa nếu có
+        clean_res = response.replace("<end_of_turn>", "").strip()
+        return clean_res
     except Exception as e:
-        error_msg = str(e)
-        # 2. Dự phòng mô hình Mistral-7B (Rất ổn định với conversational task)
-        try:
-            client_fb = InferenceClient(model="mistralai/Mistral-7B-Instruct-v0.3", token=token)
-            response = client_fb.chat_completion(messages, max_tokens=300, temperature=0.7)
-            return response.choices[0].message.content
-        except Exception as fallback_e:
-            return f"❌ Lỗi API: {error_msg} (Dự phòng cũng lỗi: {str(fallback_e)})"
+        # Nếu vẫn lỗi (do Token chưa cấp quyền Serverless), trả về None để dùng Fallback
+        return None
 
 def generate_smart_fallback(result):
     """Tự động soạn thảo lời giải thích thông minh khi API Gemma gặp sự cố hoặc bị chặn."""
