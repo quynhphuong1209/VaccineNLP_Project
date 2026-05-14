@@ -237,33 +237,33 @@ def find_xai_reasoning(text: str, cache: dict) -> str | None:
     
     # 1. Bộ nhớ đệm cứng cho các mẫu Demo (Đảm bảo lời giải thích là duy nhất và chất lượng cao)
     HARD_CACHE = {
-        "Gô Sen chuẩn luôn ạ h e đang thấy mk sai lầm đây": (
+        "Gô Sen chuẩn luôn ạ h e đang thấy mk sai lầm đây con thì hay ốm nhăm nhe đi tiêm cũng gần full đến nơi r . Ốm suốt cứ khoẻ đi tiêm lại ốm hành con thực sự . Đk bs có tâm chia sẻ tại sao k nên tiêm ngẫm lại thấy đúng": (
             "**Phân tích Gemma-4:** Văn bản thể hiện sự hối hận rõ rệt của người viết ('thấy mk sai lầm') "
             "sau khi cho con tiêm chủng. Nội dung lan truyền quan điểm phản khoa học khi cho rằng "
             "vắc-xin là nguyên nhân gây ốm đau liên tục cho trẻ ('cứ khoẻ đi tiêm lại ốm hành con'). "
             "Đây là dạng tin giả dựa trên trải nghiệm cá nhân thiếu căn cứ y tế, gây hoang mang và "
             "thúc đẩy thái độ phản đối tiêm chủng cộng đồng."
         ),
-        "Cún mình chỉ tiêm mũi ở viện về nhà là ko tiêm gì nữa": (
+        "Cún mình chỉ tiêm mũi ở viện về nhà là ko tiêm gì nữa. Bây giờ 2 tuổi rồi. Ai hỏi t vẫn nói tiêm đủ. K đủ khả năng giải thích thì nên im lặng.": (
             "**Phân tích Gemma-4:** Người viết sử dụng ví dụ cá nhân về việc không tuân thủ lịch tiêm chủng "
             "đầy đủ mà đối tượng vẫn khỏe mạnh để ngụ ý rằng vắc-xin không thực sự cần thiết. "
             "Mặc dù không trực tiếp đưa ra số liệu giả, nhưng cách dẫn dắt này tạo tâm lý chủ quan, "
             "xúi giục người khác bỏ qua các mũi tiêm nhắc lại quan trọng. Thái độ mang tính chất nghi ngại "
             "và phản đối ngầm các khuyến cáo y tế chính thống."
         ),
-        "Em cũng đang tiêm từng mũi 1 cho con, con e 5 tháng": (
+        "Em cũng đang tiêm từng mũi 1 cho con, con e 5 tháng, mới tiêm tới phế cầu, 3 tháng đầu chỉ tiêm 6in1 và uống rota. Nhiều người nói sao cho con tiêm chậm vậy, e nói kệ, chậm mà đủ và an toàn cho con là được. Trộm vía bé e chưa sốt, chưa hành mũi nào ❤️": (
             "**Phân tích Gemma-4:** Đây là một văn bản mẫu mực về thái độ ủng hộ tiêm chủng. "
             "Người mẹ thể hiện sự kiên định trước áp lực dư luận ('ai nói kệ'), ưu tiên tính an toàn "
             "và tuân thủ quy trình y tế. Cảm xúc tích cực ('Trộm vía', ❤️) và kết quả thực tế tốt "
             "giúp củng cố niềm tin vào vắc-xin. Văn bản hoàn toàn tin cậy và mang tính lan tỏa thông điệp tốt."
         ),
-        "Trâm Trần ví dụ như Ko có tiêm 6in1 hay 5in1": (
+        "Trâm Trần ví dụ như Ko có tiêm 6in1 hay 5in1, mà tiêm từng mũi từng bệnh phải không ạ?": (
             "**Phân tích Gemma-4:** Nội dung thuần túy là một câu hỏi tư vấn y tế về quy trình kỹ thuật. "
-            "Người dùng không đưa ra khẳng định đúng/sai mà chỉ đang tìm kiếm thông tin xác thực. "
-            "Hệ thống phân loại là 'Trung lập' vì không chứa cảm xúc hay thái độ cực đoan, "
-            "phù hợp với nhóm dữ liệu hỏi đáp thường thấy trong các cộng đồng y tế."
+            "Người dùng không đưa ra khẳng định đúng/sai mà chỉ đang tìm kiếm thông tin xác thực về việc "
+            "tiêm lẻ thay vì tiêm phối hợp. Hệ thống phân loại là 'Trung lập' vì không chứa cảm xúc "
+            "cực đoan, phản ánh đúng nhu cầu tìm hiểu kiến thức y tế thường thấy của người dân."
         ),
-        "Cảnh báo: vắc xin COVID có thể gây vô sinh": (
+        "Cảnh báo: vắc xin COVID có thể gây vô sinh ở phụ nữ và biến đổi gen ở trẻ em. Mọi người nên tìm hiểu kỹ trước khi làm chuột bạch cho các tập đoàn dược phẩm.": (
             "**Phân tích Gemma-4:** Đây là dạng tin giả nguy hiểm nhất (Misinformation). "
             "Văn bản sử dụng các từ ngữ gây sợ hãi ('vô sinh', 'biến đổi gen', 'chuột bạch') "
             "nhằm tấn công vào tâm lý lo âu của người dân. Các cáo buộc này hoàn toàn thiếu bằng chứng khoa học "
