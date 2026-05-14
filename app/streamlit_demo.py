@@ -1840,12 +1840,10 @@ def main():
             color: #007bff !important;
             text-decoration: none;
         }}
-        /* HIỂN THỊ LẠI HỆ THỐNG STREAMLIT THEO YÊU CẦU */
-        /*
-        header {visibility: hidden;}
-        footer {visibility: hidden;}
-        #MainMenu {visibility: hidden;}
-        */
+        /* HIỂN THỊ HỆ THỐNG STREAMLIT */
+        header {{visibility: visible !important;}}
+        footer {{visibility: visible !important;}}
+        #MainMenu {{visibility: visible !important;}}
         
         /* CƯỠNG CHẾ GIAO DIỆN ĐỘC LẬP (INDEPENDENT THEME) */
         .stApp {{
