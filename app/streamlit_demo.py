@@ -1533,13 +1533,9 @@ def main():
                     st.markdown("<br>", unsafe_allow_html=True)
                     st.markdown("##### 🧠 Hệ thống Giải thích (XAI Engine)")
                     
-                    # Thêm tính năng âm thanh AI (Chỉ đọc nếu KHÔNG phải lỗi)
+                    # Thêm tính năng âm thanh AI (Chỉ đọc nội dung giải thích chi tiết)
                     if reasoning and not reasoning.startswith("❌"):
-                        misinfo_label = LABEL_MAPS["misinfo"][result["misinfo"]["pred"]]
-                        stance_label = LABEL_MAPS["stance"][result["stance"]["pred"]]
-                        sentiment_label = LABEL_MAPS["sentiment"][result["sentiment"]["pred"]]
-                        
-                        speech_text = f"Kết quả phân tích: Đây là {misinfo_label}. Quan điểm: {stance_label}. Cảm xúc: {sentiment_label}. Giải thích chi tiết: {reasoning}"
+                        speech_text = reasoning.strip()
                         render_ai_voice(speech_text)
                     elif reasoning and reasoning.startswith("❌"):
                         st.error("⚠️ Không thể phát âm thanh do lỗi kết nối API. Vui lòng kiểm tra lại cấu hình HF_TOKEN.")
