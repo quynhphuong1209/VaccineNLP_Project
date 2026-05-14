@@ -20,12 +20,19 @@ import torch.nn as nn
 import torch.nn.functional as F
 import gc
 import sys
+import logging
 from pathlib import Path
 from underthesea import word_tokenize
-import logging
-import json
-import torch
-import torch.nn as nn
+
+# ─────────────────────────────────────────────────────────────
+# PAGE CONFIGURATION (Must be first Streamlit command)
+# ─────────────────────────────────────────────────────────────
+st.set_page_config(
+    page_title="VaccineNLP - Phân tích tin giả & Thái độ",
+    page_icon="💉",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
 # Ẩn các cảnh báo
 logging.getLogger("transformers").setLevel(logging.ERROR)
@@ -1181,14 +1188,8 @@ def render_thesis_outline_tab():
 # ─────────────────────────────────────────────────────────────
 def main():
     # ─────────────────────────────────────────────────────────────
-    # PAGE CONFIGURATION
+    # THEME STATE & TOGGLE
     # ─────────────────────────────────────────────────────────────
-    st.set_page_config(
-        page_title="VaccineNLP - Phân tích tin giả & Thái độ",
-        page_icon="💉",
-        layout="wide",
-        initial_sidebar_state="expanded"
-    )
 
     # ─────────────────────────────────────────────────────────────
     # THEME STATE & TOGGLE
