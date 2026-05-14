@@ -2112,7 +2112,7 @@ def main():
                                     st.markdown(f"""
                                     <div style="{m_card_style} padding: 20px; border-radius: 15px;">
                                         <b style="font-size: 1.1rem; {m_title_style}">🛡️ Kế hoạch Phản ứng Tin giả (Urgent)</b><br>
-                                        <ul style="font-size: 0.95em; margin-top: 10px; color: {text_col};">
+                                        <ul style="font-size: 0.95em; margin-top: 10px; color: {text_color};">
                                             <li><b style="{m_title_style}">Đính chính:</b> AI đề xuất bác bỏ trực tiếp nội dung về <i>"{case['text'][:30]}..."</i> bằng dữ liệu khoa học chính thống.</li>
                                             <li><b style="{m_title_style}">Kênh truyền thông:</b> Ưu tiên các nền tảng MXH có độ lan tỏa nhanh (TikTok, Facebook Group).</li>
                                             <li><b style="{m_title_style}">Thông điệp mục tiêu:</b> Đánh vào tâm lý bảo vệ sức khỏe gia đình để trung hòa sự tiêu cực.</li>
@@ -2123,7 +2123,7 @@ def main():
                                     st.markdown(f"""
                                     <div style="{p_card_style} padding: 20px; border-radius: 15px;">
                                         <b style="font-size: 1.1rem; {p_title_style}">✨ Kế hoạch Lan tỏa Tin tích cực</b><br>
-                                        <ul style="font-size: 0.95em; margin-top: 10px; color: {text_col};">
+                                        <ul style="font-size: 0.95em; margin-top: 10px; color: {text_color};">
                                             <li><b style="{p_title_style}">Khai thác:</b> Sử dụng nội dung này làm ví dụ điển hình (Social Proof) để củng cố niềm tin cộng đồng.</li>
                                             <li><b style="{p_title_style}">Kênh truyền thông:</b> Zalo OA, Website bệnh viện và các bảng tin cộng đồng.</li>
                                             <li><b style="{p_title_style}">Thông điệp mục tiêu:</b> Khuyến khích sự an tâm và lan tỏa tinh thần trách nhiệm với sức khỏe.</li>
