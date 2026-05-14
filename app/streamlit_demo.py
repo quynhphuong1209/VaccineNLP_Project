@@ -1024,13 +1024,25 @@ def render_evaluation_tab():
 
     fig_radar.update_layout(
         polar=dict(
-            radialaxis=dict(visible=True, range=[0, 1], gridcolor='rgba(128,128,128,0.2)'),
+            radialaxis=dict(
+                visible=True, 
+                range=[0, 1], 
+                gridcolor='rgba(128,128,128,0.2)',
+                tickfont=dict(color=text_color) # Màu số trên trục
+            ),
+            angularaxis=dict(
+                tickfont=dict(color=text_color) # Màu nhãn góc (Stance F1,...)
+            ),
             bgcolor='rgba(0,0,0,0)'
         ),
         paper_bgcolor='rgba(0,0,0,0)',
         font=dict(family='Times New Roman', color=text_color, size=14),
         height=500,
-        margin=dict(l=80, r=80, t=40, b=40)
+        margin=dict(l=80, r=80, t=40, b=40),
+        legend=dict(
+            font=dict(color=text_color), # ÉP MÀU CHỮ CHÚ GIẢI (LEGEND)
+            bgcolor='rgba(0,0,0,0)'
+        )
     )
     st.plotly_chart(fig_radar, use_container_width=True)
     st.markdown(f"""
