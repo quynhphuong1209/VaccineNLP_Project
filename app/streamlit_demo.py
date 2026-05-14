@@ -1954,6 +1954,31 @@ def main():
                                 with st.expander("📖 Xem giải thích từ Gemma-4 XAI Engine", expanded=True):
                                     st.markdown(f"<div style='border-left: 3px solid #64ffda; padding-left: 15px; font-size: 0.9em; color: {text_color}; opacity: 0.9;'>{reasoning}</div>", unsafe_allow_html=True)
                                 
+                                # 🩺 CHIẾN LƯỢC ĐỀ XUẤT ĐỘNG (DYNAMIC AI STRATEGY)
+                                st.markdown("##### 🩺 Chiến lược Hành động (AI Strategy Advisor)")
+                                if "Tin giả" in misinfo_label:
+                                    st.markdown(f"""
+                                    <div style="background: linear-gradient(135deg, #441111 0%, #1a0a0a 100%); padding: 20px; border-radius: 15px; border-left: 5px solid #ff4b4b; color: #ff8f8f;">
+                                        <b style="font-size: 1.1rem;">🛡️ Kế hoạch Phản ứng Tin giả (Urgent)</b><br>
+                                        <ul style="font-size: 0.9em; margin-top: 10px; color: #eee;">
+                                            <li><b>Đính chính:</b> AI đề xuất bác bỏ trực tiếp nội dung về <i>"{case['text'][:30]}..."</i> bằng dữ liệu khoa học chính thống.</li>
+                                            <li><b>Kênh truyền thông:</b> Ưu tiên các nền tảng MXH có độ lan tỏa nhanh (TikTok, Facebook Group).</li>
+                                            <li><b>Thông điệp mục tiêu:</b> Đánh vào tâm lý bảo vệ sức khỏe gia đình để trung hòa sự tiêu cực.</li>
+                                        </ul>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+                                else:
+                                    st.markdown(f"""
+                                    <div style="background: linear-gradient(135deg, #113322 0%, #0a1a14 100%); padding: 20px; border-radius: 15px; border-left: 5px solid #38ef7d; color: #38ef7d;">
+                                        <b style="font-size: 1.1rem;">✨ Kế hoạch Lan tỏa Tin tích cực</b><br>
+                                        <ul style="font-size: 0.9em; margin-top: 10px; color: #eee;">
+                                            <li><b>Khai thác:</b> Sử dụng nội dung này làm ví dụ điển hình (Social Proof) để củng cố niềm tin cộng đồng.</li>
+                                            <li><b>Kênh truyền thông:</b> Zalo OA, Website bệnh viện và các bảng tin cộng đồng.</li>
+                                            <li><b>Thông điệp mục tiêu:</b> Khuyến khích sự an tâm và lan tỏa tinh thần trách nhiệm với sức khỏe.</li>
+                                        </ul>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+
                                 st.progress(confidence, text=f"Độ tin cậy của mô hình {model_selection}")
                             else:
                                 st.error("Không nhận được kết quả từ mô hình.")
@@ -1961,37 +1986,10 @@ def main():
                             st.error(f"Lỗi khi chạy mô hình: {e}")
                 
                 st.markdown("<br>", unsafe_allow_html=True)
-                
-                st.markdown("<br>", unsafe_allow_html=True)
 
         st.markdown("---")
-        st.markdown("#### 🩺 2. AI Health Strategy Advisor (Trợ lý Chiến lược Y tế)")
-        st.write("Dựa trên kết quả phân tích, AI tự động đề xuất hành động cụ thể cho cán bộ quản lý y tế:")
-        
-        col_adv1, col_adv2 = st.columns(2)
-        with col_adv1:
-            st.markdown("""
-            <div style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); padding: 20px; border-radius: 15px; color: white; height: 200px;">
-                <h5 style="margin-top:0;">🛡️ Kế hoạch Phản ứng Tin giả</h5>
-                <ul style="font-size: 0.85em;">
-                    <li><b>Đính chính:</b> Tập trung bác bỏ 'Chip 5G' bằng dữ liệu thành phần vaccine.</li>
-                    <li><b>Kênh:</b> Ưu tiên TikTok (nơi tin giả mỉa mai lan truyền mạnh).</li>
-                    <li><b>Thông điệp:</b> 'Khoa học là sự thật, đừng để mỉa mai làm hại sức khỏe'.</li>
-                </ul>
-            </div>
-            """, unsafe_allow_html=True)
-            
-        with col_adv2:
-            st.markdown("""
-            <div style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); padding: 20px; border-radius: 15px; color: white; height: 200px;">
-                <h5 style="margin-top:0;">✨ Kế hoạch Lan tỏa Tin thật</h5>
-                <ul style="font-size: 0.85em;">
-                    <li><b>Khai thác:</b> Biến các câu hỏi thắc mắc thành bài viết giải đáp Q&A.</li>
-                    <li><b>Kênh:</b> Facebook Group mẹ và bé, Zalo cộng đồng.</li>
-                    <li><b>Thông điệp:</b> 'Hiểu đúng về vaccine - An tâm cho cả gia đình'.</li>
-                </ul>
-            </div>
-            """, unsafe_allow_html=True)
+        st.markdown("#### 🚀 Tầm nhìn Hệ thống (System Vision)")
+        st.write("Mô hình VaccineNLP hướng tới việc trở thành một 'Màng lọc thông tin thông minh' cho các cơ quan y tế, giúp phản ứng nhanh với các luồng dư luận trái chiều.")
 
     with tabs[3]:
         render_evaluation_tab()
