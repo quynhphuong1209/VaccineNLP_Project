@@ -238,20 +238,21 @@ def find_xai_reasoning(text: str, cache: dict) -> str | None:
     
     import re
     def normalize(t):
-        # Giữ lại chữ, số và khoảng trắng để so sánh chính xác hơn
-        return re.sub(r'[^a-z0-9àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ\s]', '', t.lower()).strip()
+        # Chuyển về chữ thường và chỉ giữ lại ký tự chữ cái và số (loại bỏ hoàn toàn khoảng trắng và dấu)
+        if not t: return ""
+        return re.sub(r'[^a-z0-9àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]', '', t.lower())
     
     input_norm = normalize(t_strip)
     
-    # 2. Thử tìm kiếm theo nội dung đã chuẩn hóa
+    # 2. Thử tìm kiếm theo nội dung đã chuẩn hóa tuyệt đối
     for k, v in cache.items():
         if normalize(k) == input_norm:
             return v
             
-    # 3. Thử tìm kiếm mờ (nếu khớp 100 ký tự đầu)
+    # 3. Thử tìm kiếm mờ (nếu khớp một phần đáng kể)
     for k, v in cache.items():
         k_norm = normalize(k)
-        if len(input_norm) > 50 and (input_norm[:100] in k_norm or k_norm[:100] in input_norm):
+        if len(input_norm) > 20 and (input_norm in k_norm or k_norm in input_norm):
             return v
             
     return None
@@ -1521,13 +1522,16 @@ def main():
                     st.markdown("<br>", unsafe_allow_html=True)
                     st.markdown("##### 🧠 Hệ thống Giải thích (XAI Engine)")
                     
-                    # Thêm tính năng âm thanh AI
-                    misinfo_label = LABEL_MAPS["misinfo"][result["misinfo"]["pred"]]
-                    stance_label = LABEL_MAPS["stance"][result["stance"]["pred"]]
-                    sentiment_label = LABEL_MAPS["sentiment"][result["sentiment"]["pred"]]
-                    
-                    speech_text = f"Kết quả phân tích: Đây là {misinfo_label}. Quan điểm: {stance_label}. Cảm xúc: {sentiment_label}. Giải thích chi tiết: {reasoning}"
-                    render_ai_voice(speech_text)
+                    # Thêm tính năng âm thanh AI (Chỉ đọc nếu KHÔNG phải lỗi)
+                    if reasoning and not reasoning.startswith("❌"):
+                        misinfo_label = LABEL_MAPS["misinfo"][result["misinfo"]["pred"]]
+                        stance_label = LABEL_MAPS["stance"][result["stance"]["pred"]]
+                        sentiment_label = LABEL_MAPS["sentiment"][result["sentiment"]["pred"]]
+                        
+                        speech_text = f"Kết quả phân tích: Đây là {misinfo_label}. Quan điểm: {stance_label}. Cảm xúc: {sentiment_label}. Giải thích chi tiết: {reasoning}"
+                        render_ai_voice(speech_text)
+                    elif reasoning and reasoning.startswith("❌"):
+                        st.error("⚠️ Không thể phát âm thanh do lỗi kết nối API. Vui lòng kiểm tra lại cấu hình HF_TOKEN.")
 
                     with st.expander("📖 Xem giải thích chi tiết từ Gemma-4 XAI Engine", expanded=True):
                         st.markdown(f"<div style='border-left: 3px solid #64ffda; padding-left: 20px; color: {text_color}; opacity: 0.9;'>{reasoning}</div>", unsafe_allow_html=True)
