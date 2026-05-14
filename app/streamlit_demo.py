@@ -1375,6 +1375,20 @@ def main():
             padding: 10px 15px !important;
         }}
         
+        /* Fix Download Button theme adaptation */
+        div[data-testid="stDownloadButton"] button {
+            background-color: {"#112240" if is_dark else "#f0f2f6"} !important;
+            color: {"#64ffda" if is_dark else "#1f2937"} !important;
+            border: 1px solid {"rgba(100, 255, 218, 0.2)" if is_dark else "rgba(0, 0, 0, 0.1)"} !important;
+            width: 100% !important;
+            border-radius: 10px !important;
+            padding: 8px !important;
+        }
+        div[data-testid="stDownloadButton"] button:hover {
+            background-color: {"rgba(100, 255, 218, 0.1)" if is_dark else "rgba(0, 0, 0, 0.05)"} !important;
+            border-color: #64ffda !important;
+        }
+
         /* Focus state for inputs */
         div[data-testid="stTextInput"] input:focus, 
         div[data-testid="stTextArea"] textarea:focus {{
