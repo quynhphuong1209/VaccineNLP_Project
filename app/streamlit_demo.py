@@ -1932,7 +1932,7 @@ def main():
                                 misinfo_label = LABEL_MAPS['misinfo'][m_id]
                                 stance_label = LABEL_MAPS['stance'][st_id]
                                 sentiment_label = LABEL_MAPS['sentiment'][se_id]
-                                confidence = max(result['misinfo']['conf'])
+                                confidence = float(max(result['misinfo']['conf']))
                                 
                                 # Lấy màu sắc từ LABEL_COLORS
                                 m_color = LABEL_COLORS['misinfo'][m_id]
