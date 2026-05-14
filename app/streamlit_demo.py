@@ -330,33 +330,38 @@ def query_gemma_api(prompt, token):
     return None # Nếu tất cả đều thất bại, tầng 4 (Smart Fallback) sẽ tự kích hoạt
 
 def generate_smart_fallback(result):
-    """Tự động soạn thảo lời giải thích thông minh khi API Gemma gặp sự cố hoặc bị chặn."""
+    """Tự động soạn thảo lời giải thích thông minh, nhất quán và không mâu thuẫn."""
     misinfo = result['misinfo']['pred']
     stance = result['stance']['pred']
     sentiment = result['sentiment']['pred']
     
-    explanation = f"💡 **[AI Reasoning Engine]** Phân tích đa nhiệm cho thấy:\n\n"
+    explanation = f"💡 **[AI Reasoning Engine]** Phân tích nội dung cho thấy:\n\n"
     
+    # Nhận xét về tính xác thực
     if misinfo == 1:
-        explanation += "- **Đánh giá Tin cậy:** Văn bản này chứa các từ khóa nhạy cảm và cấu trúc câu thường thấy trong các nội dung sai lệch về y tế. "
+        explanation += "- **Tính xác thực:** Văn bản chứa thông tin sai lệch hoặc thuyết âm mưu chưa kiểm chứng về y tế. "
     else:
-        explanation += "- **Đánh giá Tin cậy:** Nội dung mang tính thông tin y tế chính thống, phù hợp với các khuyến cáo chuyên môn. "
+        explanation += "- **Tính xác thực:** Đây là một chia sẻ mang tính cá nhân hoặc thông tin cộng đồng, không vi phạm các tiêu chuẩn về tin giả y tế. "
         
+    # Nhận xét về lập trường (Stance)
+    explanation += "\n- **Lập trường:** "
     if stance == 1:
-        explanation += "Người viết thể hiện thái độ phản đối hoặc nghi ngại đáng kể đối với việc tiêm chủng. "
+        explanation += "Người viết thể hiện thái độ phản đối, nghi ngại hoặc do dự đối với việc tiêm chủng vắc-xin. "
     elif stance == 2:
-        explanation += "Văn bản tập trung vào việc đặt câu hỏi hoặc tìm kiếm sự tư vấn chuyên môn. "
+        explanation += "Văn bản mang tính chất hỏi đáp, thảo luận trung lập hoặc đang tìm kiếm lời khuyên từ chuyên gia. "
     else:
-        explanation += "Thông điệp thể hiện sự ủng hộ tích cực và tin tưởng vào tính hiệu quả của vắc-xin. "
+        explanation += "Thông điệp mang tính ủng hộ, tin tưởng và khuyến khích thực hiện tiêm chủng an toàn. "
         
+    # Nhận xét về cảm xúc (Sentiment)
+    explanation += "\n- **Cảm sắc:** "
     if sentiment == 0:
-        explanation += "\n- **Cảm xúc:** Sắc thái ngôn ngữ tiêu cực, có thể tạo tâm lý hoang mang cho người đọc."
+        explanation += "Ngôn ngữ mang sắc thái tiêu cực, thể hiện sự lo âu, hối hận hoặc bất mãn."
     elif sentiment == 2:
-        explanation += "\n- **Cảm xúc:** Ngôn ngữ tích cực, truyền tải thông điệp khích lệ và niềm tin."
+        explanation += "Ngôn ngữ tích cực, truyền tải sự an tâm, hài lòng và niềm tin vào y tế."
     else:
-        explanation += "\n- **Cảm xúc:** Ngôn ngữ trung tính, tập trung truyền tải thông tin khách quan."
+        explanation += "Ngôn ngữ trung tính, tập trung vào việc thuật lại sự việc hoặc đặt câu hỏi khách quan."
         
-    explanation += "\n\n*💡 Lưu ý: Giải thích này được tạo tự động bởi bộ máy suy luận nội tại của hệ thống.*"
+    explanation += "\n\n*💡 Phân tích này được thực hiện bởi mô hình nội tại của hệ thống VaccineNLP.*"
     return explanation
 
 @st.cache_data(show_spinner=False)
