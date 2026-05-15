@@ -2221,21 +2221,25 @@ def main():
                 m_label = LABEL_MAPS['misinfo'][active_res['misinfo']['pred']]
                 if "Tin giả" in m_label:
                     st.warning("**Kịch bản Phản hồi (Debunking Script):**")
-                    st.code(f"""
-[Healthcare Official Response]
-Chào bạn, chúng tôi đã nhận được thông tin về bài viết này. 
-Qua kiểm chứng, thông tin về "{active_text[:50]}..." là KHÔNG CHÍNH XÁC.
-Sự thật y khoa: [Dẫn link từ Bộ Y Tế]
-Khuyến cáo: Mọi người không nên chia sẻ thông tin chưa kiểm chứng này.
-                    """, language="markdown")
+                    st.markdown(f"""
+                        <div style="background: rgba(255, 75, 75, 0.1); padding: 20px; border-radius: 10px; border: 1px solid #ff4b4b; font-family: 'Times New Roman', serif; font-size: 1.1rem; line-height: 1.6; color: {text_color};">
+                            <b>[Healthcare Official Response]</b><br>
+                            Chào bạn, chúng tôi đã nhận được thông tin về bài viết này.<br>
+                            Qua kiểm chứng, thông tin về <i>"{active_text[:100]}..."</i> là KHÔNG CHÍNH XÁC.<br>
+                            <b>Sự thật y khoa:</b> [Dẫn link từ Bộ Y Tế]<br>
+                            <b>Khuyến cáo:</b> Mọi người không nên chia sẻ thông tin chưa kiểm chứng này.
+                        </div>
+                    """, unsafe_allow_html=True)
                 else:
                     st.success("**Kịch bản Lan tỏa (Engagement Script):**")
-                    st.code(f"""
-[Community Engagement]
-Cảm ơn sự chia sẻ tích cực của bạn về vaccine. 
-Những trải nghiệm thực tế như thế này giúp cộng đồng yên tâm hơn.
-Hãy cùng lan tỏa thông điệp tiêm chủng an toàn nhé!
-                    """, language="markdown")
+                    st.markdown(f"""
+                        <div style="background: rgba(0, 200, 83, 0.1); padding: 20px; border-radius: 10px; border: 1px solid #00c853; font-family: 'Times New Roman', serif; font-size: 1.1rem; line-height: 1.6; color: {text_color};">
+                            <b>[Community Engagement]</b><br>
+                            Cảm ơn sự chia sẻ tích cực của bạn về vaccine.<br>
+                            Những trải nghiệm thực tế như thế này giúp cộng đồng yên tâm hơn.<br>
+                            Hãy cùng lan tỏa thông điệp tiêm chủng an toàn nhé!
+                        </div>
+                    """, unsafe_allow_html=True)
             else:
                 st.info("💡 Hãy chọn một kịch bản ở bên trái để kích hoạt trình trợ lý chiến lược.")
                 # Hiển thị biểu đồ radar mặc định hoặc trống
