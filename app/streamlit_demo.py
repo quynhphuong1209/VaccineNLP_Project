@@ -2175,7 +2175,10 @@ def main():
                                 """, unsafe_allow_html=True)
                                 
                                 st.markdown(f"<p style='font-size: 0.9rem; margin-top: 10px; font-style: italic;'>{res['reasoning']}</p>", unsafe_allow_html=True)
-                                st.session_state[f"last_lab_res_{case['id']}"] = res
+                                st.session_state[f"last_lab_res_{case['id']}"] = {
+                                    "result": res,
+                                    "text": case['text']
+                                }
 
         with lab_col2:
             st.markdown("### 🧬 2. Interaction Matrix")
@@ -2186,12 +2189,14 @@ def main():
             import pandas as pd
             
             # Lấy data từ case cuối cùng được chạy
-            active_res = None
+            active_data = None
             for case in stress_cases:
                 if st.session_state.get(f"run_lab_{case['id']}", False):
-                    active_res = st.session_state.get(f"last_lab_res_{case['id']}")
+                    active_data = st.session_state.get(f"last_lab_res_{case['id']}")
             
-            if active_res:
+            if active_data:
+                active_res = active_data["result"]
+                active_text = active_data["text"]
                 corr_data = {
                     'Task': ['Misinfo', 'Stance', 'Sentiment'],
                     'Intensity': [
@@ -2219,7 +2224,7 @@ def main():
                     st.code(f"""
 [Healthcare Official Response]
 Chào bạn, chúng tôi đã nhận được thông tin về bài viết này. 
-Qua kiểm chứng, thông tin về "{active_res['reasoning'][:50]}..." là KHÔNG CHÍNH XÁC.
+Qua kiểm chứng, thông tin về "{active_text[:50]}..." là KHÔNG CHÍNH XÁC.
 Sự thật y khoa: [Dẫn link từ Bộ Y Tế]
 Khuyến cáo: Mọi người không nên chia sẻ thông tin chưa kiểm chứng này.
                     """, language="markdown")
