@@ -2128,22 +2128,22 @@ def main():
             
             stress_cases = [
                 {
-                    "id": "sarcasm",
-                    "title": "🎭 Kịch bản 1: Mỉa mai (Sarcasm)",
-                    "text": "Tiêm vaccine để được gắn chip 5G miễn phí, đúng là một phát minh thiên tài của nhân loại!",
-                    "icon": "🎭"
+                    "id": "VNLP_V6_1651",
+                    "title": "📜 Case 1: Ngụy biện thế hệ (8x Logic)",
+                    "text": "Ko tiêm mũi nào hết. Ko biết bạn thuộc thế hệ nào, chứ bạn nhìn xem thế hệ 8x trở về trước ko có ai tiêm bất cứ mũi gì vẫn khoẻ mạnh đó thôi. Cha mẹ thời nay bị doạ cho sợ hãi...",
+                    "icon": "👴"
                 },
                 {
-                    "id": "mixed",
-                    "title": "🧪 Kịch bản 2: Tin giả lồng Tin thật (Mixed Fact)",
-                    "text": "Vaccine Pfizer hiệu quả rất cao, nhưng theo nghiên cứu mới nhất, 10% người tiêm sẽ bị đột tử sau 2 năm.",
-                    "icon": "💉"
+                    "id": "VNLP_V6_0189",
+                    "title": "🌍 Case 2: Tin giả Quốc tế (International Fake)",
+                    "text": "Các nước tiên tiến người ta không tiêm vắc xin cho trẻ sơ sinh nữa.",
+                    "icon": "🌐"
                 },
                 {
-                    "id": "conspiracy",
-                    "title": "📜 Kịch bản 3: Thuyết âm mưu (Conspiracy)",
-                    "text": "Mọi người có thấy lạ không khi các tỷ phú cứ thúc giục tiêm vaccine? Đây là kế hoạch giảm dân số toàn cầu đấy.",
-                    "icon": "🌑"
+                    "id": "VNLP_V6_1339",
+                    "title": "❤️ Case 3: Chia sẻ tích cực (Social Proof)",
+                    "text": "Em cũng đang tiêm từng mũi 1 cho con, chậm mà đủ và an toàn cho con là được. Trộm vía bé e chưa sốt, chưa hành mũi nào ❤️",
+                    "icon": "🛡️"
                 }
             ]
             
