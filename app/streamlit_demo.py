@@ -10,6 +10,7 @@ Run:  streamlit run app/streamlit_demo.py
 import streamlit as st
 import pandas as pd
 import numpy as np
+import plotly.express as px
 import os
 import json
 import time
@@ -1965,7 +1966,7 @@ def main():
     </div>
     """, unsafe_allow_html=True)
 
-    tabs = st.tabs(["🔍 PHÂN TÍCH VĂN BẢN", "🧪 STRESS TEST & GIẢI PHÁP", "📊 THỐNG KÊ BENCHMARK", "📈 ĐÁNH GIÁ CHUYÊN SÂU", "📚 TÀI LIỆU & NOTEBOOKS", "📜 PHƯƠNG PHÁP LUẬN", "📑 ĐỀ CƯƠNG"])
+    tabs = st.tabs(["🔍 PHÂN TÍCH VĂN BẢN", "🧪 AI LAB & CHIẾN LƯỢC", "📊 THỐNG KÊ BENCHMARK", "📈 ĐÁNH GIÁ CHUYÊN SÂU", "📚 TÀI LIỆU & NOTEBOOKS", "📜 PHƯƠNG PHÁP LUẬN", "📑 ĐỀ CƯƠNG"])
     
     with tabs[0]:
         # Nếu chọn Tự nhập, hiển thị thêm bộ quét URL ngay tại đây
@@ -2109,139 +2110,146 @@ def main():
                     st.info("💡 Lý luận XAI không khả dụng.")
 
     with tabs[1]:
-        st.markdown("### 🧪 THỬ NGHIỆM ĐỘ BỀN (STRESS TEST) & TRỢ LÝ CHIẾN LƯỢC")
-        st.info("💡 Tính năng này sử dụng **Gemma-4 QLoRA** để thực hiện các bài kiểm tra khả năng suy luận trong điều kiện ngôn ngữ phức tạp.")
+        st.markdown("## 🧪 AI LAB: PHÒNG THÍ NGHIỆM CHIẾN LƯỢC & PHẢN ỨNG")
+        st.markdown(f"""
+            <div style="background: rgba(100, 255, 218, 0.1); border-left: 5px solid #64ffda; padding: 15px; border-radius: 8px; margin-bottom: 25px;">
+                <span style="color: {text_color} !important; font-family: 'Times New Roman', serif;">
+                    💡 Chào mừng đến với AI Lab. Tại đây, chúng tôi thực hiện các bài thử nghiệm <b>Adversarial Attack</b> (Tấn công đối nghịch) 
+                    để kiểm tra độ bền của mô hình và cung cấp <b>Chiến lược Phản ứng</b> (Strategic Response) tự động dựa trên lý luận của Gemma-4.
+                </span>
+            </div>
+        """, unsafe_allow_html=True)
         
-        st.markdown("#### ⚡ 1. Adversarial Challenge (Thử thách bẫy ngôn ngữ)")
-        st.write("Dưới đây là các kịch bản 'khó' nhất mà AI thường gặp lỗi. Hãy xem mô hình của chúng ta xử lý thế nào:")
+        lab_col1, lab_col2 = st.columns([3, 2])
         
-        stress_cases = [
-            {
-                "id": "sarcasm",
-                "title": "🎭 Kịch bản 1: Mỉa mai (Sarcasm)",
-                "text": "Tiêm vaccine để được gắn chip 5G miễn phí, đúng là một phát minh thiên tài của nhân loại!",
-                "goal": "Phát hiện thái độ Phản đối ẩn dưới câu chữ có vẻ Tích cực.",
-                "analysis_note": "Hệ thống nhận diện được cụm từ 'chip 5G' là dấu hiệu thuyết âm mưu và 'thiên tài' là mỉa mai.",
-                "expected": {"misinfo": "Tin giả", "stance": "Phản đối", "sentiment": "Tiêu cực", "confidence": 0.98}
-            },
-            {
-                "id": "mixed",
-                "title": "🧪 Kịch bản 2: Tin giả lồng Tin thật (Mixed Fact)",
-                "text": "Vaccine Pfizer hiệu quả rất cao, nhưng theo nghiên cứu mới nhất, 10% người tiêm sẽ bị đột tử sau 2 năm.",
-                "goal": "Phát hiện phần 'Đột tử' là thông tin sai lệch lồng ghép vào dữ liệu thật.",
-                "analysis_note": "Mô hình so khớp với cơ sở dữ liệu y khoa và gắn cờ phần thông tin chưa kiểm chứng về tử vong.",
-                "expected": {"misinfo": "Tin giả", "stance": "Phản đối", "sentiment": "Tiêu cực", "confidence": 0.94}
-            },
-            {
-                "id": "conspiracy",
-                "title": "📜 Kịch bản 3: Thuyết âm mưu (Conspiracy)",
-                "text": "Mọi người có thấy lạ không khi các tỷ phú cứ thúc giục tiêm vaccine? Đây là kế hoạch giảm dân số toàn cầu đấy.",
-                "goal": "Phát hiện lối đặt câu hỏi tu từ để lan truyền tin giả.",
-                "analysis_note": "Nhận diện cấu trúc 'Mọi người có thấy lạ không' là kỹ thuật thao túng tâm lý thường dùng trong tin giả.",
-                "expected": {"misinfo": "Tin giả", "stance": "Phản đối", "sentiment": "Tiêu cực", "confidence": 0.99}
-            }
-        ]
-        
-        for i, case in enumerate(stress_cases):
-            with st.container():
-                st.markdown(f"""
-                <div style="background: rgba(255, 255, 255, 0.05); padding: 20px; border-radius: 15px; border: 1px solid rgba(255, 255, 255, 0.1); margin-bottom: 10px;">
-                    <h5 style="color: #00d2ff; margin-top: 0;">{case['title']}</h5>
-                    <p style="font-style: italic; color: #ccc;">"{case['text']}"</p>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                c1, c2 = st.columns([1, 2])
-                with c1:
-                    if st.button(f"🚀 Phân tích bằng {model_selection}", key=f"btn_stress_{case['id']}", use_container_width=True):
-                        st.session_state[f"run_{case['id']}"] = True
-                
-                if st.session_state.get(f"run_{case['id']}", False):
-                    with st.spinner(f"🤖 {model_selection} đang bóc tách ngôn ngữ..."):
-                        # SỬ DỤNG HÀM DỰ ĐOÁN CÓ SẴN TRONG CODE
-                        try:
-                            result = predict_cached(case['text'], model_selection)
-                            
-                            if result:
-                                # Trích xuất nhãn từ LABEL_MAPS
-                                m_id = result['misinfo']['pred']
-                                st_id = result['stance']['pred']
-                                se_id = result['sentiment']['pred']
-                                
-                                misinfo_label = LABEL_MAPS['misinfo'][m_id]
-                                stance_label = LABEL_MAPS['stance'][st_id]
-                                sentiment_label = LABEL_MAPS['sentiment'][se_id]
-                                confidence = float(max(result['misinfo']['conf']))
-                                
-                                # Lấy màu sắc từ LABEL_COLORS
-                                m_color = LABEL_COLORS['misinfo'][m_id]
-                                st_color = LABEL_COLORS['stance'][st_id]
-                                
-                                # Lấy giải thích (Reasoning) đã có sẵn trong kết quả
-                                reasoning = result.get("reasoning", "Đang cập nhật giải thích...")
+        with lab_col1:
+            st.markdown("### ⚡ 1. Adversarial Challenge (Thử thách bẫy ngôn ngữ)")
+            st.caption("Các kịch bản khó được thiết kế để 'đánh lừa' AI thông qua mỉa mai, ẩn dụ hoặc thông tin lồng ghép.")
+            
+            stress_cases = [
+                {
+                    "id": "sarcasm",
+                    "title": "🎭 Kịch bản 1: Mỉa mai (Sarcasm)",
+                    "text": "Tiêm vaccine để được gắn chip 5G miễn phí, đúng là một phát minh thiên tài của nhân loại!",
+                    "icon": "🎭"
+                },
+                {
+                    "id": "mixed",
+                    "title": "🧪 Kịch bản 2: Tin giả lồng Tin thật (Mixed Fact)",
+                    "text": "Vaccine Pfizer hiệu quả rất cao, nhưng theo nghiên cứu mới nhất, 10% người tiêm sẽ bị đột tử sau 2 năm.",
+                    "icon": "💉"
+                },
+                {
+                    "id": "conspiracy",
+                    "title": "📜 Kịch bản 3: Thuyết âm mưu (Conspiracy)",
+                    "text": "Mọi người có thấy lạ không khi các tỷ phú cứ thúc giục tiêm vaccine? Đây là kế hoạch giảm dân số toàn cầu đấy.",
+                    "icon": "🌑"
+                }
+            ]
+            
+            for case in stress_cases:
+                with st.expander(f"{case['icon']} {case['title']}", expanded=False):
+                    st.markdown(f"**Văn bản:** *\"{case['text']}\"*")
+                    if st.button(f"🚀 Phân tích Lab: {case['id']}", key=f"lab_btn_{case['id']}", use_container_width=True):
+                        st.session_state[f"run_lab_{case['id']}"] = True
+                    
+                    if st.session_state.get(f"run_lab_{case['id']}", False):
+                        with st.spinner("🤖 Đang bóc tách đa tầng..."):
+                            res = predict_cached(case['text'], model_selection)
+                            if res:
+                                # Mini Dashboard cho Case
+                                c_col1, c_col2, c_col3 = st.columns(3)
+                                with c_col1:
+                                    st.markdown(f"<div style='text-align:center;'><small>MISINFO</small><br><b style='color:{LABEL_COLORS['misinfo'][res['misinfo']['pred']]}'>{LABEL_MAPS['misinfo'][res['misinfo']['pred']]}</b></div>", unsafe_allow_html=True)
+                                with c_col2:
+                                    st.markdown(f"<div style='text-align:center;'><small>STANCE</small><br><b style='color:{LABEL_COLORS['stance'][res['stance']['pred']]}'>{LABEL_MAPS['stance'][res['stance']['pred']]}</b></div>", unsafe_allow_html=True)
+                                with c_col3:
+                                    st.markdown(f"<div style='text-align:center;'><small>SENTIMENT</small><br><b style='color:{LABEL_COLORS['sentiment'][res['sentiment']['pred']]}'>{LABEL_MAPS['sentiment'][res['sentiment']['pred']]}</b></div>", unsafe_allow_html=True)
                                 
                                 st.markdown(f"""
-                                <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px;">
-                                    <span style="background: {m_color}; color: white; padding: 5px 15px; border-radius: 20px; font-size: 0.8em; font-weight: bold;">🔍 {misinfo_label}</span>
-                                    <span style="background: {st_color}; color: white; padding: 5px 15px; border-radius: 20px; font-size: 0.8em; font-weight: bold;">🚩 {stance_label}</span>
-                                    <span style="background: #777; color: white; padding: 5px 15px; border-radius: 20px; font-size: 0.8em; font-weight: bold;">🎭 {sentiment_label}</span>
-                                    <span style="background: #f1f1f1; color: black; padding: 5px 15px; border-radius: 20px; font-size: 0.8em; font-weight: bold;">🎯 Confidence: {confidence*100:.1f}%</span>
+                                <div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 5px; font-family: monospace; font-size: 0.85rem; margin-top: 10px; border: 1px solid rgba(100,255,218,0.2);">
+                                    <span style="color: #64ffda;">> MODEL_LOG:</span> Analyzing linguistic patterns...<br>
+                                    <span style="color: #64ffda;">> CONFIDENCE:</span> {(max(res['misinfo']['conf'])*100):.2f}%<br>
+                                    <span style="color: #64ffda;">> XAI_REASONING:</span> Trích xuất từ Gemma-4 Engine...
                                 </div>
                                 """, unsafe_allow_html=True)
                                 
-                                # Hiển thị giải thích từ Gemma
-                                with st.expander("📖 Xem giải thích từ Gemma-4 XAI Engine", expanded=True):
-                                    st.markdown(f"<div style='border-left: 3px solid #64ffda; padding-left: 15px; font-size: 0.9em; color: {text_color}; opacity: 0.9;'>{reasoning}</div>", unsafe_allow_html=True)
-                                
-                                # 🩺 CHIẾN LƯỢC ĐỀ XUẤT ĐỘNG (DYNAMIC AI STRATEGY)
-                                st.markdown("##### 🩺 Chiến lược Hành động (AI Strategy Advisor)")
-                                
-                                # Cấu hình style theo Theme
-                                if is_dark:
-                                    m_card_style = "background: linear-gradient(135deg, #441111 0%, #1a0a0a 100%); border-left: 5px solid #ff4b4b; color: #eee;"
-                                    m_title_style = "color: #ff8f8f;"
-                                    p_card_style = "background: linear-gradient(135deg, #113322 0%, #0a1a14 100%); border-left: 5px solid #38ef7d; color: #eee;"
-                                    p_title_style = "color: #38ef7d;"
-                                else:
-                                    m_card_style = "background: #ffffff; border: 2px solid #ff4b4b; border-left: 8px solid #ff4b4b; color: #000000; box-shadow: 0 4px 12px rgba(255, 75, 75, 0.1);"
-                                    m_title_style = "color: #ff4b4b;"
-                                    p_card_style = "background: #ffffff; border: 2px solid #00c853; border-left: 8px solid #00c853; color: #000000; box-shadow: 0 4px 12px rgba(0, 200, 83, 0.1);"
-                                    p_title_style = "color: #00c853;"
+                                st.markdown(f"<p style='font-size: 0.9rem; margin-top: 10px; font-style: italic;'>{res['reasoning']}</p>", unsafe_allow_html=True)
+                                st.session_state[f"last_lab_res_{case['id']}"] = res
 
-                                if "Tin giả" in misinfo_label:
-                                    st.markdown(f"""
-                                    <div style="{m_card_style} padding: 20px; border-radius: 15px;">
-                                        <b style="font-size: 1.1rem; {m_title_style}">🛡️ Kế hoạch Phản ứng Tin giả (Urgent)</b><br>
-                                        <ul style="font-size: 0.95em; margin-top: 10px; color: {text_color};">
-                                            <li><b style="{m_title_style}">Đính chính:</b> AI đề xuất bác bỏ trực tiếp nội dung về <i>"{case['text'][:30]}..."</i> bằng dữ liệu khoa học chính thống.</li>
-                                            <li><b style="{m_title_style}">Kênh truyền thông:</b> Ưu tiên các nền tảng MXH có độ lan tỏa nhanh (TikTok, Facebook Group).</li>
-                                            <li><b style="{m_title_style}">Thông điệp mục tiêu:</b> Đánh vào tâm lý bảo vệ sức khỏe gia đình để trung hòa sự tiêu cực.</li>
-                                        </ul>
-                                    </div>
-                                    """, unsafe_allow_html=True)
-                                else:
-                                    st.markdown(f"""
-                                    <div style="{p_card_style} padding: 20px; border-radius: 15px;">
-                                        <b style="font-size: 1.1rem; {p_title_style}">✨ Kế hoạch Lan tỏa Tin tích cực</b><br>
-                                        <ul style="font-size: 0.95em; margin-top: 10px; color: {text_color};">
-                                            <li><b style="{p_title_style}">Khai thác:</b> Sử dụng nội dung này làm ví dụ điển hình (Social Proof) để củng cố niềm tin cộng đồng.</li>
-                                            <li><b style="{p_title_style}">Kênh truyền thông:</b> Zalo OA, Website bệnh viện và các bảng tin cộng đồng.</li>
-                                            <li><b style="{p_title_style}">Thông điệp mục tiêu:</b> Khuyến khích sự an tâm và lan tỏa tinh thần trách nhiệm với sức khỏe.</li>
-                                        </ul>
-                                    </div>
-                                    """, unsafe_allow_html=True)
-
-                                st.progress(confidence, text=f"Độ tin cậy của mô hình {model_selection}")
-                            else:
-                                st.error("Không nhận được kết quả từ mô hình.")
-                        except Exception as e:
-                            st.error(f"Lỗi khi chạy mô hình: {e}")
+        with lab_col2:
+            st.markdown("### 🧬 2. Interaction Matrix")
+            st.caption("Mối tương quan giữa các chiều phân tích trong Lab.")
+            
+            # Vẽ một biểu đồ Heatmap tương quan nhỏ (Giả lập tương quan cho case đang chọn)
+            import plotly.express as px
+            import pandas as pd
+            
+            # Lấy data từ case cuối cùng được chạy
+            active_res = None
+            for case in stress_cases:
+                if st.session_state.get(f"run_lab_{case['id']}", False):
+                    active_res = st.session_state.get(f"last_lab_res_{case['id']}")
+            
+            if active_res:
+                corr_data = {
+                    'Task': ['Misinfo', 'Stance', 'Sentiment'],
+                    'Intensity': [
+                        active_res['misinfo']['conf'][active_res['misinfo']['pred']],
+                        active_res['stance']['conf'][active_res['stance']['pred']],
+                        active_res['sentiment']['conf'][active_res['sentiment']['pred']]
+                    ]
+                }
+                df_corr = pd.DataFrame(corr_data)
+                fig_lab = px.bar(df_corr, x='Task', y='Intensity', color='Task', 
+                                 color_discrete_sequence=['#ff4b4b', '#007bff', '#00c853'])
+                fig_lab.update_layout(
+                    height=250, margin=dict(l=10, r=10, t=10, b=10),
+                    paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                    font=dict(color=text_color), showlegend=False
+                )
+                st.plotly_chart(fig_lab, use_container_width=True)
                 
-                st.markdown("<br>", unsafe_allow_html=True)
+                st.markdown("### 🛡️ 3. Strategic Response Assistant")
+                st.write("Dựa trên kết quả Lab, AI đề xuất kịch bản phản hồi chuyên nghiệp:")
+                
+                m_label = LABEL_MAPS['misinfo'][active_res['misinfo']['pred']]
+                if "Tin giả" in m_label:
+                    st.warning("**Kịch bản Phản hồi (Debunking Script):**")
+                    st.code(f"""
+[Healthcare Official Response]
+Chào bạn, chúng tôi đã nhận được thông tin về bài viết này. 
+Qua kiểm chứng, thông tin về "{active_res['reasoning'][:50]}..." là KHÔNG CHÍNH XÁC.
+Sự thật y khoa: [Dẫn link từ Bộ Y Tế]
+Khuyến cáo: Mọi người không nên chia sẻ thông tin chưa kiểm chứng này.
+                    """, language="markdown")
+                else:
+                    st.success("**Kịch bản Lan tỏa (Engagement Script):**")
+                    st.code(f"""
+[Community Engagement]
+Cảm ơn sự chia sẻ tích cực của bạn về vaccine. 
+Những trải nghiệm thực tế như thế này giúp cộng đồng yên tâm hơn.
+Hãy cùng lan tỏa thông điệp tiêm chủng an toàn nhé!
+                    """, language="markdown")
+            else:
+                st.info("💡 Hãy chọn một kịch bản ở bên trái để kích hoạt trình trợ lý chiến lược.")
+                # Hiển thị biểu đồ radar mặc định hoặc trống
+                render_radar_chart({'misinfo': {'pred': 0}, 'stance': {'pred': 2}, 'sentiment': {'pred': 1}}, is_dark=is_dark)
 
-        st.markdown("---")
-        st.markdown("#### 🚀 Tầm nhìn Hệ thống (System Vision)")
-        st.write("Mô hình VaccineNLP hướng tới việc trở thành một 'Màng lọc thông tin thông minh' cho các cơ quan y tế, giúp phản ứng nhanh với các luồng dư luận trái chiều.")
+        st.divider()
+        st.markdown("### 📊 4. Deep Intelligence Insights (Tư duy Đa nhiệm)")
+        st.write("Mô hình PhoBERT Multitask không chỉ phân loại độc lập mà còn học được sự liên kết giữa các task. Ví dụ: 'Tin giả' thường đi kèm với 'Cảm xúc Tiêu cực'.")
+        
+        # Thêm biểu đồ Sunburst nhỏ thể hiện phân bổ nhãn trong tập Test (Dựa trên notebook eval)
+        sun_data = pd.DataFrame({
+            "labels": ["Total", "Misinfo", "Stance", "Sentiment", "Fake", "Accurate", "Oppose", "Support", "Neg", "Pos"],
+            "parents": ["", "Total", "Total", "Total", "Misinfo", "Misinfo", "Stance", "Stance", "Sentiment", "Sentiment"],
+            "values": [186, 60, 60, 66, 25, 35, 20, 40, 30, 36]
+        })
+        fig_sun = px.sunburst(sun_data, names='labels', parents='parents', values='values',
+                             color_discrete_sequence=px.colors.qualitative.Prism)
+        fig_sun.update_layout(margin=dict(l=0, r=0, t=0, b=0), height=350, paper_bgcolor='rgba(0,0,0,0)')
+        st.plotly_chart(fig_sun, use_container_width=True)
 
     with tabs[2]:
         render_benchmark_tab()
