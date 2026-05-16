@@ -75,9 +75,9 @@ LABEL_MAPS = {
 }
 
 LABEL_COLORS = {
-    "misinfo": {0: "#3db882", 1: "#e8504a", 2: "#d48f35"},
-    "stance":  {0: "#3db882", 1: "#e8504a", 2: "#4a9eed", 3: "#9e9e9e"},
-    "sentiment": {0: "#e8504a", 1: "#4a9eed", 2: "#3db882"},
+    "misinfo": {0: "#214E37", 1: "#C0392B", 2: "#D48F35"},
+    "stance":  {0: "#214E37", 1: "#C0392B", 2: "#2980B9", 3: "#7F8C8D"},
+    "sentiment": {0: "#C0392B", 1: "#2980B9", 2: "#214E37"},
 }
 
 LABEL_ICONS = {
@@ -430,97 +430,118 @@ def find_xai_reasoning(text: str, cache: dict) -> str | None:
 # UI COMPONENTS (Premium Style)
 # ─────────────────────────────────────────────────────────────
 def hien_thi_footer_chung(is_dark=True):
-    """Hiển thị chân trang (footer) 3 cột chuyên nghiệp cho đồ án VaccineNLP"""
+    """Hiển thị chân trang (footer) chuyên nghiệp theo phong cách HUPH"""
     import base64
     
-    # Xác định đường dẫn logo an toàn
-    logo_path_local = PROJECT_ROOT / "abc1.png"
-    logo_src = "https://huph.edu.vn/uploads/logo/logo-huph.png" # Link dự phòng
+    logo_src = "https://huph.edu.vn/uploads/logo/logo-huph.png" 
     
-    try:
-        if logo_path_local.exists():
-            with open(logo_path_local, "rb") as img_file:
-                logo_b64 = base64.b64encode(img_file.read()).decode()
-                logo_src = f"data:image/png;base64,{logo_b64}"
-    except Exception:
-        pass
+    # Màu sắc HUPH (Sử dụng màu xanh đậm của HUPH cho footer)
+    footer_bg = "#122A1E"
+    footer_text = "#FFFFFF"
+    accent_green = "#214E37"
 
-    # Cấu hình màu sắc theo giao diện Sáng/Tối
-    if is_dark:
-        footer_bg = "linear-gradient(135deg, #0a192f 0%, #112240 100%)"
-        footer_text = "#a8b2d1"
-        title_color = "#007bff"
-        label_color = "#ccd6f6"
-        school_name_color = "#fff"
-        col_border = "rgba(0, 123, 255, 0.2)"
-        bottom_text = "#8892b0"
-        project_vi = "#ffd700"
-    else:
-        footer_bg = "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)"
-        footer_text = "#444"
-        title_color = "#0056b3"
-        label_color = "#222"
-        school_name_color = "#000"
-        col_border = "rgba(0,0,0,0.1)"
-        bottom_text = "#666"
-        project_vi = "#b8860b"
-
-    border_color = "#007bff"
-
-    footer_html = f"""<div class="main-footer">
-<div class="footer-container">
-<!-- Cột 1: Logo & Trường -->
-<div class="footer-col logo-col">
-<img src="{logo_src}" class="footer-logo-img" alt="HUPH Logo">
-<div class="school-name">TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG</div>
-<div style="font-size:0.9rem; opacity:0.8; margin-top:10px;">
-<p>📍 Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</p>
-<p>🌐 <a href="https://huph.edu.vn/" target="_blank" class="footer-link">huph.edu.vn</a></p>
-</div>
-</div>
-<!-- Cột 2: Đề tài -->
-<div class="footer-col">
-<div class="footer-title">🔬 ĐỀ TÀI ĐỒ ÁN</div>
-<div class="project-name-vi">Ứng dụng Xử lý Ngôn ngữ Tự nhiên trong phát hiện thông tin sai lệch về vaccine và phân tích thái độ cộng đồng trên môi trường số tại Việt Nam</div>
-<div class="project-name-en" style="margin-top:10px; font-size:0.9rem; opacity:0.8;">
-(Applying NLP for Vaccine Misinformation Detection and Community Attitude Analysis in Vietnamese Digital Environments)
-</div>
-</div>
-<!-- Cột 3: Nhóm thực hiện -->
-<div class="footer-col">
-<div class="footer-title">👥 NHÓM THỰC HIỆN</div>
-<div class="info-row">
-<b>1. Kim Mạnh Hưng</b><br>
-<span style="font-size:0.9rem; opacity:0.8;">
-MSSV: 2211090016 | Lớp: CNCQ KHDL1-1A<br>
-📧 <a href="mailto:2211090016@studenthuph.edu.vn" class="footer-link">2211090016@studenthuph.edu.vn</a>
-</span>
-</div>
-<div class="info-row" style="margin-top:15px;">
-<b>2. Đinh Lê Quỳnh Phương</b><br>
-<span style="font-size:0.9rem; opacity:0.8;">
-MSSV: 2211090031 | Lớp: CNCQ KHDL1-1A<br>
-📧 <a href="mailto:2211090031@studenthuph.edu.vn" class="footer-link">2211090031@studenthuph.edu.vn</a>
-</span>
-</div>
-</div>
-<!-- Cột 4: Giảng viên hướng dẫn -->
-<div class="footer-col">
-<div class="footer-title">👨‍🏫 GIẢNG VIÊN HƯỚNG DẪN</div>
-<div class="info-row">
-<b style="font-size:1.1rem;">TS. Trần Lâm Quân</b><br>
-<div style="margin-top:10px; font-size:0.9rem; opacity:0.8;">
-Giảng viên Khoa học dữ liệu<br>
-Trường Đại học Y tế Công Cộng<br>
-📧 <a href="mailto:tlq@huph.edu.vn" class="footer-link">tlq@huph.edu.vn</a>
-</div>
-</div>
-</div>
-</div>
-<div class="footer-bottom">
-© 2026 VaccineNLP Project | Đồ án tốt nghiệp chuyên ngành Khoa học Dữ liệu - HUPH
-</div>
-</div>"""
+    footer_html = f"""
+    <style>
+        .huph-footer {{
+            background-color: {footer_bg};
+            color: {footer_text};
+            padding: 60px 0 30px 0;
+            font-family: 'Inter', sans-serif;
+            margin-top: 50px;
+            border-top: 5px solid {accent_green};
+        }}
+        .footer-content {{
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 40px;
+            padding: 0 20px;
+        }}
+        .footer-section h4 {{
+            color: #FFFFFF;
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            border-bottom: 2px solid {accent_green};
+            padding-bottom: 10px;
+            display: inline-block;
+        }}
+        .footer-section p, .footer-section a {{
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            text-decoration: none;
+            margin-bottom: 10px;
+            display: block;
+        }}
+        .footer-section a:hover {{
+            color: #64ffda;
+        }}
+        .footer-logo {{
+            max-width: 180px;
+            margin-bottom: 20px;
+            filter: brightness(0) invert(1);
+        }}
+        .footer-bottom-bar {{
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 40px;
+            padding-top: 20px;
+            text-align: center;
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.5);
+        }}
+        .social-icons {{
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+        }}
+        .social-icon {{
+            width: 35px;
+            height: 35px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.3s;
+        }}
+        .social-icon:hover {{
+            background: {accent_green};
+        }}
+    </style>
+    <div class="huph-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <img src="{logo_src}" class="footer-logo" alt="HUPH Logo">
+                <p><b>TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG</b></p>
+                <p>📍 Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</p>
+                <p>📞 Điện thoại: (84-24) 6266 2222</p>
+                <p>📧 Email: info@huph.edu.vn</p>
+            </div>
+            <div class="footer-section">
+                <h4>🔬 ĐỀ TÀI ĐỒ ÁN</h4>
+                <p>Ứng dụng NLP trong phát hiện thông tin sai lệch về vaccine và phân tích thái độ cộng đồng trên môi trường số tại Việt Nam</p>
+                <p><i>Applying NLP for Vaccine Misinformation Detection and Community Attitude Analysis</i></p>
+            </div>
+            <div class="footer-section">
+                <h4>👥 NHÓM THỰC HIỆN</h4>
+                <p><b>Kim Mạnh Hưng</b> (2211090016)</p>
+                <p><b>Đinh Lê Quỳnh Phương</b> (2211090031)</p>
+                <p><b>GVHD: TS. Trần Lâm Quân</b></p>
+            </div>
+            <div class="footer-section">
+                <h4>🔗 LIÊN KẾT</h4>
+                <a href="https://huph.edu.vn/" target="_blank">Trang chủ HUPH</a>
+                <a href="https://huggingface.co/quynhphuong1209" target="_blank">HuggingFace Model Card</a>
+                <a href="https://github.com/quynhphuong1209/VaccineNLP_Project" target="_blank">GitHub Repository</a>
+            </div>
+        </div>
+        <div class="footer-bottom-bar">
+            © 2026 VaccineNLP Project | Đồ án tốt nghiệp KHDL - Trường Đại học Y tế Công Cộng
+        </div>
+    </div>"""
     st.markdown(footer_html, unsafe_allow_html=True)
 
 def render_ai_voice(text_to_read: str):
@@ -545,7 +566,7 @@ def render_ai_voice(text_to_read: str):
             <div style="margin-top: 10px;">
                 <audio id="google-tts-audio" src="data:audio/mp3;base64,{audio_b64}"></audio>
                 <button id="speak-btn" style="
-                    background: linear-gradient(135deg, #00c853 0%, #b2ff59 100%);
+                    background: linear-gradient(135deg, #214E37 0%, #122A1E 100%);
                     color: #0a192f;
                     border: none;
                     padding: 10px 20px;
@@ -568,12 +589,12 @@ def render_ai_voice(text_to_read: str):
                     if (audio.paused) {{
                         audio.play();
                         btn.innerHTML = '<span style="font-size: 1.2rem;">⏹️</span> Đang đọc giải thích...';
-                        btn.style.background = 'linear-gradient(135deg, #ff4b4b 0%, #ff8f8f 100%)';
+                        btn.style.background = 'linear-gradient(135deg, #C0392B 0%, #A94442 100%)';
                     }} else {{
                         audio.pause();
                         audio.currentTime = 0;
                         btn.innerHTML = '<span style="font-size: 1.2rem;">🔊</span> Nghe AI Giải Thích';
-                        btn.style.background = 'linear-gradient(135deg, #00c853 0%, #b2ff59 100%)';
+                        btn.style.background = 'linear-gradient(135deg, #214E37 0%, #122A1E 100%)';
                     }}
                     audio.onended = () => {{
                         btn.innerHTML = '<span style="font-size: 1.2rem;">🔊</span> Nghe Lại';
@@ -742,7 +763,7 @@ def render_news_scraper():
             st.warning("⚠️ Vui lòng nhập URL.")
 
 def render_result_card(task_name: str, task_key: str, result: dict):
-    """Render a styled result card for one task with premium aesthetics."""
+    """Render a styled result card for one task with HUPH aesthetics."""
     pred_id = result["pred"]
     conf_list = result["conf"]
     label = LABEL_MAPS[task_key][pred_id]
@@ -751,27 +772,29 @@ def render_result_card(task_name: str, task_key: str, result: dict):
     confidence = max(conf_list) * 100
 
     is_dark = st.session_state.get("theme", "Dark") == "Dark"
-    card_bg = "rgba(255, 255, 255, 0.03)" if is_dark else "#ffffff"
-    text_color = "#e2e4e9" if is_dark else "#1a1e2e"
-    secondary_text = "#888" if is_dark else "#666"
-    shadow = "0 10px 20px rgba(0,0,0,0.3)" if is_dark else "0 10px 20px rgba(0,0,0,0.1)"
+    # Sử dụng phong cách HUPH: Boxed, shadow nhẹ, font Inter
+    card_bg = "rgba(255, 255, 255, 1)" if not is_dark else "rgba(30, 40, 50, 0.95)"
+    text_color = "#243646" if not is_dark else "#e2e4e9"
+    secondary_text = "#666" if not is_dark else "#888"
+    shadow = "0 8px 30px rgba(0,0,0,0.08)" if not is_dark else "0 8px 30px rgba(0,0,0,0.4)"
 
     st.markdown(f"""
     <div style="
         background: {card_bg};
-        border: 1px solid {color}80;
-        border-radius: 16px;
+        border-top: 5px solid {color};
+        border-radius: 12px;
         padding: 25px;
         text-align: center;
         box-shadow: {shadow};
-        font-family: 'Times New Roman', Times, serif !important;
+        font-family: 'Inter', sans-serif !important;
+        transition: transform 0.3s ease;
     ">
         <div style="font-size: 40px; margin-bottom: 12px;">{icon}</div>
-        <div style="font-size: 0.85rem; color: {secondary_text}; text-transform: uppercase;
-                    letter-spacing: 0.15em; margin-bottom: 8px;">{task_name}</div>
-        <div style="font-size: 1.6rem; font-weight: 700; color: {color};
+        <div style="font-size: 0.8rem; color: {secondary_text}; text-transform: uppercase;
+                    letter-spacing: 0.1em; font-weight: 600; margin-bottom: 8px;">{task_name}</div>
+        <div style="font-size: 1.5rem; font-weight: 800; color: {color};
                     margin-bottom: 10px;">{label}</div>
-        <div style="font-size: 1rem; color: {secondary_text};">
+        <div style="font-size: 0.9rem; color: {secondary_text}; font-weight: 500;">
             Độ tin cậy: <strong style="color: {color};">{confidence:.1f}%</strong>
         </div>
     </div>
@@ -782,16 +805,15 @@ def render_result_card(task_name: str, task_key: str, result: dict):
             class_label = LABEL_MAPS[task_key][idx]
             class_color = LABEL_COLORS[task_key][idx]
             pct = prob * 100
-            bar_bg = "#262730" if is_dark else "#e6eaf1"
-            label_text_color = "#a0a5b0" if is_dark else "#000"
+            bar_bg = "#eee" if not is_dark else "#262730"
             st.markdown(f"""
-            <div style="margin-bottom: 8px;">
-                <div style="display: flex; justify-content: space-between; font-size: 13px; color: {label_text_color};">
+            <div style="margin-bottom: 12px;">
+                <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 500;">
                     <span>{class_label}</span>
-                    <span style="color: {class_color}; font-weight: bold;">{pct:.1f}%</span>
+                    <span style="color: {class_color}; font-weight: 700;">{pct:.1f}%</span>
                 </div>
-                <div style="background: {bar_bg}; border-radius: 10px; height: 8px; margin-top: 4px;">
-                    <div style="background: {class_color}; width: {pct}%; height: 8px; border-radius: 10px; box-shadow: 0 0 10px {class_color}40;"></div>
+                <div style="background: {bar_bg}; border-radius: 6px; height: 8px; margin-top: 6px; overflow: hidden;">
+                    <div style="background: {class_color}; width: {pct}%; height: 8px; border-radius: 6px;"></div>
                 </div>
             </div>
             """, unsafe_allow_html=True)
@@ -836,12 +858,12 @@ def render_benchmark_tab():
             rows_html += f"""
             <tr style="border-bottom: 1px solid {'#444' if is_dark else '#ddd'};">
                 <td style="padding: 12px; font-weight: bold; color: {chart_font_color};">{row['Model']}</td>
-                <td style="padding: 12px;">{get_prog_html(row['Misinfo'], '#ff4b4b')}</td>
-                <td style="padding: 12px;">{get_prog_html(row['Stance'], '#007bff')}</td>
-                <td style="padding: 12px;">{get_prog_html(row['Sentiment'], '#00c853')}</td>
+                <td style="padding: 12px;">{get_prog_html(row['Misinfo'], '#C0392B')}</td>
+                <td style="padding: 12px;">{get_prog_html(row['Stance'], '#2980B9')}</td>
+                <td style="padding: 12px;">{get_prog_html(row['Sentiment'], '#214E37')}</td>
             </tr>"""
         
-        return f"""<table style="width: 100%; border-collapse: collapse; background: {'#161b22' if is_dark else '#ffffff'}; border: 1px solid {'#444' if is_dark else '#ddd'}; border-radius: 10px; overflow: hidden; font-family: 'Times New Roman', serif;">
+        return f"""<table style="width: 100%; border-collapse: collapse; background: {'#161b22' if is_dark else '#ffffff'}; border: 1px solid {'#444' if is_dark else '#ddd'}; border-radius: 10px; overflow: hidden; font-family: 'Inter', sans-serif;">
             <thead style="background: {'#0d1b3e' if is_dark else '#f8f9fa'};">
                 <tr>
                     <th style="padding: 12px; text-align: left; color: {chart_font_color}; border-bottom: 2px solid {info_border};">Kiến trúc mô hình</th>
@@ -987,8 +1009,8 @@ def render_evaluation_tab():
 
     st.markdown("## 📈 Đánh giá Chuyên sâu & Phân tích Tương quan")
     # CUSTOM INFO BOX (Thay thế st.info)
-    info_bg = "rgba(100, 255, 218, 0.1)" if is_dark else "rgba(0, 123, 255, 0.05)"
-    info_border = "#64ffda" if is_dark else "#007bff"
+    info_bg = "rgba(33, 78, 55, 0.05)" if is_dark else "rgba(33, 78, 55, 0.02)"
+    info_border = "#214E37"
     st.markdown(f"""
         <div style="background: {info_bg}; border-left: 5px solid {info_border}; padding: 15px; border-radius: 5px; margin-bottom: 25px;">
             <span style="color: {text_color} !important; font-family: 'Times New Roman', serif;">💡 Tab này cung cấp cái nhìn đa chiều về hiệu năng mô hình và mối tương quan giữa các nhãn dữ liệu trong tập Gold Test Set.</span>
@@ -1006,7 +1028,7 @@ def render_evaluation_tab():
         theta=categories,
         fill='toself',
         name='PhoBERT-v2',
-        line_color='#3db882'
+        line_color='#214E37'
     ))
     fig_radar.add_trace(go.Scatterpolar(
         r=[0.46, 0.62, 0.69, 0.15, 0.85],
@@ -1037,7 +1059,7 @@ def render_evaluation_tab():
             bgcolor='rgba(0,0,0,0)'
         ),
         paper_bgcolor='rgba(0,0,0,0)',
-        font=dict(family='Times New Roman', color=text_color, size=14),
+        font=dict(family='Inter', color=text_color, size=14),
         height=500,
         margin=dict(l=80, r=80, t=40, b=40),
         legend=dict(
@@ -1432,172 +1454,156 @@ def main():
         """, unsafe_allow_html=True)
 
     # ─────────────────────────────────────────────────────────────
-    # DYNAMIC CSS BASED ON THEME
+    # DYNAMIC CSS BASED ON HUPH DESIGN
     # ─────────────────────────────────────────────────────────────
-
+    primary_green = "#214E37"
+    footer_dark = "#122A1E"
+    text_main = "#243646" if not is_dark else "#e2e4e9"
+    bg_main = "#FFFFFF" if not is_dark else "#0a111a"
+    
+    # Custom Header like HUPH
+    logo_huph = "https://huph.edu.vn/uploads/logo/logo-huph.png"
+    
     st.markdown(f"""
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        /* 🎨 CREATIVE INTERFACE UPGRADE & ACADEMIC STYLING */
-        
-        /* 0. Phông chữ Times New Roman toàn cục */
+        /* Global Typography */
         html, body, [data-testid="stAppViewContainer"], .stMarkdown, p, h1, h2, h3, h4, h5, h6, span, label, div, button, input, textarea, select {{
-            font-family: 'Times New Roman', Times, serif !important;
+            font-family: 'Inter', sans-serif !important;
+            color: {text_main} !important;
         }}
 
-        /* 1. Nền Gradient chuyển động (Animated Gradient Background) */
+        /* Page Background */
         [data-testid="stAppViewContainer"] {{
-            background: { "linear-gradient(-45deg, #0a192f, #112240, #0d1b3e, #0a192f)" if is_dark else "linear-gradient(-45deg, #f8f9fa, #e9ecef, #dee2e6, #f8f9fa)" };
-            background-size: 400% 400% !important;
-            animation: gradient 15s ease infinite !important;
+            background-color: {bg_main} !important;
         }}
-        @keyframes gradient {{
-            0% {{ background-position: 0% 50%; }}
-            50% {{ background-position: 100% 50%; }}
-            100% {{ background-position: 0% 50%; }}
+        
+        /* Custom Header */
+        .huph-header {{
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: white;
+            z-index: 1000;
+            padding: 10px 60px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+            border-bottom: 4px solid {primary_green};
         }}
-
-        /* 2. Thanh cuộn tùy chỉnh (Custom Scrollbar) */
-        ::-webkit-scrollbar {{
-            width: 8px;
-            height: 8px;
+        .header-logo-img {{
+            height: 60px;
         }}
-        ::-webkit-scrollbar-track {{
-            background: rgba(0,0,0,0.1);
+        .header-nav {{
+            display: flex;
+            gap: 25px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: {primary_green};
+            text-transform: uppercase;
         }}
-        ::-webkit-scrollbar-thumb {{
-            background: #64ffda;
-            border-radius: 10px;
-        }}
-        ::-webkit-scrollbar-thumb:hover {{
-            background: #4cd9b9;
-        }}
-
-        /* 3. Hiệu ứng Glassmorphism cho Main Container */
-        [data-testid="stAppViewBlockContainer"] {{
-            max-width: none !important;
-            width: 100% !important;
-            padding: 2rem 5rem !important;
-        }}
-
-        /* 4. Tối ưu hóa Sidebar (Glassmorphism & Neon) */
+        
+        /* Sidebar Styling */
         [data-testid="stSidebar"] {{
-            background-color: { "rgba(13, 27, 62, 0.8)" if is_dark else "rgba(248, 249, 250, 0.8)" } !important;
-            backdrop-filter: blur(15px) !important;
-            border-right: 1px solid {border_color} !important;
+            background-color: {"#f8f9fa" if not is_dark else "#161b22"} !important;
+            border-right: 1px solid rgba(0,0,0,0.05) !important;
+            z-index: 1001;
         }}
-
-        /* 5. Hiệu ứng Tab sáng tạo */
+        
+        /* Tabs Styling - HUPH Style */
         .stTabs [data-baseweb="tab-list"] {{
-            gap: 10px;
+            gap: 5px;
             background-color: transparent !important;
+            border-bottom: 2px solid #eee !important;
         }}
         .stTabs [data-baseweb="tab"] {{
             background-color: transparent !important;
             border: none !important;
-            border-bottom: 2px solid transparent !important;
-            border-radius: 0 !important;
-            padding: 10px 25px !important;
-            transition: all 0.3s ease !important;
-            color: {secondary_text} !important;
-            font-weight: normal !important;
-            text-transform: uppercase !important;
-        }}
-        .stTabs [data-baseweb="tab"]:hover {{
-            color: {"#64ffda" if is_dark else "#0056b3"} !important;
-            border-bottom: 2px solid {"rgba(100, 255, 218, 0.3)" if is_dark else "rgba(0, 86, 179, 0.3)"} !important;
+            padding: 12px 20px !important;
+            color: #666 !important;
+            font-weight: 600 !important;
+            font-size: 0.85rem !important;
+            text-transform: uppercase;
         }}
         .stTabs [aria-selected="true"] {{
-            background-color: transparent !important;
-            color: {"#64ffda" if is_dark else "#0056b3"} !important;
-            border-bottom: 2px solid {"#64ffda" if is_dark else "#0056b3"} !important;
-            font-weight: bold !important;
+            color: {primary_green} !important;
+            border-bottom: 3px solid {primary_green} !important;
         }}
-        /* Loại bỏ gạch chân mặc định của Streamlit */
-        .stTabs [data-baseweb="tab-highlight"] {{
-            background-color: {"#64ffda" if is_dark else "#0056b3"} !important;
+        
+        /* Button Styling - HUPH Green */
+        .stButton > button {{
+            background-color: {primary_green} !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 9px !important;
+            padding: 0.6rem 1.5rem !important;
+            font-weight: 700 !important;
+            transition: all 0.3s ease !important;
+            box-shadow: 0 4px 12px rgba(33, 78, 55, 0.2) !important;
+        }}
+        .stButton > button:hover {{
+            background-color: {footer_dark} !important;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(33, 78, 55, 0.3) !important;
+        }}
+        
+        /* Secondary buttons (Làm mới) */
+        div[data-testid="stVerticalBlock"] div:nth-child(2) .stButton > button {{
+             background-color: #f0f2f5 !important;
+             color: {text_main} !important;
+             box-shadow: none !important;
+        }}
+        div[data-testid="stVerticalBlock"] div:nth-child(2) .stButton > button:hover {{
+             background-color: #e4e6e9 !important;
+             color: {primary_green} !important;
         }}
 
-        /* 6. Hiệu ứng Pulse cho nút Phân tích */
-        div[data-testid="stButton"] button:first-child {{
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        /* Input Areas */
+        .stTextArea textarea {{
             border-radius: 12px !important;
-            border: 1px solid {"#64ffda" if is_dark else "#0056b3"} !important;
-            background: transparent !important;
-            color: {"#64ffda" if is_dark else "#0056b3"} !important;
+            border: 1px solid #ddd !important;
+            background: {"white" if not is_dark else "#112240"} !important;
+        }}
+        .stTextArea textarea:focus {{
+            border-color: {primary_green} !important;
+            box-shadow: 0 0 0 2px rgba(33, 78, 55, 0.1) !important;
+        }}
+
+        /* Hide Streamlit elements for a cleaner look */
+        #MainMenu, header, footer {{
+            visibility: hidden;
+        }}
+        .stAppDeployButton {{
+            display: none;
         }}
         
-        /* Fix Code block (URL Suggestions) theme adaptation */
-        code, pre {{
-            background-color: {"#112240" if is_dark else "#f5f7f9"} !important;
-            color: {"#64ffda" if is_dark else "#1f2937"} !important;
-            border: 1px solid {"rgba(100, 255, 218, 0.2)" if is_dark else "rgba(0, 0, 0, 0.1)"} !important;
+        /* Custom adjustment for main content to fit header */
+        .main-content-wrapper {{
+            margin-top: 80px;
+        }}
+        
+        /* Info boxes */
+        div[data-testid="stNotification"] {{
+            background-color: {primary_green}10 !important;
+            border-left: 5px solid {primary_green} !important;
             border-radius: 8px !important;
+            color: {text_main} !important;
         }}
-        
-        /* Fix Textarea Placeholder color */
-        textarea::placeholder {{
-            color: {"#666" if is_dark else "#999"} !important;
-            opacity: 1 !important;
-        }}
-
-        /* Fix Text Input & TextArea theme adaptation (URL & Content) */
-        div[data-testid="stTextInput"] input, 
-        div[data-testid="stTextArea"] textarea {{
-            background-color: {"#112240" if is_dark else "#ffffff"} !important;
-            color: {"#64ffda" if is_dark else "#000000"} !important;
-            border: 1px solid {"rgba(100, 255, 218, 0.2)" if is_dark else "#ced4da"} !important;
-            border-radius: 10px !important;
-            padding: 10px 15px !important;
-        }}
-        
-        /* Fix Download Button theme adaptation */
-        div[data-testid="stDownloadButton"] button {{
-            background-color: {"#112240" if is_dark else "#f0f2f6"} !important;
-            color: {"#64ffda" if is_dark else "#1f2937"} !important;
-            border: 1px solid {"rgba(100, 255, 218, 0.2)" if is_dark else "rgba(0, 0, 0, 0.1)"} !important;
-            width: 100% !important;
-            border-radius: 10px !important;
-            padding: 8px !important;
-        }}
-        div[data-testid="stDownloadButton"] button:hover {{
-            background-color: {"rgba(100, 255, 218, 0.1)" if is_dark else "rgba(0, 0, 0, 0.05)"} !important;
-            border-color: #64ffda !important;
-        }}
-
-        /* Focus state for inputs */
-        div[data-testid="stTextInput"] input:focus, 
-        div[data-testid="stTextArea"] textarea:focus {{
-            border-color: #64ffda !important;
-            box-shadow: 0 0 0 2px {"rgba(100, 255, 218, 0.2)" if is_dark else "rgba(0, 123, 255, 0.1)"} !important;
-        }}
-
-        div[data-testid="stButton"] button:first-child:hover {{
-            background: {"rgba(100, 255, 218, 0.1)" if is_dark else "rgba(0, 86, 179, 0.1)"} !important;
-            box-shadow: 0 0 20px {"rgba(100, 255, 218, 0.4)" if is_dark else "rgba(0, 86, 179, 0.4)"} !important;
-            transform: scale(1.02);
-        }}
-
-        /* 7. Ép các khối nội dung bên trong dãn 100% */
-        .element-container, .stMarkdown, .stVerticalBlock, div[data-testid="stVerticalBlock"] > div {{
-            width: 100% !important;
-        }}
-
-        /* 5. Loại bỏ nền đen thừa nếu có ở hai bên */
-        .stApp {{
-            background-color: {bg_color} !important;
-        }}
-        
-        /* Toàn bộ giao diện chính */
-        .stApp {{
-            background-color: {bg_color} !important;
-            color: {text_color} !important;
-        }}
-        
-        /* Font chữ toàn cục và màu chữ */
-        html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"], .stMarkdown, p, label, li, span, h1, h2, h3, h4, h5, h6, button, input, select, textarea {{
-            font-family: 'Times New Roman', Times, serif !important;
-            color: {text_color} !important;
-        }}
+    </style>
+    
+    <div class="huph-header">
+        <img src="{logo_huph}" class="header-logo-img">
+        <div class="header-nav">
+            <span>TRANG CHỦ</span>
+            <span>NGHIÊN CỨU</span>
+            <span>THỐNG KÊ</span>
+            <span>DỰ ÁN VACCINENLP</span>
+        </div>
+    </div>
+    <div class="main-content-wrapper"></div>
+    """, unsafe_allow_html=True)
 
         /* Sidebar styling */
         [data-testid="stSidebar"] {{
@@ -1765,7 +1771,7 @@ def main():
             width: 100%;
             border-collapse: collapse !important;
             color: {text_color} !important;
-            font-family: 'Times New Roman', Times, serif !important;
+            font-family: 'Inter', sans-serif !important;
             border: 1px solid {"#444" if is_dark else "#000"} !important;
         }}
         th, td {{
@@ -1778,68 +1784,10 @@ def main():
             font-weight: bold !important;
         }}
 
-        /* Footer Unified Styling */
-        .main-footer {{
-            background: {"linear-gradient(135deg, #0a192f 0%, #112240 100%)" if is_dark else "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)"};
-            padding: 50px 20px;
-            color: {"#ccc" if is_dark else "#444"};
-            font-family: 'Times New Roman', Times, serif !important;
-            border-top: 4px solid #007bff;
-            box-shadow: 0 -10px 25px rgba(0, 123, 255, 0.1);
-            margin-top: 60px;
-        }}
-        .footer-container {{
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            max-width: none !important;
-            margin: 0 auto;
-            gap: 20px;
-            font-family: 'Times New Roman', Times, serif !important;
-        }}
-        .footer-col {{
-            flex: 1;
-            min-width: 300px;
-            padding: 0 25px;
-            border-right: 1px solid {"rgba(255,255,255,0.1)" if is_dark else "rgba(0,0,0,0.1)"};
-        }}
-        .footer-col:last-child {{ border-right: none; }}
-        .logo-col {{
-            text-align: center;
-        }}
-        .footer-logo-img {{
-            width: 100px;
-            margin-bottom: 15px;
-            filter: drop-shadow(0 0 8px rgba(0,123,255,0.2));
-        }}
-        .footer-title {{
-            color: {"#007bff" if is_dark else "#0056b3"};
-            font-weight: bold;
-            margin-bottom: 15px;
-            font-size: 1.2rem;
-            text-transform: uppercase;
-        }}
-        .school-name {{
-            font-weight: bold;
-            color: {"#fff" if is_dark else "#000"};
-            font-size: 1.1rem;
-        }}
-        .project-name-vi {{
-            color: {"#ffd700" if is_dark else "#b8860b"};
-            font-weight: bold;
-            font-style: italic;
-        }}
-        .footer-bottom {{
-            padding-top: 20px;
-            margin-top: 30px;
-            border-top: 1px solid rgba(0,0,0,0.05);
-            font-size: 0.9rem;
-            color: {"#777" if is_dark else "#666"};
-            text-align: center;
-        }}
-        .footer-link {{
-            color: #007bff !important;
-            text-decoration: none;
+        /* HUPH Institutional Styling Cleanup */
+        hr {{
+            border-top: 1px solid rgba(0,0,0,0.1) !important;
+            margin: 2rem 0 !important;
         }}
         /* HIỂN THỊ VÀ TẠO KIỂU NÚT HỆ THỐNG (GIỐNG ẢNH 2) */
         header {{
@@ -1934,35 +1882,28 @@ def main():
     <div style="
         width: 100%; 
         text-align: center; 
-        margin-bottom: 3rem; 
-        padding: 3.5rem 2rem; 
-        background: { "linear-gradient(135deg, rgba(10, 25, 47, 0.9) 0%, rgba(17, 34, 64, 0.9) 100%)" if is_dark else "linear-gradient(135deg, #ffffff 0%, #f0f2f6 100%)" };
-        border-radius: 24px; 
-        border: 1px solid {banner_border};
-        box-shadow: 0 20px 40px rgba(0,0,0,0.4);
-        position: relative;
-        overflow: hidden;
+        margin-bottom: 2rem; 
+        padding: 4rem 2rem; 
+        background: linear-gradient(135deg, {primary_green} 0%, {footer_dark} 100%);
+        border-radius: 16px; 
+        color: white;
+        box-shadow: 0 15px 35px rgba(18, 42, 30, 0.2);
     ">
-        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: linear-gradient(90deg, #64ffda, #48c6ef, #64ffda);"></div>
         <h1 style="
-            color: #FFD700; 
-            font-family: 'Times New Roman', Times, serif; 
+            color: #FFFFFF; 
+            font-family: 'Inter', sans-serif; 
             font-weight: 800; 
-            font-size: 2.8rem; 
+            font-size: 2.5rem; 
             margin-bottom: 1rem; 
-            letter-spacing: 1px;
             text-transform: uppercase;
-            text-shadow: 0 5px 15px rgba(0,0,0,0.5);
-        ">🔬 PHÁT HIỆN TIN GIẢ VÀ PHÂN TÍCH THÁI ĐỘ VỀ VACCINE TẠI VIỆT NAM 💉</h1>
-        <div style="width: 100px; height: 3px; background: #64ffda; margin: 1.5rem auto;"></div>
+        ">Ứng dụng Xử lý Ngôn ngữ Tự nhiên trong phát hiện thông tin sai lệch về vaccine</h1>
+        <div style="width: 80px; height: 4px; background: #64ffda; margin: 1.5rem auto;"></div>
         <p style="
-            color: {banner_p_color}; 
-            font-family: 'Times New Roman', Times, serif; 
-            font-style: italic; 
-            font-size: 1.3rem; 
-            opacity: {banner_p_opacity};
-            letter-spacing: 0.5px;
-        ">Vaccine Misinformation & Attitude Analysis Framework for Vietnamese Social Media</p>
+            color: rgba(255,255,255,0.85); 
+            font-family: 'Inter', sans-serif; 
+            font-size: 1.2rem; 
+            font-weight: 500;
+        ">Hệ thống phân tích tin giả và thái độ cộng đồng trên môi trường số tại Việt Nam</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -2207,7 +2148,7 @@ def main():
                 }
                 df_corr = pd.DataFrame(corr_data)
                 fig_lab = px.bar(df_corr, x='Task', y='Intensity', color='Task', 
-                                 color_discrete_sequence=['#ff4b4b', '#007bff', '#00c853'])
+                                 color_discrete_sequence=['#C0392B', '#2980B9', '#214E37'])
                 fig_lab.update_layout(
                     height=250, margin=dict(l=10, r=10, t=10, b=10),
                     paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
@@ -2222,7 +2163,7 @@ def main():
                 if "Tin giả" in m_label:
                     st.warning("**Kịch bản Phản hồi (Debunking Script):**")
                     st.markdown(f"""
-                        <div style="background: rgba(255, 75, 75, 0.1); padding: 20px; border-radius: 10px; border: 1px solid #ff4b4b; font-family: 'Times New Roman', serif; font-size: 1.1rem; line-height: 1.6; color: {text_color};">
+                        <div style="background: rgba(192, 57, 43, 0.05); padding: 20px; border-radius: 10px; border: 1px solid #C0392B; font-family: 'Inter', sans-serif; font-size: 1.1rem; line-height: 1.6; color: {text_color};">
                             <b>[Healthcare Official Response]</b><br>
                             Chào bạn, chúng tôi đã nhận được thông tin về bài viết này.<br>
                             Qua kiểm chứng, thông tin về <i>"{active_text[:100]}..."</i> là KHÔNG CHÍNH XÁC.<br>
@@ -2233,7 +2174,7 @@ def main():
                 else:
                     st.success("**Kịch bản Lan tỏa (Engagement Script):**")
                     st.markdown(f"""
-                        <div style="background: rgba(0, 200, 83, 0.1); padding: 20px; border-radius: 10px; border: 1px solid #00c853; font-family: 'Times New Roman', serif; font-size: 1.1rem; line-height: 1.6; color: {text_color};">
+                        <div style="background: rgba(33, 78, 55, 0.05); padding: 20px; border-radius: 10px; border: 1px solid #214E37; font-family: 'Inter', sans-serif; font-size: 1.1rem; line-height: 1.6; color: {text_color};">
                             <b>[Community Engagement]</b><br>
                             Cảm ơn sự chia sẻ tích cực của bạn về vaccine.<br>
                             Những trải nghiệm thực tế như thế này giúp cộng đồng yên tâm hơn.<br>
