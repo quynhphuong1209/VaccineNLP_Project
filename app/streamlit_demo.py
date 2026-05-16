@@ -1603,7 +1603,7 @@ def main():
         </div>
     </div>
     <div class="main-content-wrapper"></div>
-    """, unsafe_allow_html=True)
+
 
         /* Sidebar styling */
         [data-testid="stSidebar"] {{
