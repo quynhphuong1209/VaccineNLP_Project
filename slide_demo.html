@@ -79,7 +79,6 @@
 
     // Biến cho vuốt tay
     let prevX = null;
-    const swipeThreshold = 0.2; // Khoảng cách di chuyển tay (20% màn hình) để tính là vuốt
     let lastSwipeTime = 0;
     const cooldown = 1200; // Nghỉ 1.2s giữa 2 lần vuốt để tránh vuốt nhầm liên tục
 
@@ -123,8 +122,16 @@
           drawLandmarks(canvasCtx, landmarks, {color: '#FF0000', lineWidth: 1, radius: 2});
         }
 
-        // Lấy tọa độ cổ tay (wrist - điểm 0)
-        const wrist = results.multiHandLandmarks[0][0]; 
+        // Lấy tọa độ cổ tay (wrist - điểm 0) và khớp ngón giữa (middle MCP - điểm 9)
+        const landmarks = results.multiHandLandmarks[0];
+        const wrist = landmarks[0]; 
+        const middleMCP = landmarks[9];
+
+        // Tính kích thước bàn tay (từ cổ tay đến giữa lòng bàn tay)
+        // Để tự động điều chỉnh độ nhạy: Đứng gần tay to -> ngưỡng to. Đứng xa tay nhỏ -> ngưỡng nhỏ.
+        const handSize = Math.sqrt(Math.pow(wrist.x - middleMCP.x, 2) + Math.pow(wrist.y - middleMCP.y, 2));
+        const dynamicSwipeThreshold = handSize * 2.5; // Ngưỡng vuốt thay đổi động bằng 2.5 lần lòng bàn tay
+
         const currentX = wrist.x;
         const currentTime = new Date().getTime();
 
@@ -136,13 +143,13 @@
             // X trong MediaPipe tính từ trái qua phải, nhưng camera đã bị lật (scaleX(-1))
             // Di chuyển tay về bên trái của bạn -> diffX lớn
             // Di chuyển tay về bên phải của bạn -> diffX âm
-            if (diffX > swipeThreshold) {
+            if (diffX > dynamicSwipeThreshold) {
               nextSlide(); // Vuốt sang trái (Next)
               lastSwipeTime = currentTime;
               statusEl.innerText = "⬅️ Vuốt sang Trái (Tiếp theo)";
               prevX = null;
               return;
-            } else if (diffX < -swipeThreshold) {
+            } else if (diffX < -dynamicSwipeThreshold) {
               prevSlide(); // Vuốt sang phải (Prev)
               lastSwipeTime = currentTime;
               statusEl.innerText = "➡️ Vuốt sang Phải (Quay lại)";
@@ -167,8 +174,8 @@
     hands.setOptions({
       maxNumHands: 1,
       modelComplexity: 1,
-      minDetectionConfidence: 0.7,
-      minTrackingConfidence: 0.7
+      minDetectionConfidence: 0.5, // Giảm độ khó nhận diện để bắt được tay từ xa
+      minTrackingConfidence: 0.5   // Giảm độ khó theo dõi
     });
     hands.onResults(onResults);
 
@@ -176,8 +183,8 @@
       onFrame: async () => {
         await hands.send({image: videoElement});
       },
-      width: 640,
-      height: 480
+      width: 1280, // Tăng độ phân giải camera lên HD để bắt nét tay ở xa
+      height: 720
     });
     camera.start();
   </script>
