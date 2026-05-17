@@ -69,20 +69,20 @@ XAI_MODEL_REPO = "quynhphuong1209/gemma-4-E4B-unsloth-vaccine-xai"
 # LABEL TAXONOMY (matches trained checkpoint)
 # ─────────────────────────────────────────────────────────────
 LABEL_MAPS = {
-    "misinfo": {0: "Không phải tin giả", 1: "Tin giả", 2: "Ranh giới"},
-    "stance":  {0: "Ủng hộ", 1: "Phản đối", 2: "Trung lập", 3: "Không liên quan"},
-    "sentiment": {0: "Tiêu cực", 1: "Trung lập", 2: "Tích cực"},
+    "misinfo": {0: "Tin giả", 1: "Chính xác"},
+    "stance":  {0: "Ủng hộ", 1: "Phản đối", 2: "Trung lập"},
+    "sentiment": {0: "Tiêu cực", 1: "Trung tính", 2: "Tích cực"},
 }
 
 LABEL_COLORS = {
-    "misinfo": {0: "#3db882", 1: "#e8504a", 2: "#d48f35"},
-    "stance":  {0: "#3db882", 1: "#e8504a", 2: "#4a9eed", 3: "#9e9e9e"},
+    "misinfo": {0: "#e8504a", 1: "#3db882"},
+    "stance":  {0: "#3db882", 1: "#e8504a", 2: "#4a9eed"},
     "sentiment": {0: "#e8504a", 1: "#4a9eed", 2: "#3db882"},
 }
 
 LABEL_ICONS = {
-    "misinfo": {0: "✅", 1: "🚨", 2: "⚠️"},
-    "stance":  {0: "👍", 1: "👎", 2: "🤝", 3: "⚪"},
+    "misinfo": {0: "🚨", 1: "✅"},
+    "stance":  {0: "👍", 1: "👎", 2: "🤝"},
     "sentiment": {0: "😠", 1: "😐", 2: "😊"},
 }
 
@@ -90,14 +90,23 @@ LABEL_ICONS = {
 # SAMPLE TEXTS
 # ─────────────────────────────────────────────────────────────
 SAMPLE_TEXTS = {
-    "🚨 Tin giả - Chống vaccine cực đoan": (
+    "🚨 [Tin giả - Chống vaccine cực đoan] Chủ đề: Chống tiêm chủng": (
         "Ko tiêm mũi nào hết. Ko biết bạn thuộc thế hệ nào, chứ bạn nhìn xem thế hệ 8x "
         "trở về trước ko có ai tiêm bất cứ mũi gì vẫn khoẻ mạnh đó thôi. Cha mẹ thời nay "
         "bị doạ cho sợ hãi, đem con đi tiêm vì bị bóng ma sợ hãi nó đè, chứ thực chất chả "
         "có tác dụng gì còn gây hại cho cơ thể nữa. Bao giờ bạn hết sợ hãi thì tự khắc bạn "
         "sẽ hết tiêm. Còn sợ là còn tiêm."
     ),
-    "💬 Từ lóng MXH - Tin giả nguy hiểm": (
+    "🚨 [Tin giả - Chống vaccine cực đoan] Chủ đề: Phản đối": (
+        "Gô Sen chuẩn luôn ạ h e đang thấy mk sai lầm đây con thì hay ốm nhăm nhe đi tiêm "
+        "cũng gần full đến nơi r . Ốm suốt cứ khoẻ đi tiêm lại ốm hành con thực sự . "
+        "Đk bs có tâm chia sẻ tại sao k nên tiêm ngẫm lại thấy đúng"
+    ),
+    "🚨 [Tin giả - Chống vaccine cực đoan] Chủ đề: Vô sinh": (
+        "Cảnh báo: vắc xin COVID có thể gây vô sinh ở phụ nữ và biến đổi gen ở trẻ em. "
+        "Mọi người nên tìm hiểu kỹ trước khi làm chuột bạch cho các tập đoàn dược phẩm."
+    ),
+    "💬 [Tin giả - Mạng xã hội] Từ lóng nguy hiểm": (
         "K có vacxin thì hệ miễn dịch khỏe sẽ rất ít khi bị ốm bị bệnh \n"
         "Nhưng tiêm vắc xin thì là tiêm thuốc độc vào người \n\n"
         "Càng tiêm nhiều càng bệnh nhiều \n\n"
@@ -106,7 +115,16 @@ SAMPLE_TEXTS = {
         "Muốn hạ sốt ( sốt nóng ) cho con uống nc chanh ấm có đường \n"
         "Lấy chanh xoa toàn thân"
     ),
-    "✅ Tin chính xác - Chia sẻ tích cực": (
+    "🟢 [Nhóm Thái độ] Ủng hộ": (
+        "Em cũng đang tiêm từng mũi 1 cho con, con e 5 tháng, mới tiêm tới phế cầu, "
+        "3 tháng đầu chỉ tiêm 6in1 và uống rota. Nhiều người nói sao cho con tiêm chậm vậy, "
+        "e nói kệ, chậm mà đủ và an toàn cho con là được. Trộm vía bé e chưa sốt, chưa hành mũi nào ❤️"
+    ),
+    "🟡 [Nhóm Thái độ] Nghi ngại": (
+        "Cún mình chỉ tiêm mũi ở viện về nhà là ko tiêm gì nữa. Bây giờ 2 tuổi rồi. "
+        "Ai hỏi t vẫn nói tiêm đủ. K đủ khả năng giải thích thì nên im lặng."
+    ),
+    "✅ [Thông tin chuẩn] Chia sẻ tích cực": (
         "TRẢI NGHIỆM TIÊM VACCINE MODERNA | Kim's here daily vlog #covid19 #vaccine #moderna. "
         "Mọi người đã tiêm vaccine hết chưa nhỉ?\nNhiều lúc mình cũng hơi ức chế vì khu nhà "
         "mình nằm trong vùng đỏ ấy vì vẫn phải giãn cách theo chỉ thị 16, nhưng có thể vì "
@@ -120,26 +138,8 @@ SAMPLE_TEXTS = {
         "Phong: https://www.youtube.com/watch?v=kv6XnfuPyII\n --------\n\nĐọc blog mình viết "
         "tại: https://kimisgonnabeanadult.blogspot.com/"
     ),
-    "🔴 Tin giả - Phản đối (VNLP_V6_1773)": (
-        "Gô Sen chuẩn luôn ạ h e đang thấy mk sai lầm đây con thì hay ốm nhăm nhe đi tiêm "
-        "cũng gần full đến nơi r . Ốm suốt cứ khoẻ đi tiêm lại ốm hành con thực sự . "
-        "Đk bs có tâm chia sẻ tại sao k nên tiêm ngẫm lại thấy đúng"
-    ),
-    "🟡 Thái độ - Nghi ngại (VNLP_V6_1170)": (
-        "Cún mình chỉ tiêm mũi ở viện về nhà là ko tiêm gì nữa. Bây giờ 2 tuổi rồi. "
-        "Ai hỏi t vẫn nói tiêm đủ. K đủ khả năng giải thích thì nên im lặng."
-    ),
-    "🟢 Thái độ - Ủng hộ (VNLP_V6_1339)": (
-        "Em cũng đang tiêm từng mũi 1 cho con, con e 5 tháng, mới tiêm tới phế cầu, "
-        "3 tháng đầu chỉ tiêm 6in1 và uống rota. Nhiều người nói sao cho con tiêm chậm vậy, "
-        "e nói kệ, chậm mà đủ và an toàn cho con là được. Trộm vía bé e chưa sốt, chưa hành mũi nào ❤️"
-    ),
-    "🔵 Câu hỏi - Tư vấn (VNLP_V6_1202)": (
+    "🔵 [Thông tin chuẩn] Câu hỏi - Tư vấn": (
         "Trâm Trần ví dụ như Ko có tiêm 6in1 hay 5in1, mà tiêm từng mũi từng bệnh phải không ạ?"
-    ),
-    "💉 Tin giả - Vô sinh (VNLP_V6_0234)": (
-        "Cảnh báo: vắc xin COVID có thể gây vô sinh ở phụ nữ và biến đổi gen ở trẻ em. "
-        "Mọi người nên tìm hiểu kỹ trước khi làm chuột bạch cho các tập đoàn dược phẩm."
     ),
 }
 
@@ -150,7 +150,7 @@ class VaccineMultitaskModel(nn.Module):
     """Multitask model with shared PhoBERT encoder and task-specific heads."""
 
     def __init__(self, model_name="vinai/phobert-base-v2",
-                 num_misinfo=3, num_stance=4, num_sentiment=3, token=None):
+                 num_misinfo=2, num_stance=3, num_sentiment=3, token=None):
         from transformers import AutoConfig, AutoModel
         super(VaccineMultitaskModel, self).__init__()
         import transformers
@@ -816,9 +816,9 @@ def render_benchmark_tab():
 
     # Dữ liệu gốc
     benchmark_data = [
-        {"Model": "PhoBERT-v2", "Misinfo": 0.4547, "Stance": 0.6608, "Sentiment": 0.7325},
-        {"Model": "XLM-R-v1",   "Misinfo": 0.4572, "Stance": 0.6247, "Sentiment": 0.6918},
-        {"Model": "Gemma-4-4B", "Misinfo": 0.4400, "Stance": 0.6200, "Sentiment": 0.6600},
+        {"Model": "PhoBERT-v2", "Misinfo": 0.6886, "Stance": 0.6383, "Sentiment": 0.7289},
+        {"Model": "XLM-R-v1",   "Misinfo": 0.6632, "Stance": 0.5618, "Sentiment": 0.6394},
+        {"Model": "Gemma-4-4B", "Misinfo": 0.3588, "Stance": 0.2862, "Sentiment": 0.2883},
     ]
 
     # Hiệu ứng Live Evaluation (Xây dựng bảng từng dòng bằng HTML)
@@ -874,11 +874,11 @@ def render_benchmark_tab():
     st.markdown("#### 🏆 Top Performance Honors")
     m_col1, m_col2, m_col3 = st.columns(3)
     with m_col1:
-        st.metric("🚨 Best Misinfo", "XLM-R-v1", "0.4572", delta_color="normal")
+        st.metric("🚨 Best Misinfo", "PhoBERT-v2", "0.6886", delta_color="normal")
     with m_col2:
-        st.metric("🚩 Best Stance", "PhoBERT-v2", "0.6608", delta_color="normal")
+        st.metric("🚩 Best Stance", "PhoBERT-v2", "0.6383", delta_color="normal")
     with m_col3:
-        st.metric("🎭 Best Sentiment", "PhoBERT-v2", "0.7325", delta_color="normal")
+        st.metric("🎭 Best Sentiment", "PhoBERT-v2", "0.7289", delta_color="normal")
 
     # 📊 BIỂU ĐỒ BAR CHART NGANG CAO CẤP
     st.markdown("#### 📊 So sánh chi tiết F1-Score (Horizontal Analysis)")
@@ -1189,7 +1189,7 @@ def render_resources_tab():
                         '• <a href="https://www.kaggle.com/code/kimmnhhng/vaccinenlp-gemma-4-qlora-multitask">Gemma-4 QLoRA</a><br>'
                         '• <a href="https://www.kaggle.com/code/kimmnhhng/vaccinenlp-phobert-v2-multitask">PhoBERT-v2 Multitask</a><br>'
                         '• <a href="https://www.kaggle.com/code/kimmnhhng/gemma-e4b-it">Gemma E4B-IT</a><br>'
-                        '• <a href="https://www.kaggle.com/code/kimmnhhng/vaccinenlp-xlm-r-v1-multitask-classifi">XLM-R-v1 Classifier</a>'
+                        '• <a href="https://www.kaggle.com/code/kimmnhhng/vaccinenlp-xlm-r-v1-multitask-classifier">XLM-R-v1 Classifier</a>'
                         '</div>', unsafe_allow_html=True)
             
             st.markdown('<div class="resource-card"><div class="resource-header">🤗 II. HUGGINGFACE</div>'
@@ -1211,12 +1211,13 @@ def render_resources_tab():
         with st.container():
             st.markdown('<div class="resource-card"><div class="resource-header">📘 I. KAGGLE</div>'
                         '• <a href="https://www.kaggle.com/code/inhlqunhphng/vaccinenlp-gemma-4-qlora-multitask">Gemma-4 QLoRA (Main)</a><br>'
-                        '• <a href="https://www.kaggle.com/code/inhlqunhphng/vaccinenlp-xlm-r-v1-multitask-classifi">XLM-R-v1 Baseline</a><br>'
+                        '• <a href="https://www.kaggle.com/code/inhlqunhphng/vaccinenlp-xlm-r-v1-multitask-classifier">XLM-R-v1 Baseline</a><br>'
                         '• <a href="https://www.kaggle.com/code/inhlqunhphng/01-phobert-multitask-training">PhoBERT Training (01)</a><br>'
                         '• <a href="https://www.kaggle.com/code/inhlqunhphng/vaccinenlp-phobert-v2-multitask-classifier">PhoBERT-v2 Classifier</a><br>'
                         '• <a href="https://www.kaggle.com/code/inhlqunhphng/vaccine-nlp-eval-final-t4">Final Evaluation</a><br>'
                         '• <a href="https://www.kaggle.com/code/inhlqunhphng/02-gemma4-4b-qlora-training">Gemma-4 4B Training</a><br>'
-                        '• <a href="https://www.kaggle.com/code/inhlqunhphng/gemma-e4b-it">Gemma E4B-IT</a>'
+                        '• <a href="https://www.kaggle.com/code/inhlqunhphng/gemma-e4b-it">Gemma E4B-IT</a><br>'
+                        '• <a href="https://www.kaggle.com/code/inhlqunhphng/vaccinenlp-model-benchmark-report">Model Benchmark Report</a>'
                         '</div>', unsafe_allow_html=True)
             
             st.markdown('<div class="resource-card"><div class="resource-header">🤗 II. HUGGINGFACE</div>'
@@ -2251,9 +2252,9 @@ def main():
         
         # Thêm biểu đồ Sunburst nhỏ thể hiện phân bổ nhãn trong tập Test (Dựa trên notebook eval)
         sun_data = pd.DataFrame({
-            "labels": ["Total", "Misinfo", "Stance", "Sentiment", "Fake", "Accurate", "Oppose", "Support", "Neg", "Pos"],
-            "parents": ["", "Total", "Total", "Total", "Misinfo", "Misinfo", "Stance", "Stance", "Sentiment", "Sentiment"],
-            "values": [186, 60, 60, 66, 25, 35, 20, 40, 30, 36]
+            "labels": ["Tổng nhãn", "Misinfo", "Stance", "Sentiment", "Tin giả", "Chính xác", "Ủng hộ", "Phản đối", "Trung lập", "Tiêu cực", "Trung tính", "Tích cực"],
+            "parents": ["", "Tổng nhãn", "Tổng nhãn", "Tổng nhãn", "Misinfo", "Misinfo", "Stance", "Stance", "Stance", "Sentiment", "Sentiment", "Sentiment"],
+            "values": [558, 186, 186, 186, 28, 158, 54, 48, 84, 71, 75, 40]
         })
         fig_sun = px.sunburst(sun_data, names='labels', parents='parents', values='values',
                              color_discrete_sequence=px.colors.qualitative.Prism)
