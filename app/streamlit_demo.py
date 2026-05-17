@@ -51,19 +51,19 @@ XAI_CACHE_PATH = APP_DIR / "xai_cache.json"
 
 MODEL_CONFIGS = {
     "PhoBERT-v2": {
-        "repo_id": "quynhphuong1209/phobert-multitask", 
+        "repo_id": "hung2903/phobert-vaccine-multitask", 
         "base_repo": "vinai/phobert-base-v2",
         "type": "phobert"
     },
     "XLM-R-v1": {
-        "repo_id": "quynhphuong1209/xlmr-multitask", 
+        "repo_id": "hung2903/xlmr-vaccine-multitask", 
         "base_repo": "xlm-roberta-base",
         "type": "xlm-roberta"
     }
 }
 
 # Mô hình mặc định cho hệ thống giải thích (XAI Engine)
-XAI_MODEL_REPO = "quynhphuong1209/gemma-4-E4B-unsloth-vaccine-xai"
+XAI_MODEL_REPO = "hung2903/gemma-4-E4B-unsloth-vaccine-xai"
 
 # ─────────────────────────────────────────────────────────────
 # LABEL TAXONOMY (matches trained checkpoint)
@@ -150,7 +150,7 @@ class VaccineMultitaskModel(nn.Module):
     """Multitask model with shared PhoBERT encoder and task-specific heads."""
 
     def __init__(self, model_name="vinai/phobert-base-v2",
-                 num_misinfo=3, num_stance=4, num_sentiment=3, token=None):
+                 num_misinfo=2, num_stance=3, num_sentiment=3, token=None):
         from transformers import AutoConfig, AutoModel
         super(VaccineMultitaskModel, self).__init__()
         import transformers
@@ -387,21 +387,21 @@ def generate_smart_fallback(result):
     sentiment = result['sentiment']['pred']
     
     # Sử dụng các biến thể câu để tránh cảm giác cố định
-    if misinfo == 1:
+    if misinfo == 0:  # UI: 0 is "Tin giả"
         res = "Dựa trên các đặc trưng ngôn ngữ, hệ thống nhận diện đây là nội dung có rủi ro cao về tin giả y tế. "
-    else:
+    else:  # UI: 1 is "Chính xác"
         res = "Nội dung này được đánh giá là thông tin chia sẻ thông thường, không chứa các dấu hiệu của tin giả. "
         
-    if stance == 1:
+    if stance == 1:  # UI: 1 is "Phản đối"
         res += "Người viết đang bày tỏ sự phản đối hoặc nghi ngờ khá gay gắt về hiệu quả của vắc-xin. "
-    elif stance == 2:
+    elif stance == 2:  # UI: 2 is "Trung lập"
         res += "Văn bản chủ yếu tập trung vào việc thảo luận hoặc đặt câu hỏi để làm rõ thông tin. "
-    else:
+    else:  # UI: 0 is "Ủng hộ"
         res += "Thông điệp truyền tải thái độ tích cực và sự tin tưởng vào việc tiêm chủng an toàn. "
         
-    if sentiment == 0:
+    if sentiment == 0:  # UI: 0 is "Tiêu cực"
         res += "Cảm xúc tiêu cực được thể hiện rõ qua cách dùng từ, có thể gây tâm lý hoang mang."
-    elif sentiment == 2:
+    elif sentiment == 2:  # UI: 2 is "Tích cực"
         res += "Sắc thái văn bản rất lạc quan, giúp củng cố niềm tin cho cộng đồng."
         
     return res
@@ -409,6 +409,29 @@ def generate_smart_fallback(result):
 @st.cache_data(show_spinner=False)
 def predict_cached(text: str, model_key: str) -> dict:
     import torch.nn.functional as F
+    import numpy as np
+    
+    def translate_to_vietnamese(txt: str) -> str:
+        """Dịch giải thích sang tiếng Việt bằng Google Translate API miễn phí, cực kỳ ổn định."""
+        import urllib.request
+        import urllib.parse
+        import json
+        try:
+            url = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=vi&dt=t&q=" + urllib.parse.quote(txt)
+            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req) as response:
+                res = json.loads(response.read().decode('utf-8'))
+                translated_sentences = [sentence[0] for sentence in res[0] if sentence[0]]
+                return "".join(translated_sentences)
+        except Exception as e:
+            print(f"Error translating: {e}")
+            return txt
+
+    def is_mostly_english(txt: str) -> bool:
+        common_en_words = {"the", "and", "of", "to", "a", "in", "is", "that", "it", "he", "was", "for", "on", "are", "as", "with", "his", "they", "i", "at", "be", "this", "have", "from"}
+        words = set(txt.lower().split())
+        return len(words.intersection(common_en_words)) > 2
+
     model, tokenizer, _ = load_model(model_key)
     if model is None: return None
 
@@ -432,32 +455,38 @@ def predict_cached(text: str, model_key: str) -> dict:
     p_st  = F.softmax(logits_st, dim=1).cpu().numpy()[0]
     p_sen = F.softmax(logits_se, dim=1).cpu().numpy()[0]
 
-    # Tra cứu giải thích (Ưu tiên gọi Gemma API trực tiếp -> Chỉ khi lỗi mới dùng Cache)
-    reasoning = None
-    hf_token = st.secrets.get("HF_TOKEN") or st.secrets.get("VaccineNLP_TOKEN")
-    short_text = text.strip()[:1000] + "..." if len(text.strip()) > 1000 else text.strip()
-    
-    try:
-        reasoning = query_gemma_api(short_text, hf_token)
-        # Kiểm tra nếu kết quả trả về là thông báo lỗi API (403, Forbidden, v.v.)
-        error_keywords = ["403", "Forbidden", "permissions", "Error", "Request ID", "❌"]
-        if reasoning and any(kw in str(reasoning) for kw in error_keywords):
-            reasoning = None
-    except:
-        reasoning = None
+    # Dự đoán của mô hình (khớp 1-to-1 hoàn hảo với LABEL_MAPS chuẩn hung2903)
+    pred_m = int(torch.argmax(logits_m, dim=1))
+    pred_st = int(torch.argmax(logits_st, dim=1))
+    pred_se = int(torch.argmax(logits_se, dim=1))
 
-    # Nếu gọi API trực tiếp thất bại (hoặc không phản hồi), dùng cache để dự phòng (Fallback)
+    # Tra cứu giải thích (Ưu tiên số 1: Tra cứu cache trước để luôn hiển thị Tiếng Việt chất lượng cao cho các mẫu)
+    xai_cache = load_xai_cache()
+    reasoning = find_xai_reasoning(text, xai_cache)
+    
+    # Ưu tiên số 2: Nếu cache không có (văn bản tự gõ mới), gọi Gemma API trực tiếp
     if not reasoning:
-        xai_cache = load_xai_cache()
-        reasoning = find_xai_reasoning(text, xai_cache)
+        hf_token = st.secrets.get("HF_TOKEN") or st.secrets.get("VaccineNLP_TOKEN")
+        short_text = text.strip()[:1000] + "..." if len(text.strip()) > 1000 else text.strip()
+        try:
+            reasoning = query_gemma_api(short_text, hf_token)
+            error_keywords = ["403", "Forbidden", "permissions", "Error", "Request ID", "❌"]
+            if reasoning and any(kw in str(reasoning) for kw in error_keywords):
+                reasoning = None
+        except:
+            reasoning = None
+
+    # Nếu mô hình Custom Gemma sinh ra lý luận bằng tiếng Anh, tự động dịch sang tiếng Việt mượt mà
+    if reasoning and is_mostly_english(reasoning):
+        reasoning = translate_to_vietnamese(reasoning)
 
     res_dict = {
-        "misinfo":   {"pred": int(torch.argmax(logits_m, dim=1)), "conf": p_mis},
-        "stance":    {"pred": int(torch.argmax(logits_st, dim=1)), "conf": p_st},
-        "sentiment": {"pred": int(torch.argmax(logits_se, dim=1)), "conf": p_sen},
+        "misinfo":   {"pred": pred_m, "conf": list(p_mis)},
+        "stance":    {"pred": pred_st, "conf": list(p_st)},
+        "sentiment": {"pred": pred_se, "conf": list(p_sen)},
     }
     
-    # Nếu không có reasoning (do lỗi API hoặc k tìm thấy trong cache), dùng fallback thông minh
+    # Nếu tất cả các cách trên bị lỗi, tự động tạo fallback thông minh bằng tiếng Việt
     if not reasoning:
         reasoning = generate_smart_fallback(res_dict)
     
@@ -2184,6 +2213,7 @@ def main():
             st.subheader("🛠️ Quản trị hệ thống")
             if st.button("♻️ Xóa Cache & Khởi động lại"):
                 st.cache_data.clear()
+                st.cache_resource.clear()
                 st.session_state.last_result = None
                 st.success("Đã xóa bộ nhớ đệm! Đang khởi động lại...")
                 st.rerun()
