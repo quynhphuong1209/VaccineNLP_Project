@@ -2493,7 +2493,7 @@ def main():
                         </tr>
                     </thead>
                     <tbody style="color:{text_col};">
-                        <tr style="border-bottom:1px solid #table_border};">
+                        <tr style="border-bottom:1px solid {table_border};">
                             <td style="padding:10px; text-align:left; font-weight:bold; color:#ff4b4b;">Tiêu cực</td>
                             <td style="padding:10px; font-family:monospace;">71</td>
                             <td style="padding:10px; font-weight:bold; color:#64ffda;">0.7606</td>
