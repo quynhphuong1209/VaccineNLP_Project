@@ -209,7 +209,18 @@ def load_model(model_key="PhoBERT-v2"):
     gc.collect()
     
     cfg = MODEL_CONFIGS[model_key]
-    hf_token = st.secrets.get("HF_TOKEN") or st.secrets.get("VaccineNLP_TOKEN")
+    try:
+        hf_token = st.secrets.get("HF_TOKEN") or st.secrets.get("VaccineNLP_TOKEN")
+    except Exception:
+        import os
+        hf_token = os.environ.get("HF_TOKEN") or os.environ.get("VaccineNLP_TOKEN")
+        
+    if hf_token:
+        hf_token = hf_token.strip()
+        if not hf_token:
+            hf_token = None
+    else:
+        hf_token = None
     
     try:
         # Tải file checkpoint (.pt)
