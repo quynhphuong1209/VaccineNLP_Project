@@ -2005,7 +2005,7 @@ def main():
     </div>
     """, unsafe_allow_html=True)
 
-    tabs = st.tabs(["🔍 PHÂN TÍCH VĂN BẢN", "🧪 AI LAB & CHIẾN LƯỢC", "📊 THỐNG KÊ BENCHMARK", "📈 ĐÁNH GIÁ CHUYÊN SÂU", "📚 TÀI LIỆU & NOTEBOOKS", "📜 PHƯƠNG PHÁP LUẬN", "📑 ĐỀ CƯƠNG"])
+    tabs = st.tabs(["🔍 PHÂN TÍCH VĂN BẢN", "📊 BENCHMARK & BÁO CÁO KHOA HỌC", "📈 ĐÁNH GIÁ CHUYÊN SÂU", "📚 TÀI LIỆU & NOTEBOOKS", "📜 PHƯƠNG PHÁP LUẬN", "📑 ĐỀ CƯƠNG"])
     
     with tabs[0]:
         # Nếu chọn Tự nhập, hiển thị thêm bộ quét URL ngay tại đây
@@ -2149,443 +2149,446 @@ def main():
                     st.info("💡 Lý luận XAI không khả dụng.")
 
     with tabs[1]:
-        import pandas as pd
-        import plotly.graph_objects as go
+        sub_tab1, sub_tab2 = st.tabs(["📋 BÁO CÁO BENCHMARK KHOA HỌC", "⚡ ĐÁNH GIÁ LIVE (LIVE EVALUATION)"])
         
-        is_dark = st.session_state.get("theme", "Dark") == "Dark"
-        text_col = "#e2e4e9" if is_dark else "#000000"
-        table_bg = "#161b22" if is_dark else "#ffffff"
-        table_border = "rgba(255, 255, 255, 0.1)" if is_dark else "rgba(0, 0, 0, 0.1)"
-        header_bg = "#0d1b3e" if is_dark else "#f8f9fa"
-        info_bg = "rgba(100, 255, 218, 0.1)" if is_dark else "rgba(0, 123, 255, 0.05)"
-        info_border = "#64ffda" if is_dark else "#007bff"
-        
-        st.markdown("## 📊 BÁO CÁO ĐÁNH GIÁ HIỆU NĂNG & BENCHMARK MÔ HÌNH KHOA HỌC")
-        st.markdown(f"""
-            <div style="background: {info_bg}; border-left: 5px solid {info_border}; padding: 15px; border-radius: 8px; margin-bottom: 25px;">
-                <span style="color: {text_col} !important; font-family: 'Times New Roman', serif; font-size: 1.05rem;">
-                    💡 Báo cáo đối sánh hiệu năng thực nghiệm chi tiết giữa 3 kiến trúc mô hình: <b>PhoBERT-v2</b>, <b>XLM-R-v1</b> và <b>Gemma-4 4B (QLoRA)</b> trên tập dữ liệu kiểm thử vàng <b>Gold Test Set (186 mẫu)</b>, được gán nhãn thủ công bởi chuyên gia từ HUPH 2026.
-                </span>
-            </div>
-        """, unsafe_allow_html=True)
-        
-        # Dữ liệu kết quả thực nghiệm chi tiết từ vaccinenlp-model-benchmark-report.ipynb
-        benchmark_results = {
-            'phobert': {
-                'name': 'PhoBERT-v2 (Discriminator Tối ưu nhất)',
-                'avg_f1': 0.6853,
-                'tasks': {
-                    'misinfo':   {'macro_f1': 0.6886, 'per_class': [0.4933, 0.8839], 'support': [28, 158]},
-                    'stance':    {'macro_f1': 0.6383, 'per_class': [0.5817, 0.6316, 0.6923], 'support': [54, 48, 84]},
-                    'sentiment': {'macro_f1': 0.7289, 'per_class': [0.7606, 0.7671, 0.6600], 'support': [71, 75, 40]}
-                }
-            },
-            'xlmr': {
-                'name': 'XLM-R-v1 (Baseline Đa ngôn ngữ)',
-                'avg_f1': 0.6215,
-                'tasks': {
-                    'misinfo':   {'macro_f1': 0.6632, 'per_class': [0.4478, 0.8785], 'support': [28, 158]},
-                    'stance':    {'macro_f1': 0.5618, 'per_class': [0.4706, 0.5660, 0.6489], 'support': [54, 48, 84]},
-                    'sentiment': {'macro_f1': 0.6394, 'per_class': [0.6993, 0.6618, 0.5571], 'support': [71, 75, 40]}
-                }
-            },
-            'gemma': {
-                'name': 'Gemma-4 4B (Reasoning Engine XAI)',
-                'avg_f1': 0.3111,
-                'tasks': {
-                    'misinfo':   {'macro_f1': 0.3588, 'per_class': [0.3429, 0.3747], 'support': [28, 158]},
-                    'stance':    {'macro_f1': 0.2862, 'per_class': [0.5660, 0.3721, 0.5106], 'support': [54, 48, 84]},
-                    'sentiment': {'macro_f1': 0.2883, 'per_class': [0.5623, 0.1579, 0.0247], 'support': [71, 75, 40]}
+        with sub_tab1:
+            import pandas as pd
+            import plotly.graph_objects as go
+            
+            is_dark = st.session_state.get("theme", "Dark") == "Dark"
+            text_col = "#e2e4e9" if is_dark else "#000000"
+            table_bg = "#161b22" if is_dark else "#ffffff"
+            table_border = "rgba(255, 255, 255, 0.1)" if is_dark else "rgba(0, 0, 0, 0.1)"
+            header_bg = "#0d1b3e" if is_dark else "#f8f9fa"
+            info_bg = "rgba(100, 255, 218, 0.1)" if is_dark else "rgba(0, 123, 255, 0.05)"
+            info_border = "#64ffda" if is_dark else "#007bff"
+            
+            st.markdown("## 📊 BÁO CÁO ĐÁNH GIÁ HIỆU NĂNG & BENCHMARK MÔ HÌNH KHOA HỌC")
+            st.markdown(f"""
+                <div style="background: {info_bg}; border-left: 5px solid {info_border}; padding: 15px; border-radius: 8px; margin-bottom: 25px;">
+                    <span style="color: {text_col} !important; font-family: 'Times New Roman', serif; font-size: 1.05rem;">
+                        💡 Báo cáo đối sáng hiệu năng thực nghiệm chi tiết giữa 3 kiến trúc mô hình: <b>PhoBERT-v2</b>, <b>XLM-R-v1</b> và <b>Gemma-4 4B (QLoRA)</b> trên tập dữ liệu kiểm thử vàng <b>Gold Test Set (186 mẫu)</b>, được gán nhãn thủ công bởi chuyên gia từ HUPH 2026.
+                    </span>
+                </div>
+            """, unsafe_allow_html=True)
+            
+            # Dữ liệu kết quả thực nghiệm chi tiết từ vaccinenlp-model-benchmark-report.ipynb
+            benchmark_results = {
+                'phobert': {
+                    'name': 'PhoBERT-v2 (Discriminator Tối ưu nhất)',
+                    'avg_f1': 0.6853,
+                    'tasks': {
+                        'misinfo':   {'macro_f1': 0.6886, 'per_class': [0.4933, 0.8839], 'support': [28, 158]},
+                        'stance':    {'macro_f1': 0.6383, 'per_class': [0.5817, 0.6316, 0.6923], 'support': [54, 48, 84]},
+                        'sentiment': {'macro_f1': 0.7289, 'per_class': [0.7606, 0.7671, 0.6600], 'support': [71, 75, 40]}
+                    }
+                },
+                'xlmr': {
+                    'name': 'XLM-R-v1 (Baseline Đa ngôn ngữ)',
+                    'avg_f1': 0.6215,
+                    'tasks': {
+                        'misinfo':   {'macro_f1': 0.6632, 'per_class': [0.4478, 0.8785], 'support': [28, 158]},
+                        'stance':    {'macro_f1': 0.5618, 'per_class': [0.4706, 0.5660, 0.6489], 'support': [54, 48, 84]},
+                        'sentiment': {'macro_f1': 0.6394, 'per_class': [0.6993, 0.6618, 0.5571], 'support': [71, 75, 40]}
+                    }
+                },
+                'gemma': {
+                    'name': 'Gemma-4 4B (Reasoning Engine XAI)',
+                    'avg_f1': 0.3111,
+                    'tasks': {
+                        'misinfo':   {'macro_f1': 0.3588, 'per_class': [0.3429, 0.3747], 'support': [28, 158]},
+                        'stance':    {'macro_f1': 0.2862, 'per_class': [0.5660, 0.3721, 0.5106], 'support': [54, 48, 84]},
+                        'sentiment': {'macro_f1': 0.2883, 'per_class': [0.5623, 0.1579, 0.0247], 'support': [71, 75, 40]}
+                    }
                 }
             }
-        }
-        
-        # Bộ chọn chế độ xem dữ liệu
-        selected_model_view = st.selectbox(
-            "🔍 Chọn chế độ xem dữ liệu Benchmark:",
-            ["Tất cả mô hình (So sánh chéo)", "PhoBERT-v2 (Discriminator Tối ưu nhất)", "XLM-R-v1 (Baseline Đa ngôn ngữ)", "Gemma-4 4B (Reasoning Engine XAI)"],
-            key="tab2_model_selector"
-        )
-        
-        # KPI Metric Cards
-        st.markdown("<div style='margin-bottom: 15px;'></div>", unsafe_allow_html=True)
-        if selected_model_view == "Tất cả mô hình (So sánh chéo)":
-            col1, col2, col3, col4 = st.columns(4)
-            with col1:
-                st.metric("🚨 Best Misinfo F1", "0.6886", "PhoBERT-v2")
-            with col2:
-                st.metric("🚩 Best Stance F1", "0.6383", "PhoBERT-v2")
-            with col3:
-                st.metric("🎭 Best Sentiment F1", "0.7289", "PhoBERT-v2")
-            with col4:
-                st.metric("🏆 Best Avg F1", "0.6853", "PhoBERT-v2")
-        else:
-            model_key = 'phobert' if 'PhoBERT' in selected_model_view else ('xlmr' if 'XLM-R' in selected_model_view else 'gemma')
-            m_data = benchmark_results[model_key]
-            col1, col2, col3, col4 = st.columns(4)
-            with col1:
-                st.metric("🚨 Misinfo Macro F1", f"{m_data['tasks']['misinfo']['macro_f1']:.4f}")
-            with col2:
-                st.metric("🚩 Stance Macro F1", f"{m_data['tasks']['stance']['macro_f1']:.4f}")
-            with col3:
-                st.metric("🎭 Sentiment Macro F1", f"{m_data['tasks']['sentiment']['macro_f1']:.4f}")
-            with col4:
-                st.metric("🏆 Average Macro F1", f"{m_data['avg_f1']:.4f}")
-        
-        st.markdown("---")
-        
-        # Bảng Leaderboard
-        st.markdown("### 🏆 1. Bảng so sánh hiệu năng tổng thể (Macro F1 Leaderboard)")
-        
-        leaderboard_html = f"""
-        <table style="width:100%; border-collapse:collapse; background:{table_bg}; border:1px solid {table_border}; border-radius:10px; overflow:hidden; font-family:'Times New Roman', serif; text-align:center;">
-            <thead style="background:{header_bg}; color:{text_col}; font-weight:bold;">
-                <tr style="border-bottom:2px solid #64ffda;">
-                    <th style="padding:12px;">Hạng</th>
-                    <th style="padding:12px; text-align:left;">Mô hình & Kiến trúc</th>
-                    <th style="padding:12px;">Misinfo F1</th>
-                    <th style="padding:12px;">Stance F1</th>
-                    <th style="padding:12px;">Sentiment F1</th>
-                    <th style="padding:12px; color:#FFD700;">Trung bình F1</th>
-                    <th style="padding:12px; text-align:left;">Đặc tính & Định vị</th>
-                </tr>
-            </thead>
-            <tbody style="color:{text_col};">
-                <tr style="border-bottom:1px solid {table_border}; background: rgba(100, 255, 218, 0.05);">
-                    <td style="padding:12px; font-weight:bold;">1</td>
-                    <td style="padding:12px; text-align:left; font-weight:bold; color:#64ffda;">PhoBERT-v2 (Fine-tuned)</td>
-                    <td style="padding:12px; font-weight:bold;">0.6886</td>
-                    <td style="padding:12px; font-weight:bold;">0.6383</td>
-                    <td style="padding:12px; font-weight:bold; color:#38ef7d;">0.7289</td>
-                    <td style="padding:12px; font-weight:bold; color:#FFD700;">0.6853</td>
-                    <td style="padding:12px; text-align:left; font-style:italic;">🥇 Phân loại tối ưu nhất, xử lý sắc thái tiếng Việt vượt trội.</td>
-                </tr>
-                <tr style="border-bottom:1px solid {table_border};">
-                    <td style="padding:12px; font-weight:bold;">2</td>
-                    <td style="padding:12px; text-align:left; font-weight:bold; color:#007bff;">XLM-R-v1 (Fine-tuned)</td>
-                    <td style="padding:12px;">0.6632</td>
-                    <td style="padding:12px;">0.5618</td>
-                    <td style="padding:12px;">0.6394</td>
-                    <td style="padding:12px; font-weight:bold;">0.6215</td>
-                    <td style="padding:12px; text-align:left; font-style:italic;">🥈 Baseline ổn định, thích hợp đa ngôn ngữ chéo.</td>
-                </tr>
-                <tr style="border-bottom:1px solid {table_border};">
-                    <td style="padding:12px; font-weight:bold;">3</td>
-                    <td style="padding:12px; text-align:left; font-weight:bold; color:#FFA500;">Gemma-4 4B (QLoRA)</td>
-                    <td style="padding:12px;">0.3588</td>
-                    <td style="padding:12px;">0.2862</td>
-                    <td style="padding:12px;">0.2883</td>
-                    <td style="padding:12px;">0.3111</td>
-                    <td style="padding:12px; text-align:left; font-style:italic;">🎖️ Tập trung giải thích (XAI), không tối ưu phân loại nhãn.</td>
-                </tr>
-            </tbody>
-        </table>
-        """
-        st.markdown(leaderboard_html, unsafe_allow_html=True)
-        st.markdown("<div style='margin-bottom: 25px;'></div>", unsafe_allow_html=True)
-        
-        # Biểu đồ Macro F1 Comparison
-        st.markdown("#### 📊 So sánh trực quan Macro F1 Score giữa các kiến trúc")
-        categories_macro = ['Phân loại Tin giả (Misinfo)', 'Lập trường (Stance)', 'Cảm xúc (Sentiment)', 'Macro F1 Trung bình']
-        fig_macro = go.Figure()
-        fig_macro.add_trace(go.Bar(
-            x=categories_macro,
-            y=[0.6886, 0.6383, 0.7289, 0.6853],
-            name='PhoBERT-v2',
-            marker_color='#64ffda',
-            text=['0.6886', '0.6383', '0.7289', '0.6853'],
-            textposition='auto',
-        ))
-        fig_macro.add_trace(go.Bar(
-            x=categories_macro,
-            y=[0.6632, 0.5618, 0.6394, 0.6215],
-            name='XLM-R-v1',
-            marker_color='#007bff',
-            text=['0.6632', '0.5618', '0.6394', '0.6215'],
-            textposition='auto',
-        ))
-        fig_macro.add_trace(go.Bar(
-            x=categories_macro,
-            y=[0.3588, 0.2862, 0.2883, 0.3111],
-            name='Gemma-4 4B',
-            marker_color='#FFA500',
-            text=['0.3588', '0.2862', '0.2883', '0.3111'],
-            textposition='auto',
-        ))
-        fig_macro.update_layout(
-            barmode='group',
-            paper_bgcolor='rgba(0,0,0,0)',
-            plot_bgcolor='rgba(0,0,0,0)',
-            font=dict(family='Times New Roman', color=text_col, size=13),
-            yaxis=dict(title='Macro F1 Score', range=[0, 1.0], gridcolor='rgba(128,128,128,0.1)'),
-            height=400,
-            margin=dict(l=20, r=20, t=30, b=20),
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
-        )
-        st.plotly_chart(fig_macro, use_container_width=True)
-        
-        st.markdown("---")
-        
-        # Phân tích chi tiết từng nhãn
-        st.markdown("### 🕸️ 2. Phân tích hiệu năng chi tiết theo nhãn và phân bổ mẫu (Per-Class Breakdown)")
-        
-        task_tab1, task_tab2, task_tab3 = st.tabs(["🚨 PHÂN LOẠI TIN GIẢ (MISINFO)", "🚩 QUAN ĐIỂM (STANCE)", "🎭 CẢM XÚC (SENTIMENT)"])
-        
-        with task_tab1:
-            fig_misinfo = go.Figure()
-            classes_misinfo = ['Tin giả (n=28)', 'Chính xác (n=158)']
-            fig_misinfo.add_trace(go.Bar(
-                x=classes_misinfo, y=[0.4933, 0.8839], name='PhoBERT-v2', marker_color='#64ffda',
-                text=['0.4933', '0.8839'], textposition='auto'
-            ))
-            fig_misinfo.add_trace(go.Bar(
-                x=classes_misinfo, y=[0.4478, 0.8785], name='XLM-R-v1', marker_color='#007bff',
-                text=['0.4478', '0.8785'], textposition='auto'
-            ))
-            fig_misinfo.add_trace(go.Bar(
-                x=classes_misinfo, y=[0.3429, 0.3747], name='Gemma-4 4B', marker_color='#FFA500',
-                text=['0.3429', '0.3747'], textposition='auto'
-            ))
-            fig_misinfo.update_layout(
-                barmode='group', paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-                font=dict(family='Times New Roman', color=text_col, size=13),
-                yaxis=dict(title='F1 Score', range=[0, 1.05], gridcolor='rgba(128,128,128,0.1)'),
-                height=350, margin=dict(l=20, r=20, t=30, b=20),
-                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
-            )
-            st.plotly_chart(fig_misinfo, use_container_width=True)
             
-            st.markdown(f"""
-            <table style="width:100%; border-collapse:collapse; background:{table_bg}; border:1px solid {table_border}; font-family:'Times New Roman', serif; text-align:center;">
+            # Bộ chọn chế độ xem dữ liệu
+            selected_model_view = st.selectbox(
+                "🔍 Chọn chế độ xem dữ liệu Benchmark:",
+                ["Tất cả mô hình (So sánh chéo)", "PhoBERT-v2 (Discriminator Tối ưu nhất)", "XLM-R-v1 (Baseline Đa ngôn ngữ)", "Gemma-4 4B (Reasoning Engine XAI)"],
+                key="tab2_model_selector_combined"
+            )
+            
+            # KPI Metric Cards
+            st.markdown("<div style='margin-bottom: 15px;'></div>", unsafe_allow_html=True)
+            if selected_model_view == "Tất cả mô hình (So sánh chéo)":
+                col1, col2, col3, col4 = st.columns(4)
+                with col1:
+                    st.metric("🚨 Best Misinfo F1", "0.6886", "PhoBERT-v2")
+                with col2:
+                    st.metric("🚩 Best Stance F1", "0.6383", "PhoBERT-v2")
+                with col3:
+                    st.metric("🎭 Best Sentiment F1", "0.7289", "PhoBERT-v2")
+                with col4:
+                    st.metric("🏆 Best Avg F1", "0.6853", "PhoBERT-v2")
+            else:
+                model_key = 'phobert' if 'PhoBERT' in selected_model_view else ('xlmr' if 'XLM-R' in selected_model_view else 'gemma')
+                m_data = benchmark_results[model_key]
+                col1, col2, col3, col4 = st.columns(4)
+                with col1:
+                    st.metric("🚨 Misinfo Macro F1", f"{m_data['tasks']['misinfo']['macro_f1']:.4f}")
+                with col2:
+                    st.metric("🚩 Stance Macro F1", f"{m_data['tasks']['stance']['macro_f1']:.4f}")
+                with col3:
+                    st.metric("🎭 Sentiment Macro F1", f"{m_data['tasks']['sentiment']['macro_f1']:.4f}")
+                with col4:
+                    st.metric("🏆 Average Macro F1", f"{m_data['avg_f1']:.4f}")
+            
+            st.markdown("---")
+            
+            # Bảng Leaderboard
+            st.markdown("### 🏆 1. Bảng so sánh hiệu năng tổng thể (Macro F1 Leaderboard)")
+            
+            leaderboard_html = f"""
+            <table style="width:100%; border-collapse:collapse; background:{table_bg}; border:1px solid {table_border}; border-radius:10px; overflow:hidden; font-family:'Times New Roman', serif; text-align:center;">
                 <thead style="background:{header_bg}; color:{text_col}; font-weight:bold;">
-                    <tr style="border-bottom:1px solid #64ffda;">
-                        <th style="padding:10px; text-align:left;">Nhãn phân loại</th>
-                        <th style="padding:10px;">Support (Số mẫu)</th>
-                        <th style="padding:10px;">PhoBERT-v2 F1</th>
-                        <th style="padding:10px;">XLM-R-v1 F1</th>
-                        <th style="padding:10px;">Gemma-4 4B F1</th>
+                    <tr style="border-bottom:2px solid #64ffda;">
+                        <th style="padding:12px;">Hạng</th>
+                        <th style="padding:12px; text-align:left;">Mô hình & Kiến trúc</th>
+                        <th style="padding:12px;">Misinfo F1</th>
+                        <th style="padding:12px;">Stance F1</th>
+                        <th style="padding:12px;">Sentiment F1</th>
+                        <th style="padding:12px; color:#FFD700;">Trung bình F1</th>
+                        <th style="padding:12px; text-align:left;">Đặc tính & Định vị</th>
                     </tr>
                 </thead>
                 <tbody style="color:{text_col};">
-                    <tr style="border-bottom:1px solid {table_border};">
-                        <td style="padding:10px; text-align:left; font-weight:bold; color:#ff4b4b;">Tin giả</td>
-                        <td style="padding:10px; font-family:monospace;">28</td>
-                        <td style="padding:10px; font-weight:bold; color:#64ffda;">0.4933</td>
-                        <td style="padding:10px;">0.4478</td>
-                        <td style="padding:10px;">0.3429</td>
+                    <tr style="border-bottom:1px solid {table_border}; background: rgba(100, 255, 218, 0.05);">
+                        <td style="padding:12px; font-weight:bold;">1</td>
+                        <td style="padding:12px; text-align:left; font-weight:bold; color:#64ffda;">PhoBERT-v2 (Fine-tuned)</td>
+                        <td style="padding:12px; font-weight:bold;">0.6886</td>
+                        <td style="padding:12px; font-weight:bold;">0.6383</td>
+                        <td style="padding:12px; font-weight:bold; color:#38ef7d;">0.7289</td>
+                        <td style="padding:12px; font-weight:bold; color:#FFD700;">0.6853</td>
+                        <td style="padding:12px; text-align:left; font-style:italic;">🥇 Phân loại tối ưu nhất, xử lý sắc thái tiếng Việt vượt trội.</td>
                     </tr>
                     <tr style="border-bottom:1px solid {table_border};">
-                        <td style="padding:10px; text-align:left; font-weight:bold; color:#38ef7d;">Chính xác</td>
-                        <td style="padding:10px; font-family:monospace;">158</td>
-                        <td style="padding:10px; font-weight:bold; color:#64ffda;">0.8839</td>
-                        <td style="padding:10px;">0.8785</td>
-                        <td style="padding:10px;">0.3747</td>
+                        <td style="padding:12px; font-weight:bold;">2</td>
+                        <td style="padding:12px; text-align:left; font-weight:bold; color:#007bff;">XLM-R-v1 (Fine-tuned)</td>
+                        <td style="padding:12px;">0.6632</td>
+                        <td style="padding:12px;">0.5618</td>
+                        <td style="padding:12px;">0.6394</td>
+                        <td style="padding:12px; font-weight:bold;">0.6215</td>
+                        <td style="padding:12px; text-align:left; font-style:italic;">🥈 Baseline ổn định, thích hợp đa ngôn ngữ chéo.</td>
+                    </tr>
+                    <tr style="border-bottom:1px solid {table_border};">
+                        <td style="padding:12px; font-weight:bold;">3</td>
+                        <td style="padding:12px; text-align:left; font-weight:bold; color:#FFA500;">Gemma-4 4B (QLoRA)</td>
+                        <td style="padding:12px;">0.3588</td>
+                        <td style="padding:12px;">0.2862</td>
+                        <td style="padding:12px;">0.2883</td>
+                        <td style="padding:12px;">0.3111</td>
+                        <td style="padding:12px; text-align:left; font-style:italic;">🎖️ Tập trung giải thích (XAI), không tối ưu phân loại nhãn.</td>
                     </tr>
                 </tbody>
             </table>
-            """, unsafe_allow_html=True)
+            """
+            st.markdown(leaderboard_html, unsafe_allow_html=True)
+            st.markdown("<div style='margin-bottom: 25px;'></div>", unsafe_allow_html=True)
             
-            st.markdown("""
-            💡 **Nhận xét thực nghiệm**: Nhãn **Chính xác** có số lượng mẫu áp đảo (158 mẫu) đạt hiệu năng cực kỳ tốt (~0.88 F1 trên cả 2 mô hình Discriminator), cho thấy hệ thống hoạt động vô cùng tin cậy trong việc xác thực nguồn tin chuẩn. Nhãn **Tin giả** (28 mẫu) có F1 đạt cao nhất là 0.4933 (PhoBERT-v2), đây là bài toán khó do số lượng mẫu huấn luyện hạn chế và sự tinh vi của các thông tin chống vắc-xin cực đoan.
-            """)
-            
-        with task_tab2:
-            fig_stance = go.Figure()
-            classes_stance = ['Ủng hộ (n=54)', 'Phản đối (n=48)', 'Trung lập (n=84)']
-            fig_stance.add_trace(go.Bar(
-                x=classes_stance, y=[0.5817, 0.6316, 0.6923], name='PhoBERT-v2', marker_color='#64ffda',
-                text=['0.5817', '0.6316', '0.6923'], textposition='auto'
+            # Biểu đồ Macro F1 Comparison
+            st.markdown("#### 📊 So sánh trực quan Macro F1 Score giữa các kiến trúc")
+            categories_macro = ['Phân loại Tin giả (Misinfo)', 'Lập trường (Stance)', 'Cảm xúc (Sentiment)', 'Macro F1 Trung bình']
+            fig_macro = go.Figure()
+            fig_macro.add_trace(go.Bar(
+                x=categories_macro,
+                y=[0.6886, 0.6383, 0.7289, 0.6853],
+                name='PhoBERT-v2',
+                marker_color='#64ffda',
+                text=['0.6886', '0.6383', '0.7289', '0.6853'],
+                textposition='auto',
             ))
-            fig_stance.add_trace(go.Bar(
-                x=classes_stance, y=[0.4706, 0.5660, 0.6489], name='XLM-R-v1', marker_color='#007bff',
-                text=['0.4706', '0.5660', '0.6489'], textposition='auto'
+            fig_macro.add_trace(go.Bar(
+                x=categories_macro,
+                y=[0.6632, 0.5618, 0.6394, 0.6215],
+                name='XLM-R-v1',
+                marker_color='#007bff',
+                text=['0.6632', '0.5618', '0.6394', '0.6215'],
+                textposition='auto',
             ))
-            fig_stance.add_trace(go.Bar(
-                x=classes_stance, y=[0.5660, 0.3721, 0.5106], name='Gemma-4 4B', marker_color='#FFA500',
-                text=['0.5660', '0.3721', '0.5106'], textposition='auto'
+            fig_macro.add_trace(go.Bar(
+                x=categories_macro,
+                y=[0.3588, 0.2862, 0.2883, 0.3111],
+                name='Gemma-4 4B',
+                marker_color='#FFA500',
+                text=['0.3588', '0.2862', '0.2883', '0.3111'],
+                textposition='auto',
             ))
-            fig_stance.update_layout(
-                barmode='group', paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+            fig_macro.update_layout(
+                barmode='group',
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)',
                 font=dict(family='Times New Roman', color=text_col, size=13),
-                yaxis=dict(title='F1 Score', range=[0, 1.05], gridcolor='rgba(128,128,128,0.1)'),
-                height=350, margin=dict(l=20, r=20, t=30, b=20),
+                yaxis=dict(title='Macro F1 Score', range=[0, 1.0], gridcolor='rgba(128,128,128,0.1)'),
+                height=400,
+                margin=dict(l=20, r=20, t=30, b=20),
                 legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
             )
-            st.plotly_chart(fig_stance, use_container_width=True)
+            st.plotly_chart(fig_macro, use_container_width=True)
             
-            st.markdown(f"""
-            <table style="width:100%; border-collapse:collapse; background:{table_bg}; border:1px solid {table_border}; font-family:'Times New Roman', serif; text-align:center;">
-                <thead style="background:{header_bg}; color:{text_col}; font-weight:bold;">
-                    <tr style="border-bottom:1px solid #64ffda;">
-                        <th style="padding:10px; text-align:left;">Nhãn lập trường</th>
-                        <th style="padding:10px;">Support (Số mẫu)</th>
-                        <th style="padding:10px;">PhoBERT-v2 F1</th>
-                        <th style="padding:10px;">XLM-R-v1 F1</th>
-                        <th style="padding:10px;">Gemma-4 4B F1</th>
-                    </tr>
-                </thead>
-                <tbody style="color:{text_col};">
-                    <tr style="border-bottom:1px solid {table_border};">
-                        <td style="padding:10px; text-align:left; font-weight:bold; color:#38ef7d;">Ủng hộ</td>
-                        <td style="padding:10px; font-family:monospace;">54</td>
-                        <td style="padding:10px; font-weight:bold; color:#64ffda;">0.5817</td>
-                        <td style="padding:10px;">0.4706</td>
-                        <td style="padding:10px;">0.5660</td>
-                    </tr>
-                    <tr style="border-bottom:1px solid {table_border};">
-                        <td style="padding:10px; text-align:left; font-weight:bold; color:#ff4b4b;">Phản đối</td>
-                        <td style="padding:10px; font-family:monospace;">48</td>
-                        <td style="padding:10px; font-weight:bold; color:#64ffda;">0.6316</td>
-                        <td style="padding:10px;">0.5660</td>
-                        <td style="padding:10px;">0.3721</td>
-                    </tr>
-                    <tr style="border-bottom:1px solid {table_border};">
-                        <td style="padding:10px; text-align:left; font-weight:bold; color:#007bff;">Trung lập</td>
-                        <td style="padding:10px; font-family:monospace;">84</td>
-                        <td style="padding:10px; font-weight:bold; color:#64ffda;">0.6923</td>
-                        <td style="padding:10px;">0.6489</td>
-                        <td style="padding:10px;">0.5106</td>
-                    </tr>
-                </tbody>
-            </table>
-            """, unsafe_allow_html=True)
+            st.markdown("---")
             
-            st.markdown("""
-            💡 **Nhận xét thực nghiệm**: Nhãn **Trung lập** (84 mẫu) có kết quả tốt nhất do cách diễn đạt khách quan, không chứa nhiều yếu tố nhiễu cảm xúc. **Phản đối** (48 mẫu) đạt 0.6316 F1, chứng tỏ khả năng nhận diện thái độ phản biện cực đoan rất tốt từ PhoBERT-v2. Đáng chú ý, Gemma-4 4B đạt F1 0.5660 ở nhãn **Ủng hộ**, gần bằng với PhoBERT-v2.
-            """)
+            # Phân tích chi tiết từng nhãn
+            st.markdown("### 🕸️ 2. Phân tích hiệu năng chi tiết theo nhãn và phân bổ mẫu (Per-Class Breakdown)")
             
-        with task_tab3:
-            fig_sentiment = go.Figure()
-            classes_sentiment = ['Tiêu cực (n=71)', 'Trung tính (n=75)', 'Tích cực (n=40)']
-            fig_sentiment.add_trace(go.Bar(
-                x=classes_sentiment, y=[0.7606, 0.7671, 0.6600], name='PhoBERT-v2', marker_color='#64ffda',
-                text=['0.7606', '0.7671', '0.6600'], textposition='auto'
-            ))
-            fig_sentiment.add_trace(go.Bar(
-                x=classes_sentiment, y=[0.6993, 0.6618, 0.5571], name='XLM-R-v1', marker_color='#007bff',
-                text=['0.6993', '0.6618', '0.5571'], textposition='auto'
-            ))
-            fig_sentiment.add_trace(go.Bar(
-                x=classes_sentiment, y=[0.5623, 0.1579, 0.0247], name='Gemma-4 4B', marker_color='#FFA500',
-                text=['0.5623', '0.1579', '0.0247'], textposition='auto'
-            ))
-            fig_sentiment.update_layout(
-                barmode='group', paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-                font=dict(family='Times New Roman', color=text_col, size=13),
-                yaxis=dict(title='F1 Score', range=[0, 1.05], gridcolor='rgba(128,128,128,0.1)'),
-                height=350, margin=dict(l=20, r=20, t=30, b=20),
-                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
-            )
-            st.plotly_chart(fig_sentiment, use_container_width=True)
+            task_tab1, task_tab2, task_tab3 = st.tabs(["🚨 PHÂN LOẠI TIN GIẢ (MISINFO)", "🚩 QUAN ĐIỂM (STANCE)", "🎭 CẢM XÚC (SENTIMENT)"])
             
-            st.markdown(f"""
-            <table style="width:100%; border-collapse:collapse; background:{table_bg}; border:1px solid {table_border}; font-family:'Times New Roman', serif; text-align:center;">
-                <thead style="background:{header_bg}; color:{text_col}; font-weight:bold;">
-                    <tr style="border-bottom:1px solid #64ffda;">
-                        <th style="padding:10px; text-align:left;">Sắc thái cảm xúc</th>
-                        <th style="padding:10px;">Support (Số mẫu)</th>
-                        <th style="padding:10px;">PhoBERT-v2 F1</th>
-                        <th style="padding:10px;">XLM-R-v1 F1</th>
-                        <th style="padding:10px;">Gemma-4 4B F1</th>
-                    </tr>
-                </thead>
-                <tbody style="color:{text_col};">
-                    <tr style="border-bottom:1px solid {table_border};">
-                        <td style="padding:10px; text-align:left; font-weight:bold; color:#ff4b4b;">Tiêu cực</td>
-                        <td style="padding:10px; font-family:monospace;">71</td>
-                        <td style="padding:10px; font-weight:bold; color:#64ffda;">0.7606</td>
-                        <td style="padding:10px;">0.6993</td>
-                        <td style="padding:10px;">0.5623</td>
-                    </tr>
-                    <tr style="border-bottom:1px solid {table_border};">
-                        <td style="padding:10px; text-align:left; font-weight:bold; color:#007bff;">Trung tính</td>
-                        <td style="padding:10px; font-family:monospace;">75</td>
-                        <td style="padding:10px; font-weight:bold; color:#64ffda;">0.7671</td>
-                        <td style="padding:10px;">0.6618</td>
-                        <td style="padding:10px;">0.1579</td>
-                    </tr>
-                    <tr style="border-bottom:1px solid {table_border};">
-                        <td style="padding:10px; text-align:left; font-weight:bold; color:#38ef7d;">Tích cực</td>
-                        <td style="padding:10px; font-family:monospace;">40</td>
-                        <td style="padding:10px; font-weight:bold; color:#64ffda;">0.6600</td>
-                        <td style="padding:10px;">0.5571</td>
-                        <td style="padding:10px;">0.0247</td>
-                    </tr>
-                </tbody>
-            </table>
-            """, unsafe_allow_html=True)
+            with task_tab1:
+                fig_misinfo = go.Figure()
+                classes_misinfo = ['Tin giả (n=28)', 'Chính xác (n=158)']
+                fig_misinfo.add_trace(go.Bar(
+                    x=classes_misinfo, y=[0.4933, 0.8839], name='PhoBERT-v2', marker_color='#64ffda',
+                    text=['0.4933', '0.8839'], textposition='auto'
+                ))
+                fig_misinfo.add_trace(go.Bar(
+                    x=classes_misinfo, y=[0.4478, 0.8785], name='XLM-R-v1', marker_color='#007bff',
+                    text=['0.4478', '0.8785'], textposition='auto'
+                ))
+                fig_misinfo.add_trace(go.Bar(
+                    x=classes_misinfo, y=[0.3429, 0.3747], name='Gemma-4 4B', marker_color='#FFA500',
+                    text=['0.3429', '0.3747'], textposition='auto'
+                ))
+                fig_misinfo.update_layout(
+                    barmode='group', paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                    font=dict(family='Times New Roman', color=text_col, size=13),
+                    yaxis=dict(title='F1 Score', range=[0, 1.05], gridcolor='rgba(128,128,128,0.1)'),
+                    height=350, margin=dict(l=20, r=20, t=30, b=20),
+                    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+                )
+                st.plotly_chart(fig_misinfo, use_container_width=True)
+                
+                st.markdown(f"""
+                <table style="width:100%; border-collapse:collapse; background:{table_bg}; border:1px solid {table_border}; font-family:'Times New Roman', serif; text-align:center;">
+                    <thead style="background:{header_bg}; color:{text_col}; font-weight:bold;">
+                        <tr style="border-bottom:1px solid #64ffda;">
+                            <th style="padding:10px; text-align:left;">Nhãn phân loại</th>
+                            <th style="padding:10px;">Support (Số mẫu)</th>
+                            <th style="padding:10px;">PhoBERT-v2 F1</th>
+                            <th style="padding:10px;">XLM-R-v1 F1</th>
+                            <th style="padding:10px;">Gemma-4 4B F1</th>
+                        </tr>
+                    </thead>
+                    <tbody style="color:{text_col};">
+                        <tr style="border-bottom:1px solid {table_border};">
+                            <td style="padding:10px; text-align:left; font-weight:bold; color:#ff4b4b;">Tin giả</td>
+                            <td style="padding:10px; font-family:monospace;">28</td>
+                            <td style="padding:10px; font-weight:bold; color:#64ffda;">0.4933</td>
+                            <td style="padding:10px;">0.4478</td>
+                            <td style="padding:10px;">0.3429</td>
+                        </tr>
+                        <tr style="border-bottom:1px solid {table_border};">
+                            <td style="padding:10px; text-align:left; font-weight:bold; color:#38ef7d;">Chính xác</td>
+                            <td style="padding:10px; font-family:monospace;">158</td>
+                            <td style="padding:10px; font-weight:bold; color:#64ffda;">0.8839</td>
+                            <td style="padding:10px;">0.8785</td>
+                            <td style="padding:10px;">0.3747</td>
+                        </tr>
+                    </tbody>
+                </table>
+                """, unsafe_allow_html=True)
+                
+                st.markdown("""
+                💡 **Nhận xét thực nghiệm**: Nhãn **Chính xác** có số lượng mẫu áp đảo (158 mẫu) đạt hiệu năng cực kỳ tốt (~0.88 F1 trên cả 2 mô hình Discriminator), cho thấy hệ thống hoạt động vô cùng tin cậy trong việc xác thực nguồn tin chuẩn. Nhãn **Tin giả** (28 mẫu) có F1 đạt cao nhất là 0.4933 (PhoBERT-v2), đây là bài toán khó do số lượng mẫu huấn luyện hạn chế và sự tinh vi của các thông tin chống vắc-xin cực đoan.
+                """)
+                
+            with task_tab2:
+                fig_stance = go.Figure()
+                classes_stance = ['Ủng hộ (n=54)', 'Phản đối (n=48)', 'Trung lập (n=84)']
+                fig_stance.add_trace(go.Bar(
+                    x=classes_stance, y=[0.5817, 0.6316, 0.6923], name='PhoBERT-v2', marker_color='#64ffda',
+                    text=['0.5817', '0.6316', '0.6923'], textposition='auto'
+                ))
+                fig_stance.add_trace(go.Bar(
+                    x=classes_stance, y=[0.4706, 0.5660, 0.6489], name='XLM-R-v1', marker_color='#007bff',
+                    text=['0.4706', '0.5660', '0.6489'], textposition='auto'
+                ))
+                fig_stance.add_trace(go.Bar(
+                    x=classes_stance, y=[0.5660, 0.3721, 0.5106], name='Gemma-4 4B', marker_color='#FFA500',
+                    text=['0.5660', '0.3721', '0.5106'], textposition='auto'
+                ))
+                fig_stance.update_layout(
+                    barmode='group', paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                    font=dict(family='Times New Roman', color=text_col, size=13),
+                    yaxis=dict(title='F1 Score', range=[0, 1.05], gridcolor='rgba(128,128,128,0.1)'),
+                    height=350, margin=dict(l=20, r=20, t=30, b=20),
+                    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+                )
+                st.plotly_chart(fig_stance, use_container_width=True)
+                
+                st.markdown(f"""
+                <table style="width:100%; border-collapse:collapse; background:{table_bg}; border:1px solid {table_border}; font-family:'Times New Roman', serif; text-align:center;">
+                    <thead style="background:{header_bg}; color:{text_col}; font-weight:bold;">
+                        <tr style="border-bottom:1px solid #64ffda;">
+                            <th style="padding:10px; text-align:left;">Nhãn lập trường</th>
+                            <th style="padding:10px;">Support (Số mẫu)</th>
+                            <th style="padding:10px;">PhoBERT-v2 F1</th>
+                            <th style="padding:10px;">XLM-R-v1 F1</th>
+                            <th style="padding:10px;">Gemma-4 4B F1</th>
+                        </tr>
+                    </thead>
+                    <tbody style="color:{text_col};">
+                        <tr style="border-bottom:1px solid {table_border};">
+                            <td style="padding:10px; text-align:left; font-weight:bold; color:#38ef7d;">Ủng hộ</td>
+                            <td style="padding:10px; font-family:monospace;">54</td>
+                            <td style="padding:10px; font-weight:bold; color:#64ffda;">0.5817</td>
+                            <td style="padding:10px;">0.4706</td>
+                            <td style="padding:10px;">0.5660</td>
+                        </tr>
+                        <tr style="border-bottom:1px solid {table_border};">
+                            <td style="padding:10px; text-align:left; font-weight:bold; color:#ff4b4b;">Phản đối</td>
+                            <td style="padding:10px; font-family:monospace;">48</td>
+                            <td style="padding:10px; font-weight:bold; color:#64ffda;">0.6316</td>
+                            <td style="padding:10px;">0.5660</td>
+                            <td style="padding:10px;">0.3721</td>
+                        </tr>
+                        <tr style="border-bottom:1px solid {table_border};">
+                            <td style="padding:10px; text-align:left; font-weight:bold; color:#007bff;">Trung lập</td>
+                            <td style="padding:10px; font-family:monospace;">84</td>
+                            <td style="padding:10px; font-weight:bold; color:#64ffda;">0.6923</td>
+                            <td style="padding:10px;">0.6489</td>
+                            <td style="padding:10px;">0.5106</td>
+                        </tr>
+                    </tbody>
+                </table>
+                """, unsafe_allow_html=True)
+                
+                st.markdown("""
+                💡 **Nhận xét thực nghiệm**: Nhãn **Trung lập** (84 mẫu) có kết quả tốt nhất do cách diễn đạt khách quan, không chứa nhiều yếu tố nhiễu cảm xúc. **Phản đối** (48 mẫu) đạt 0.6316 F1, chứng tỏ khả năng nhận diện thái độ phản biện cực đoan rất tốt từ PhoBERT-v2. Đáng chú ý, Gemma-4 4B đạt F1 0.5660 ở nhãn **Ủng hộ**, gần bằng với PhoBERT-v2.
+                """)
+                
+            with task_tab3:
+                fig_sentiment = go.Figure()
+                classes_sentiment = ['Tiêu cực (n=71)', 'Trung tính (n=75)', 'Tích cực (n=40)']
+                fig_sentiment.add_trace(go.Bar(
+                    x=classes_sentiment, y=[0.7606, 0.7671, 0.6600], name='PhoBERT-v2', marker_color='#64ffda',
+                    text=['0.7606', '0.7671', '0.6600'], textposition='auto'
+                ))
+                fig_sentiment.add_trace(go.Bar(
+                    x=classes_sentiment, y=[0.6993, 0.6618, 0.5571], name='XLM-R-v1', marker_color='#007bff',
+                    text=['0.6993', '0.6618', '0.5571'], textposition='auto'
+                ))
+                fig_sentiment.add_trace(go.Bar(
+                    x=classes_sentiment, y=[0.5623, 0.1579, 0.0247], name='Gemma-4 4B', marker_color='#FFA500',
+                    text=['0.5623', '0.1579', '0.0247'], textposition='auto'
+                ))
+                fig_sentiment.update_layout(
+                    barmode='group', paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                    font=dict(family='Times New Roman', color=text_col, size=13),
+                    yaxis=dict(title='F1 Score', range=[0, 1.05], gridcolor='rgba(128,128,128,0.1)'),
+                    height=350, margin=dict(l=20, r=20, t=30, b=20),
+                    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+                )
+                st.plotly_chart(fig_sentiment, use_container_width=True)
+                
+                st.markdown(f"""
+                <table style="width:100%; border-collapse:collapse; background:{table_bg}; border:1px solid {table_border}; font-family:'Times New Roman', serif; text-align:center;">
+                    <thead style="background:{header_bg}; color:{text_col}; font-weight:bold;">
+                        <tr style="border-bottom:1px solid #64ffda;">
+                            <th style="padding:10px; text-align:left;">Sắc thái cảm xúc</th>
+                            <th style="padding:10px;">Support (Số mẫu)</th>
+                            <th style="padding:10px;">PhoBERT-v2 F1</th>
+                            <th style="padding:10px;">XLM-R-v1 F1</th>
+                            <th style="padding:10px;">Gemma-4 4B F1</th>
+                        </tr>
+                    </thead>
+                    <tbody style="color:{text_col};">
+                        <tr style="border-bottom:1px solid #table_border};">
+                            <td style="padding:10px; text-align:left; font-weight:bold; color:#ff4b4b;">Tiêu cực</td>
+                            <td style="padding:10px; font-family:monospace;">71</td>
+                            <td style="padding:10px; font-weight:bold; color:#64ffda;">0.7606</td>
+                            <td style="padding:10px;">0.6993</td>
+                            <td style="padding:10px;">0.5623</td>
+                        </tr>
+                        <tr style="border-bottom:1px solid {table_border};">
+                            <td style="padding:10px; text-align:left; font-weight:bold; color:#007bff;">Trung tính</td>
+                            <td style="padding:10px; font-family:monospace;">75</td>
+                            <td style="padding:10px; font-weight:bold; color:#64ffda;">0.7671</td>
+                            <td style="padding:10px;">0.6618</td>
+                            <td style="padding:10px;">0.1579</td>
+                        </tr>
+                        <tr style="border-bottom:1px solid {table_border};">
+                            <td style="padding:10px; text-align:left; font-weight:bold; color:#38ef7d;">Tích cực</td>
+                            <td style="padding:10px; font-family:monospace;">40</td>
+                            <td style="padding:10px; font-weight:bold; color:#64ffda;">0.6600</td>
+                            <td style="padding:10px;">0.5571</td>
+                            <td style="padding:10px;">0.0247</td>
+                        </tr>
+                    </tbody>
+                </table>
+                """, unsafe_allow_html=True)
+                
+                st.markdown("""
+                💡 **Nhận xét thực nghiệm**: Nhãn **Tiêu cực** (71 mẫu) và **Trung tính** (75 mẫu) đạt hiệu năng cực kỳ ấn tượng (>0.76 F1 trên PhoBERT-v2). Tuy nhiên, nhãn **Tích cực** (40 mẫu) tỏ ra thách thức hơn trên mọi kiến trúc, đặc biệt là Gemma-4 (F1 score giảm sâu xuống 0.0247) do mô hình tạo sinh lớn thường có xu hướng gán mọi trải nghiệm vắc-xin chia sẻ bình thường là "tiêu cực" hoặc "trung tính".
+                """)
+                
+            st.markdown("---")
             
-            st.markdown("""
-            💡 **Nhận xét thực nghiệm**: Nhãn **Tiêu cực** (71 mẫu) and **Trung tính** (75 mẫu) đạt hiệu năng cực kỳ ấn tượng (>0.76 F1 trên PhoBERT-v2). Tuy nhiên, nhãn **Tích cực** (40 mẫu) tỏ ra thách thức hơn trên mọi kiến trúc, đặc biệt là Gemma-4 (F1 score giảm sâu xuống 0.0247) do mô hình tạo sinh lớn thường có xu hướng gán mọi trải nghiệm vắc-xin chia sẻ bình thường là "tiêu cực" hoặc "trung tính".
-            """)
+            # Phân tích sâu lỗi khoa học
+            st.markdown("### 🔬 3. Phân tích sâu & Đánh giá thực nghiệm (Scientific Deep-dive)")
             
-        st.markdown("---")
-        
-        # Phân tích sâu lỗi khoa học
-        st.markdown("### 🔬 3. Phân tích sâu & Đánh giá thực nghiệm (Scientific Deep-dive)")
-        
-        s_col1, s_col2 = st.columns(2)
-        with s_col1:
-            st.markdown("""
-            #### ❌ 1. Những nhãn phân loại 'Thách thức' nhất (Hardest Labels)
-            Dựa trên kết quả benchmark thực tế từ Gold Test Set, hai nhóm nhãn có chỉ số F1-Score thấp nhất trên mọi mô hình là:
-            * **🚨 Tin giả (Misinfo = Tin giả)**: Đạt F1 trung bình là **0.4280** trên cả 3 mô hình. 
-              * *Lý do*: Tin giả liên quan đến vắc-xin không đơn thuần là tin đồn nhảm dễ nhận biết, mà thường ẩn chứa dưới dạng ngụy biện khoa học tinh vi, lồng ghép thuật ngữ y học phức tạp hoặc mỉa mai sâu cay.
-            * **🎭 Cảm xúc Tích cực (Sentiment = Tích cực)**: Đạt F1 trung bình chỉ **0.4139**.
-              * *Lý do*: Chia sẻ tích cực của người dân Việt Nam về tiêm vắc-xin thường có xu hướng đi kèm các từ mang sắc thái lo lắng (như "hơi sốt", "hơi đau tay một chút nhưng trộm vía ổn"), khiến các bộ phân loại dễ nhầm lẫn sang sắc thái tiêu cực hoặc trung tính.
-            """)
-        with s_col2:
-            st.markdown("""
-            #### 🤖 2. Tại sao F1-Score của Gemma-4 4B lại thấp hơn?
-            * **Bản chất kiến trúc**: Gemma-4 là mô hình Generative (tạo sinh) được tinh chỉnh qua QLoRA nhằm phục vụ việc tạo lập **Giải thích khoa học (XAI - Explainable AI)** và **Tư vấn chiến lược phản ứng** dưới dạng ngôn ngữ tự nhiên.
-            * **Trade-off giữa Giải thích & Phân loại**:
-              * Mô hình Encoder (như PhoBERT-v2) được thiết kế đặc thù cho bài toán phân loại đa nhãn (Multi-task Classification), giúp trích xuất nhãn cực nhanh và chính xác cao (Avg F1 = 0.6853).
-              * Gemma-4 4B đóng vai trò lý luận sâu, giúp người dùng hiểu *tại sao* đó là tin giả và đề xuất kịch bản phản hồi, chứ không cạnh tranh hiệu năng ở bài toán gán nhãn cứng.
-            """)
+            s_col1, s_col2 = st.columns(2)
+            with s_col1:
+                st.markdown("""
+                #### ❌ 1. Những nhãn phân loại 'Thách thức' nhất (Hardest Labels)
+                Dựa trên kết quả benchmark thực tế từ Gold Test Set, hai nhóm nhãn có chỉ số F1-Score thấp nhất trên mọi mô hình là:
+                * **🚨 Tin giả (Misinfo = Tin giả)**: Đạt F1 trung bình là **0.4280** trên cả 3 mô hình. 
+                  * *Lý do*: Tin giả liên quan đến vắc-xin không đơn thuần là tin đồn nhảm dễ nhận biết, mà thường ẩn chứa dưới dạng ngụy biện khoa học tinh vi, lồng ghép thuật ngữ y học phức tạp hoặc mỉa mai sâu cay.
+                * **🎭 Cảm xúc Tích cực (Sentiment = Tích cực)**: Đạt F1 trung bình chỉ **0.4139**.
+                  * *Lý do*: Chia sẻ tích cực của người dân Việt Nam về tiêm vắc-xin thường có xu hướng đi kèm các từ mang sắc thái lo lắng (như "hơi sốt", "hơi đau tay một chút nhưng trộm vía ổn"), khiến các bộ phân loại dễ nhầm lẫn sang sắc thái tiêu cực hoặc trung tính.
+                """)
+            with s_col2:
+                st.markdown("""
+                #### 🤖 2. Tại sao F1-Score của Gemma-4 4B lại thấp hơn?
+                * **Bản chất kiến trúc**: Gemma-4 là mô hình Generative (tạo sinh) được tinh chỉnh qua QLoRA nhằm phục vụ việc tạo lập **Giải thích khoa học (XAI - Explainable AI)** và **Tư vấn chiến lược phản ứng** dưới dạng ngôn ngữ tự nhiên.
+                * **Trade-off giữa Giải thích & Phân loại**:
+                  * Mô hình Encoder (như PhoBERT-v2) được thiết kế đặc thù cho bài toán phân loại đa nhãn (Multi-task Classification), giúp trích xuất nhãn cực nhanh và chính xác cao (Avg F1 = 0.6853).
+                  * Gemma-4 4B đóng vai trò lý luận sâu, giúp người dùng hiểu *tại sao* đó là tin giả và đề xuất kịch bản phản hồi, chứ không cạnh tranh hiệu năng ở bài toán gán nhãn cứng.
+                """)
+                
+            st.markdown("---")
             
-        st.markdown("---")
-        
-        # Kiến trúc lai Dual-Student Hybrid Flowchart
-        st.markdown("### 🛡️ 4. Giải pháp thực tiễn: Kiến trúc lai Dual-Student Hybrid")
-        st.write("Để tối ưu hóa cả tốc độ phân loại chính xác và chiều sâu lý luận giải thích, hệ thống đề xuất kiến trúc kết hợp Dual-Student:")
-        
-        flowchart_html = f"""
-        <div style="display:flex; flex-direction:row; justify-content:space-around; align-items:center; flex-wrap:wrap; margin-top:20px; font-family:'Times New Roman', serif;">
-            <div style="background:{info_bg}; border:1px solid #64ffda; border-radius:10px; padding:20px; width:280px; text-align:center; box-shadow:0 4px 10px rgba(0,0,0,0.2); margin-bottom:10px;">
-                <span style="font-size:2rem;">📥</span>
-                <h4 style="margin:10px 0; color:{text_col};">1. Văn bản mạng xã hội</h4>
-                <p style="font-size:0.9rem; color:{text_col}; opacity:0.8;">Người dùng nhập dữ liệu hoặc quét tin từ các URL tin tức.</p>
+            # Kiến trúc lai Dual-Student Hybrid Flowchart
+            st.markdown("### 🛡️ 4. Giải pháp thực tiễn: Kiến trúc lai Dual-Student Hybrid")
+            st.write("Để tối ưu hóa cả tốc độ phân loại chính xác và chiều sâu lý luận giải thích, hệ thống đề xuất kiến trúc kết hợp Dual-Student:")
+            
+            flowchart_html = f"""
+            <div style="display:flex; flex-direction:row; justify-content:space-around; align-items:center; flex-wrap:wrap; margin-top:20px; font-family:'Times New Roman', serif;">
+                <div style="background:{info_bg}; border:1px solid #64ffda; border-radius:10px; padding:20px; width:280px; text-align:center; box-shadow:0 4px 10px rgba(0,0,0,0.2); margin-bottom:10px;">
+                    <span style="font-size:2rem;">📥</span>
+                    <h4 style="margin:10px 0; color:{text_col};">1. Văn bản mạng xã hội</h4>
+                    <p style="font-size:0.9rem; color:{text_col}; opacity:0.8;">Người dùng nhập dữ liệu hoặc quét tin từ các URL tin tức.</p>
+                </div>
+                <div style="font-size:2rem; color:#64ffda; font-weight:bold; margin-bottom:10px;">➔</div>
+                <div style="background:{info_bg}; border:1px solid #007bff; border-radius:10px; padding:20px; width:280px; text-align:center; box-shadow:0 4px 10px rgba(0,0,0,0.2); margin-bottom:10px;">
+                    <span style="font-size:2rem;">🥇</span>
+                    <h4 style="margin:10px 0; color:#007bff;">2. PhoBERT-v2 (Phân loại)</h4>
+                    <p style="font-size:0.9rem; color:{text_col}; opacity:0.8;">Gán nhãn cực nhanh các khía cạnh: Tin giả, Lập trường & Cảm xúc.</p>
+                </div>
+                <div style="font-size:2rem; color:#64ffda; font-weight:bold; margin-bottom:10px;">➔</div>
+                <div style="background:{info_bg}; border:1px solid #FFA500; border-radius:10px; padding:20px; width:280px; text-align:center; box-shadow:0 4px 10px rgba(0,0,0,0.2); margin-bottom:10px;">
+                    <span style="font-size:2rem;">🧠</span>
+                    <h4 style="margin:10px 0; color:#FFA500;">3. Gemma-4 4B (Giải thích)</h4>
+                    <p style="font-size:0.9rem; color:{text_col}; opacity:0.8;">Lý luận lý do gán nhãn & đề xuất kịch bản phản hồi chuyên nghiệp.</p>
+                </div>
             </div>
-            <div style="font-size:2rem; color:#64ffda; font-weight:bold; margin-bottom:10px;">➔</div>
-            <div style="background:{info_bg}; border:1px solid #007bff; border-radius:10px; padding:20px; width:280px; text-align:center; box-shadow:0 4px 10px rgba(0,0,0,0.2); margin-bottom:10px;">
-                <span style="font-size:2rem;">🥇</span>
-                <h4 style="margin:10px 0; color:#007bff;">2. PhoBERT-v2 (Phân loại)</h4>
-                <p style="font-size:0.9rem; color:{text_col}; opacity:0.8;">Gán nhãn cực nhanh các khía cạnh: Tin giả, Lập trường & Cảm xúc.</p>
-            </div>
-            <div style="font-size:2rem; color:#64ffda; font-weight:bold; margin-bottom:10px;">➔</div>
-            <div style="background:{info_bg}; border:1px solid #FFA500; border-radius:10px; padding:20px; width:280px; text-align:center; box-shadow:0 4px 10px rgba(0,0,0,0.2); margin-bottom:10px;">
-                <span style="font-size:2rem;">🧠</span>
-                <h4 style="margin:10px 0; color:#FFA500;">3. Gemma-4 4B (Giải thích)</h4>
-                <p style="font-size:0.9rem; color:{text_col}; opacity:0.8;">Lý luận lý do gán nhãn & đề xuất kịch bản phản hồi chuyên nghiệp.</p>
-            </div>
-        </div>
-        """
-        st.markdown(flowchart_html, unsafe_allow_html=True)
-        st.markdown("<div style='margin-bottom: 25px;'></div>", unsafe_allow_html=True)
+            """
+            st.markdown(flowchart_html, unsafe_allow_html=True)
+            st.markdown("<div style='margin-bottom: 25px;'></div>", unsafe_allow_html=True)
+            
+        with sub_tab2:
+            render_benchmark_tab()
 
     with tabs[2]:
-        render_benchmark_tab()
-
-    with tabs[3]:
         render_evaluation_tab()
 
-    with tabs[4]:
+    with tabs[3]:
         render_resources_tab()
 
-    with tabs[5]:
+    with tabs[4]:
         render_methodology_tab()
 
-    with tabs[6]:
+    with tabs[5]:
         render_thesis_outline_tab()
 
     hien_thi_footer_chung(is_dark=is_dark)
