@@ -431,23 +431,24 @@ def predict_cached(text: str, model_key: str) -> dict:
     p_st  = F.softmax(logits_st, dim=1).cpu().numpy()[0]
     p_sen = F.softmax(logits_se, dim=1).cpu().numpy()[0]
 
-    # Tra cứu giải thích (Ưu tiên cache -> Sau đó gọi Gemma API)
-    xai_cache = load_xai_cache()
-    reasoning = find_xai_reasoning(text, xai_cache)
+    # Tra cứu giải thích (Ưu tiên gọi Gemma API trực tiếp -> Chỉ khi lỗi mới dùng Cache)
+    reasoning = None
+    hf_token = st.secrets.get("HF_TOKEN") or st.secrets.get("VaccineNLP_TOKEN")
+    short_text = text.strip()[:1000] + "..." if len(text.strip()) > 1000 else text.strip()
     
-    if not reasoning:
-        hf_token = st.secrets.get("HF_TOKEN") or st.secrets.get("VaccineNLP_TOKEN")
-        short_text = text.strip()[:1000] + "..." if len(text.strip()) > 1000 else text.strip()
-        
-        try:
-            reasoning = query_gemma_api(short_text, hf_token)
-            # Kiểm tra nếu kết quả trả về là thông báo lỗi API (403, Forbidden, v.v.)
-            error_keywords = ["403", "Forbidden", "permissions", "Error", "Request ID", "❌"]
-            if any(kw in str(reasoning) for kw in error_keywords):
-                # Sẽ được thay thế ở bước tạo result bên dưới
-                reasoning = None
-        except:
+    try:
+        reasoning = query_gemma_api(short_text, hf_token)
+        # Kiểm tra nếu kết quả trả về là thông báo lỗi API (403, Forbidden, v.v.)
+        error_keywords = ["403", "Forbidden", "permissions", "Error", "Request ID", "❌"]
+        if reasoning and any(kw in str(reasoning) for kw in error_keywords):
             reasoning = None
+    except:
+        reasoning = None
+
+    # Nếu gọi API trực tiếp thất bại (hoặc không phản hồi), dùng cache để dự phòng (Fallback)
+    if not reasoning:
+        xai_cache = load_xai_cache()
+        reasoning = find_xai_reasoning(text, xai_cache)
 
     res_dict = {
         "misinfo":   {"pred": int(torch.argmax(logits_m, dim=1)), "conf": p_mis},
@@ -461,9 +462,6 @@ def predict_cached(text: str, model_key: str) -> dict:
     
     res_dict["reasoning"] = reasoning
     return res_dict
-
-def find_xai_reasoning(text: str, cache: dict) -> str | None:
-    return cache.get(text)
 
 # ─────────────────────────────────────────────────────────────
 # UI COMPONENTS (Premium Style)
