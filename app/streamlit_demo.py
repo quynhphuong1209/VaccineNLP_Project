@@ -51,19 +51,19 @@ XAI_CACHE_PATH = APP_DIR / "xai_cache.json"
 
 MODEL_CONFIGS = {
     "PhoBERT-v2": {
-        "repo_id": "quynhphuong1209/phobert-multitask", 
+        "repo_id": "hung2903/phobert-vaccine-multitask", 
         "base_repo": "vinai/phobert-base-v2",
         "type": "phobert"
     },
     "XLM-R-v1": {
-        "repo_id": "quynhphuong1209/xlmr-multitask", 
+        "repo_id": "hung2903/xlmr-vaccine-multitask", 
         "base_repo": "xlm-roberta-base",
         "type": "xlm-roberta"
     }
 }
 
 # Mô hình mặc định cho hệ thống giải thích (XAI Engine)
-XAI_MODEL_REPO = "quynhphuong1209/gemma-4-E4B-unsloth-vaccine-xai"
+XAI_MODEL_REPO = "hung2903/gemma-4-E4B-unsloth-vaccine-xai"
 
 # ─────────────────────────────────────────────────────────────
 # LABEL TAXONOMY (matches trained checkpoint)
@@ -209,7 +209,18 @@ def load_model(model_key="PhoBERT-v2"):
     gc.collect()
     
     cfg = MODEL_CONFIGS[model_key]
-    hf_token = st.secrets.get("HF_TOKEN") or st.secrets.get("VaccineNLP_TOKEN")
+    try:
+        hf_token = st.secrets.get("HF_TOKEN") or st.secrets.get("VaccineNLP_TOKEN")
+    except Exception:
+        import os
+        hf_token = os.environ.get("HF_TOKEN") or os.environ.get("VaccineNLP_TOKEN")
+        
+    if hf_token:
+        hf_token = hf_token.strip()
+        if not hf_token:
+            hf_token = None
+    else:
+        hf_token = None
     
     try:
         # Tải file checkpoint (.pt)
