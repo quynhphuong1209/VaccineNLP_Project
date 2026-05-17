@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Gesture Controlled Slides</title>
+  <!-- Tải các thư viện MediaPipe -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+  <style>
+    body { margin: 0; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #1a1a1a; color: white; }
+    #slides-container { width: 100vw; height: 100vh; position: relative; }
+    
+    .slide { 
+      width: 100%; height: 100%; position: absolute; top: 0; left: 0; 
+      display: flex; flex-direction: column; justify-content: center; align-items: center; 
+      transition: opacity 0.6s ease-in-out, transform 0.6s ease-in-out; 
+      opacity: 0; transform: scale(0.9); z-index: 1; text-align: center;
+    }
+    .slide.active { opacity: 1; transform: scale(1); z-index: 10; }
+    
+    .slide h1 { font-size: 5rem; margin-bottom: 20px; text-shadow: 2px 2px 5px rgba(0,0,0,0.3); }
+    .slide p { font-size: 2rem; opacity: 0.8; }
+    
+    /* Màu nền cho các slide */
+    .slide:nth-child(1) { background: linear-gradient(135deg, #3498db, #8e44ad); }
+    .slide:nth-child(2) { background: linear-gradient(135deg, #e74c3c, #f39c12); }
+    .slide:nth-child(3) { background: linear-gradient(135deg, #2ecc71, #16a085); }
+    
+    /* Khu vực hiển thị camera thu nhỏ */
+    #camera-container {
+      position: absolute; bottom: 20px; right: 20px; 
+      width: 240px; height: 180px; 
+      border: 3px solid rgba(255,255,255,0.5); border-radius: 10px; 
+      overflow: hidden; z-index: 100;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+    }
+    #videoElement { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+    #canvasElement { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: scaleX(-1); z-index: 101; }
+    
+    #status { 
+      position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+      z-index: 100; background: rgba(0,0,0,0.6); padding: 10px 20px; 
+      border-radius: 20px; font-size: 1.2rem; backdrop-filter: blur(5px);
+    }
+  </style>
+</head>
+<body>
+  <div id="status">Đang khởi động Camera... Hãy cho phép truy cập Camera!</div>
+  
+  <div id="camera-container">
+    <video id="videoElement" autoplay playsinline></video>
+    <canvas id="canvasElement"></canvas>
+  </div>
+
+  <div id="slides-container">
+    <div class="slide active">
+      <h1>Slide 1: Xin chào! 👋</h1>
+      <p>Đưa tay lên trước Camera.<br>Vuốt tay từ <b>Phải sang Trái</b> (như lật sách) để sang slide tiếp theo.</p>
+    </div>
+    <div class="slide">
+      <h1>Slide 2: Nội dung Đồ Án 🚀</h1>
+      <p>Bạn đã chuyển slide thành công bằng tay không!<br>Vuốt tay từ <b>Trái sang Phải</b> để quay lại Slide 1.</p>
+    </div>
+    <div class="slide">
+      <h1>Slide 3: Kết luận 🎉</h1>
+      <p>Cảm ơn thầy cô và các bạn đã lắng nghe.</p>
+    </div>
+  </div>
+
+  <script>
+    const videoElement = document.getElementById('videoElement');
+    const canvasElement = document.getElementById('canvasElement');
+    const canvasCtx = canvasElement.getContext('2d');
+    const statusEl = document.getElementById('status');
+    const slides = document.querySelectorAll('.slide');
+    let currentSlide = 0;
+
+    // Biến cho vuốt tay
+    let prevX = null;
+    const swipeThreshold = 0.2; // Khoảng cách di chuyển tay (20% màn hình) để tính là vuốt
+    let lastSwipeTime = 0;
+    const cooldown = 1200; // Nghỉ 1.2s giữa 2 lần vuốt để tránh vuốt nhầm liên tục
+
+    // Chỉnh kích thước canvas khớp video
+    videoElement.onloadedmetadata = () => {
+      canvasElement.width = videoElement.videoWidth;
+      canvasElement.height = videoElement.videoHeight;
+    };
+
+    function showSlide(index) {
+      slides.forEach((s, i) => {
+        s.classList.remove('active');
+        if (i === index) s.classList.add('active');
+      });
+    }
+
+    function nextSlide() {
+      if (currentSlide < slides.length - 1) {
+        currentSlide++;
+        showSlide(currentSlide);
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 0) {
+        currentSlide--;
+        showSlide(currentSlide);
+      }
+    }
+
+    function onResults(results) {
+      canvasCtx.save();
+      canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+      
+      statusEl.innerText = "Camera sẵn sàng. Hãy đưa tay lên khung hình!";
+
+      if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+        // Vẽ bàn tay
+        for (const landmarks of results.multiHandLandmarks) {
+          drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, {color: '#00FF00', lineWidth: 2});
+          drawLandmarks(canvasCtx, landmarks, {color: '#FF0000', lineWidth: 1, radius: 2});
+        }
+
+        // Lấy tọa độ cổ tay (wrist - điểm 0)
+        const wrist = results.multiHandLandmarks[0][0]; 
+        const currentX = wrist.x;
+        const currentTime = new Date().getTime();
+
+        // Kiểm tra logic vuốt
+        if (currentTime - lastSwipeTime > cooldown) {
+          if (prevX !== null) {
+            const diffX = currentX - prevX;
+            
+            // X trong MediaPipe tính từ trái qua phải, nhưng camera đã bị lật (scaleX(-1))
+            // Di chuyển tay về bên trái của bạn -> diffX lớn
+            // Di chuyển tay về bên phải của bạn -> diffX âm
+            if (diffX > swipeThreshold) {
+              nextSlide(); // Vuốt sang trái (Next)
+              lastSwipeTime = currentTime;
+              statusEl.innerText = "⬅️ Vuốt sang Trái (Tiếp theo)";
+              prevX = null;
+              return;
+            } else if (diffX < -swipeThreshold) {
+              prevSlide(); // Vuốt sang phải (Prev)
+              lastSwipeTime = currentTime;
+              statusEl.innerText = "➡️ Vuốt sang Phải (Quay lại)";
+              prevX = null;
+              return;
+            }
+          }
+          prevX = currentX;
+        } else {
+           // Đang trong thời gian cooldown
+           statusEl.innerText = "Đợi một chút...";
+        }
+      } else {
+        prevX = null; // Reset nếu không thấy tay
+      }
+      canvasCtx.restore();
+    }
+
+    const hands = new Hands({locateFile: (file) => {
+      return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+    }});
+    hands.setOptions({
+      maxNumHands: 1,
+      modelComplexity: 1,
+      minDetectionConfidence: 0.7,
+      minTrackingConfidence: 0.7
+    });
+    hands.onResults(onResults);
+
+    const camera = new Camera(videoElement, {
+      onFrame: async () => {
+        await hands.send({image: videoElement});
+      },
+      width: 640,
+      height: 480
+    });
+    camera.start();
+  </script>
+</body>
+</html>
