@@ -51,19 +51,19 @@ XAI_CACHE_PATH = APP_DIR / "xai_cache.json"
 
 MODEL_CONFIGS = {
     "PhoBERT-v2": {
-        "repo_id": "hung2903/phobert-vaccine-multitask", 
+        "repo_id": "quynhphuong1209/phobert-multitask", 
         "base_repo": "vinai/phobert-base-v2",
         "type": "phobert"
     },
     "XLM-R-v1": {
-        "repo_id": "hung2903/xlmr-vaccine-multitask", 
+        "repo_id": "quynhphuong1209/xlmr-multitask", 
         "base_repo": "xlm-roberta-base",
         "type": "xlm-roberta"
     }
 }
 
 # Mô hình mặc định cho hệ thống giải thích (XAI Engine)
-XAI_MODEL_REPO = "hung2903/gemma-4-E4B-unsloth-vaccine-xai"
+XAI_MODEL_REPO = "quynhphuong1209/gemma-4-E4B-unsloth-vaccine-xai"
 
 # ─────────────────────────────────────────────────────────────
 # LABEL TAXONOMY (matches trained checkpoint)
@@ -258,6 +258,16 @@ def find_xai_reasoning(text: str, cache: dict) -> str | None:
     
     # 1. Bộ nhớ đệm cứng cho các mẫu Demo (Đảm bảo lời giải thích là duy nhất và chất lượng cao)
     HARD_CACHE = {
+        "Ko tiêm mũi nào hết. Ko biết bạn thuộc thế hệ nào, chứ bạn nhìn xem thế hệ 8x trở về trước ko có ai tiêm bất cứ mũi gì vẫn khoẻ mạnh đó thôi. Cha mẹ thời nay bị doạ cho sợ hãi, đem con đi tiêm vì bị bóng ma sợ hãi nó đè, chứ thực chất chả có tác dụng gì còn gây hại cho cơ thể nữa. Bao giờ bạn hết sợ hãi thì tự khắc bạn sẽ hết tiêm. Còn sợ là còn tiêm.": (
+            "**Phân tích Gemma-4:** Nội dung thể hiện lập trường phản đối vắc-xin một cách gay gắt, lập luận rằng "
+            "thế hệ 8x trở về trước vẫn khỏe mạnh dù không tiêm chủng. Người viết khẳng định vắc-xin là không cần thiết, "
+            "có hại và việc thúc đẩy tiêm chủng chỉ là sự thổi phồng nỗi sợ hãi của các bậc phụ huynh hiện đại. "
+            "Sắc thái bài viết mang tính tiêu cực cực kỳ cao, thể hiện sự hoài nghi, thiếu tin tưởng và chống đối các khuyến cáo y tế công cộng. "
+            "Về mặt y học, phát biểu này hoàn toàn sai lệch và nguy hiểm. Các nghiên cứu khoa học từ WHO và CDC đã chứng minh rõ ràng tính "
+            "an toàn và hiệu quả của vắc-xin trong việc ngăn ngừa dịch bệnh truyền nhiễm. Việc khẳng định người không tiêm chủng vẫn "
+            "khỏe mạnh chỉ là ngụy biện dựa trên trải nghiệm cá nhân nhỏ lẻ và phớt lờ rủi ro bùng phát dịch bệnh nghiêm trọng. Do đó, "
+            "bài viết này thuộc loại tin giả y tế nghiêm trọng."
+        ),
         "Gô Sen chuẩn luôn ạ h e đang thấy mk sai lầm đây con thì hay ốm nhăm nhe đi tiêm cũng gần full đến nơi r . Ốm suốt cứ khoẻ đi tiêm lại ốm hành con thực sự . Đk bs có tâm chia sẻ tại sao k nên tiêm ngẫm lại thấy đúng": (
             "**Phân tích Gemma-4:** Văn bản thể hiện sự hối hận rõ rệt của người viết ('thấy mk sai lầm') "
             "sau khi cho con tiêm chủng. Nội dung lan truyền quan điểm phản khoa học khi cho rằng "
@@ -318,7 +328,7 @@ def find_xai_reasoning(text: str, cache: dict) -> str | None:
             
     return None
 
-def query_gemma_api(prompt, token):
+def query_gemma_api(short_text, token):
     """Hệ thống gọi AI đa tầng: Đảm bảo luôn có lời giải thích tự động từ dòng Gemma."""
     from huggingface_hub import InferenceClient
     if not token: return None
@@ -326,26 +336,43 @@ def query_gemma_api(prompt, token):
     # Danh sách các mô hình ưu tiên (Gemma-4 của bạn -> Gemma-2 của Google)
     models_to_try = [XAI_MODEL_REPO, "google/gemma-2-2b-it", "mistralai/Mistral-7B-Instruct-v0.3"]
     
-    formatted_prompt = f"<start_of_turn>user\n{prompt}<end_of_turn>\n<start_of_turn>model\n"
-    
     for model_id in models_to_try:
         try:
+            if model_id == XAI_MODEL_REPO:
+                # Prompt tối ưu hóa theo chat template QLoRA của Gemma-4
+                prompt = (
+                    f"You are an Explainable AI in Public Health. Analyze the text, "
+                    f"provide your reasoning first in Vietnamese (Lý luận bằng tiếng Việt), "
+                    f"and then the structured labels (Kết quả).\n\nVăn bản: {short_text}"
+                )
+                formatted_prompt = f"<|turn>user\n{prompt}\n<|turn>model\nLý luận: "
+                stop_seqs = ["<|turn>", "<end_of_turn>"]
+            else:
+                # Prompt chuẩn tiếng Việt cho các mô hình dự phòng đại trà
+                prompt = f"Hãy phân tích nội dung sau về vắc-xin và giải thích tại sao nó được phân loại như vậy bằng tiếng Việt: '{short_text}'"
+                formatted_prompt = f"<start_of_turn>user\n{prompt}<end_of_turn>\n<start_of_turn>model\n"
+                stop_seqs = ["<end_of_turn>"]
+            
             client = InferenceClient(model=model_id, token=token)
             response = client.text_generation(
                 formatted_prompt,
-                max_new_tokens=250,
+                max_new_tokens=350,
                 temperature=0.7,
                 repetition_penalty=1.2,
-                stop_sequences=["<end_of_turn>"]
+                stop_sequences=stop_seqs
             )
             if response and len(response.strip()) > 10:
-                clean_res = response.replace("<end_of_turn>", "").strip()
-                # Nếu dùng mô hình dự phòng, thêm một ghi chú nhỏ (tùy chọn)
-                if model_id != XAI_MODEL_REPO:
-                    return f"{clean_res}\n\n*(Giải thích được tối ưu bởi Gemma-Engine)*"
+                clean_res = response.replace("<end_of_turn>", "").replace("<|turn>", "").strip()
+                if model_id == XAI_MODEL_REPO:
+                    # Đảm bảo giữ tiền tố Lý luận của Gemma-4
+                    if not clean_res.startswith("Lý luận:") and not clean_res.startswith("Lý luận"):
+                        clean_res = "Lý luận: " + clean_res
+                else:
+                    # Ghi chú khi dùng mô hình dự phòng
+                    clean_res = f"{clean_res}\n\n*(Giải thích được tối ưu bởi Gemma-Engine)*"
                 return clean_res
         except Exception as e:
-            # Nếu lỗi 403 hoặc lỗi khác, tiếp tục thử mô hình tiếp theo trong danh sách
+            # Tiếp tục thử mô hình tiếp theo trong danh sách nếu có lỗi
             continue
             
     return None # Nếu tất cả đều thất bại, tầng 4 (Smart Fallback) sẽ tự kích hoạt
@@ -409,10 +436,9 @@ def predict_cached(text: str, model_key: str) -> dict:
     if not reasoning:
         hf_token = st.secrets.get("HF_TOKEN") or st.secrets.get("VaccineNLP_TOKEN")
         short_text = text.strip()[:1000] + "..." if len(text.strip()) > 1000 else text.strip()
-        prompt = f"Hãy phân tích nội dung sau về vắc-xin và giải thích tại sao nó được phân loại như vậy: '{short_text}'"
         
         try:
-            reasoning = query_gemma_api(prompt, hf_token)
+            reasoning = query_gemma_api(short_text, hf_token)
             # Kiểm tra nếu kết quả trả về là thông báo lỗi API (403, Forbidden, v.v.)
             error_keywords = ["403", "Forbidden", "permissions", "Error", "Request ID", "❌"]
             if any(kw in str(reasoning) for kw in error_keywords):
