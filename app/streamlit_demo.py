@@ -744,6 +744,8 @@ def render_news_scraper():
 def render_result_card(task_name: str, task_key: str, result: dict):
     """Render a styled result card for one task with premium aesthetics."""
     pred_id = result["pred"]
+    if pred_id not in LABEL_MAPS[task_key]:
+        pred_id = list(LABEL_MAPS[task_key].keys())[0] # Phòng tránh lỗi cache cũ out-of-bounds
     conf_list = result["conf"]
     label = LABEL_MAPS[task_key][pred_id]
     color = LABEL_COLORS[task_key][pred_id]
@@ -779,6 +781,8 @@ def render_result_card(task_name: str, task_key: str, result: dict):
 
     with st.expander(f"📊 Chi tiết {task_name}", expanded=False):
         for idx, prob in enumerate(conf_list):
+            if idx not in LABEL_MAPS[task_key]:
+                continue # Bỏ qua nếu cache cũ có nhiều class hơn cấu hình hiện tại
             class_label = LABEL_MAPS[task_key][idx]
             class_color = LABEL_COLORS[task_key][idx]
             pct = prob * 100
