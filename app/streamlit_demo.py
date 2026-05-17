@@ -150,7 +150,7 @@ class VaccineMultitaskModel(nn.Module):
     """Multitask model with shared PhoBERT encoder and task-specific heads."""
 
     def __init__(self, model_name="vinai/phobert-base-v2",
-                 num_misinfo=2, num_stance=3, num_sentiment=3, token=None):
+                 num_misinfo=3, num_stance=4, num_sentiment=3, token=None):
         from transformers import AutoConfig, AutoModel
         super(VaccineMultitaskModel, self).__init__()
         import transformers
@@ -341,11 +341,12 @@ def query_gemma_api(short_text, token):
     for model_id in models_to_try:
         try:
             if model_id == XAI_MODEL_REPO:
-                # Prompt tối ưu hóa theo chat template QLoRA của Gemma-4
+                # Prompt tối ưu hóa theo chat template QLoRA của Gemma-4 hoàn toàn bằng tiếng Việt
                 prompt = (
-                    f"You are an Explainable AI in Public Health. Analyze the text, "
-                    f"provide your reasoning first in Vietnamese (Lý luận bằng tiếng Việt), "
-                    f"and then the structured labels (Kết quả).\n\nVăn bản: {short_text}"
+                    f"Bạn là một Trí tuệ Nhân tạo có khả năng giải thích (Explainable AI) trong lĩnh vực Y tế Công cộng. "
+                    f"Hãy phân tích văn bản sau đây về chủ đề vắc-xin, đưa ra lý luận chi tiết của bạn HOÀN TOÀN bằng tiếng Việt "
+                    f"(Lý luận bằng tiếng Việt) về tính xác thực của tin tức, thái độ/lập trường và sắc thái cảm xúc. "
+                    f"Tuyệt đối không sử dụng tiếng Anh.\n\nVăn bản: {short_text}"
                 )
                 formatted_prompt = f"<|turn>user\n{prompt}\n<|turn>model\nLý luận: "
                 stop_seqs = ["<|turn>", "<end_of_turn>"]
@@ -2183,6 +2184,7 @@ def main():
             st.subheader("🛠️ Quản trị hệ thống")
             if st.button("♻️ Xóa Cache & Khởi động lại"):
                 st.cache_data.clear()
+                st.cache_resource.clear()
                 st.session_state.last_result = None
                 st.success("Đã xóa bộ nhớ đệm! Đang khởi động lại...")
                 st.rerun()
