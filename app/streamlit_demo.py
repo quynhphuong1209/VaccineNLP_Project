@@ -259,14 +259,16 @@ def find_xai_reasoning(text: str, cache: dict) -> str | None:
     # 1. Bộ nhớ đệm cứng cho các mẫu Demo (Đảm bảo lời giải thích là duy nhất và chất lượng cao)
     HARD_CACHE = {
         "Ko tiêm mũi nào hết. Ko biết bạn thuộc thế hệ nào, chứ bạn nhìn xem thế hệ 8x trở về trước ko có ai tiêm bất cứ mũi gì vẫn khoẻ mạnh đó thôi. Cha mẹ thời nay bị doạ cho sợ hãi, đem con đi tiêm vì bị bóng ma sợ hãi nó đè, chứ thực chất chả có tác dụng gì còn gây hại cho cơ thể nữa. Bao giờ bạn hết sợ hãi thì tự khắc bạn sẽ hết tiêm. Còn sợ là còn tiêm.": (
-            "**Phân tích Gemma-4:** Nội dung thể hiện lập trường phản đối vắc-xin một cách gay gắt, lập luận rằng "
-            "thế hệ 8x trở về trước vẫn khỏe mạnh dù không tiêm chủng. Người viết khẳng định vắc-xin là không cần thiết, "
-            "có hại và việc thúc đẩy tiêm chủng chỉ là sự thổi phồng nỗi sợ hãi của các bậc phụ huynh hiện đại. "
-            "Sắc thái bài viết mang tính tiêu cực cực kỳ cao, thể hiện sự hoài nghi, thiếu tin tưởng và chống đối các khuyến cáo y tế công cộng. "
-            "Về mặt y học, phát biểu này hoàn toàn sai lệch và nguy hiểm. Các nghiên cứu khoa học từ WHO và CDC đã chứng minh rõ ràng tính "
-            "an toàn và hiệu quả của vắc-xin trong việc ngăn ngừa dịch bệnh truyền nhiễm. Việc khẳng định người không tiêm chủng vẫn "
-            "khỏe mạnh chỉ là ngụy biện dựa trên trải nghiệm cá nhân nhỏ lẻ và phớt lờ rủi ro bùng phát dịch bệnh nghiêm trọng. Do đó, "
-            "bài viết này thuộc loại tin giả y tế nghiêm trọng."
+            "**Lý luận:** Văn bản được cung cấp thể hiện lập trường phản đối tiêm chủng một cách mạnh mẽ, lập luận rằng "
+            "những người thuộc thế hệ 8x trở về trước vẫn khỏe mạnh mà không cần tiêm chủng. Thái độ của người viết là "
+            "cực kỳ phản đối vắc-xin, khẳng định rằng vắc-xin là không cần thiết, có khả năng gây hại và đang bị ép buộc "
+            "do sự thổi phồng nỗi sợ hãi của các bậc phụ huynh hiện đại. Sắc thái tình cảm mang tính tiêu cực cao, đặc trưng "
+            "bởi sự thiếu tin tưởng sâu sắc, hoài nghi và chống đối rõ rệt đối với các khuyến cáo y tế công cộng. Về mặt "
+            "y khoa, phát biểu này hoàn toàn sai lệch một cách nguy hiểm. Các bằng chứng khoa học sâu rộng từ các tổ chức y tế "
+            "toàn cầu (như WHO và CDC) đã chứng minh mạnh mẽ tính an toàn và hiệu quả của vắc-xin trong việc ngăn ngừa các bệnh "
+            "truyền nhiễm nghiêm trọng, thường gây tử vong. Khẳng định rằng những người không tiêm chủng vẫn khỏe mạnh chỉ là "
+            "ngụy biện dựa trên trải nghiệm cá nhân nhỏ lẻ và hoàn toàn phớt lờ nguy cơ bùng phát dịch bệnh cũng như các biến chứng "
+            "nghiêm trọng từ các bệnh có thể phòng ngừa được. Do đó, văn bản này cấu thành hành vi lan truyền tin giả y tế nghiêm trọng."
         ),
         "Gô Sen chuẩn luôn ạ h e đang thấy mk sai lầm đây con thì hay ốm nhăm nhe đi tiêm cũng gần full đến nơi r . Ốm suốt cứ khoẻ đi tiêm lại ốm hành con thực sự . Đk bs có tâm chia sẻ tại sao k nên tiêm ngẫm lại thấy đúng": (
             "**Phân tích Gemma-4:** Văn bản thể hiện sự hối hận rõ rệt của người viết ('thấy mk sai lầm') "
