@@ -78,7 +78,7 @@
     let currentSlide = 0;
 
     // Biến cho vuốt tay
-    let prevX = null;
+    let xHistory = []; // Lưu lại lịch sử di chuyển để đo khoảng cách thực tế
     let lastSwipeTime = 0;
     const cooldown = 1200; // Nghỉ 1.2s giữa 2 lần vuốt để tránh vuốt nhầm liên tục
 
@@ -135,35 +135,36 @@
         const currentX = wrist.x;
         const currentTime = new Date().getTime();
 
+        // CỐT LÕI MỚI: Lưu lại lịch sử tọa độ X để tính quãng đường vuốt trong vòng 0.5 giây
+        xHistory.push({x: currentX, time: currentTime});
+        xHistory = xHistory.filter(item => currentTime - item.time < 500); // Chỉ lấy 500ms gần nhất
+
         // Kiểm tra logic vuốt
-        if (currentTime - lastSwipeTime > cooldown) {
-          if (prevX !== null) {
-            const diffX = currentX - prevX;
+        if (currentTime - lastSwipeTime > cooldown && xHistory.length > 0) {
+            // So sánh vị trí hiện tại với vị trí cũ nhất trong 0.5s vừa qua
+            const oldestX = xHistory[0].x;
+            const diffX = currentX - oldestX;
             
             // X trong MediaPipe tính từ trái qua phải, nhưng camera đã bị lật (scaleX(-1))
-            // Di chuyển tay về bên trái của bạn -> diffX lớn
-            // Di chuyển tay về bên phải của bạn -> diffX âm
             if (diffX > dynamicSwipeThreshold) {
               nextSlide(); // Vuốt sang trái (Next)
               lastSwipeTime = currentTime;
               statusEl.innerText = "⬅️ Vuốt sang Trái (Tiếp theo)";
-              prevX = null;
+              xHistory = []; // Đặt lại lịch sử sau khi vuốt
               return;
             } else if (diffX < -dynamicSwipeThreshold) {
               prevSlide(); // Vuốt sang phải (Prev)
               lastSwipeTime = currentTime;
               statusEl.innerText = "➡️ Vuốt sang Phải (Quay lại)";
-              prevX = null;
+              xHistory = [];
               return;
             }
-          }
-          prevX = currentX;
-        } else {
+        } else if (currentTime - lastSwipeTime <= cooldown) {
            // Đang trong thời gian cooldown
            statusEl.innerText = "Đợi một chút...";
         }
       } else {
-        prevX = null; // Reset nếu không thấy tay
+        xHistory = []; // Xóa lịch sử khi giấu tay đi
       }
       canvasCtx.restore();
     }
