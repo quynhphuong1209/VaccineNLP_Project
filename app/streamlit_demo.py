@@ -1407,13 +1407,47 @@ def main():
         
         st.divider()
         st.markdown("##### 📋 Mẫu thử nghiệm")
-        selected_sample = st.radio(
-            "Chọn mẫu:", 
-            options=["Tự nhập"] + list(SAMPLE_TEXTS.keys()), 
-            index=0, 
-            key="sidebar_sample_selector",
+        
+        sample_category = st.selectbox(
+            "Chọn nhóm mẫu:",
+            ["Tự nhập", "🚨 Nhóm Tin giả cực đoan", "🟢 Nhóm phân tích Thái độ", "✅ Nhóm Thông tin chuẩn", "💬 Nhóm Từ lóng MXH"],
+            index=0,
+            key="sidebar_category_selector",
             on_change=on_sample_change
         )
+        
+        selected_sample = "Tự nhập"
+        
+        if sample_category != "Tự nhập":
+            # Filter options based on category
+            if sample_category == "🚨 Nhóm Tin giả cực đoan":
+                filter_str = "Tin giả - Chống vaccine cực đoan"
+            elif sample_category == "🟢 Nhóm phân tích Thái độ":
+                filter_str = "[Nhóm Thái độ]"
+            elif sample_category == "✅ Nhóm Thông tin chuẩn":
+                filter_str = "[Thông tin chuẩn]"
+            elif sample_category == "💬 Nhóm Từ lóng MXH":
+                filter_str = "Từ lóng nguy hiểm"
+                
+            filtered_options = [k for k in SAMPLE_TEXTS.keys() if filter_str in k]
+            
+            # Create mapping for cleaner display in the second dropdown
+            display_map = {}
+            for k in filtered_options:
+                if "Chủ đề: " in k:
+                    display_map[k.split("Chủ đề: ")[1]] = k
+                elif "] " in k:
+                    display_map[k.split("] ")[1]] = k
+                else:
+                    display_map[k] = k
+                    
+            selected_display = st.radio(
+                "Chọn loại văn bản:", 
+                options=list(display_map.keys()), 
+                key="sidebar_sample_selector_sub",
+                on_change=on_sample_change
+            )
+            selected_sample = display_map[selected_display]
         st.divider()
         st.markdown("##### 🤖 Mô hình Phân loại")
         st.info("Mô hình này đảm nhiệm việc phân loại nhãn (Tin giả, Quan điểm, Cảm xúc).")
