@@ -1,0 +1,14 @@
+{
+  "id": "kimmnhhng/test-push-gemini",
+  "title": "test push gemini",
+  "code_file": "test_push.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": false,
+  "enable_tpu": false,
+  "enable_internet": false,
+  "dataset_sources": [],
+  "competition_sources": [],
+  "kernel_sources": []
+}

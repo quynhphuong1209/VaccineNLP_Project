@@ -1,0 +1,14 @@
+{
+  "id": "kimmnhhng/vaccine-nlp-gemma-eval",
+  "title": "vaccine nlp gemma eval",
+  "code_file": "03_gemma4_inference_eval.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_tpu": false,
+  "enable_internet": true,
+  "dataset_sources": ["kimmnhhng/vaccinenlp-clean-data"],
+  "competition_sources": [],
+  "kernel_sources": []
+}

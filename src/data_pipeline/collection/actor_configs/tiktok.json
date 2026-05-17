@@ -1,0 +1,8 @@
+{
+  "max_per_tag": 10,
+  "comments_per_video": 100,
+  "max_replies": 30,
+  "min_video_comments": 10,
+  "batch_size": 2,
+  "shouldDownloadVideos": false
+}

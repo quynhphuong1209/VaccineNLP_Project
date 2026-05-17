@@ -1,0 +1,7 @@
+# VaccineNLP · Streamlit XAI Demo
+# Install: pip install -r app/requirements_demo.txt
+
+streamlit>=1.30.0
+transformers>=4.36.0
+torch>=2.1.0
+underthesea>=6.8.0

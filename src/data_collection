@@ -1,0 +1,77 @@
+import os
+import shutil
+import json
+import random
+
+TEMP_GIT_DIR = "datasets/01_raw/temp_git"
+TARGET_SAMPLES = 100
+GIT_REPOS = ["https://github.com/WhySchools/VFND-vietnamese-fake-news-datasets.git"]
+
+def clone_repos():
+    if os.path.exists(TEMP_GIT_DIR):
+        try:
+            shutil.rmtree(TEMP_GIT_DIR, ignore_errors=True)
+        except:
+            pass
+    os.makedirs(TEMP_GIT_DIR, exist_ok=True)
+    
+    print("🚀 Bắt đầu Clone VFND (Negative Sampling)...")
+    repo = GIT_REPOS[0]
+    repo_name = repo.split('/')[-1].replace('.git', '')
+    os.system(f"git clone --depth 1 {repo} {TEMP_GIT_DIR}/{repo_name}")
+
+def sample_negative_academic():
+    all_candidates = []
+    
+    print("\n🔍 Đang quét các file dữ liệu VFND...")
+    for root, dirs, files in os.walk(TEMP_GIT_DIR):
+        for file in files:
+            file_path = os.path.join(root, file)
+            if file.endswith('.json'):
+                try:
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        content = json.load(f)
+                        if isinstance(content, dict):
+                            text = content.get('text', '') or content.get('content', '')
+                            if text and len(str(text).split()) > 10:
+                                all_candidates.append(text)
+                except Exception:
+                    pass
+                    
+    # Deduplicate
+    unique_candidates = list(set(all_candidates))
+    print(f"\n📊 Tổng số ứng viên VFND gom được: {len(unique_candidates)}")
+    
+    # Random Sample
+    if len(unique_candidates) > TARGET_SAMPLES:
+        final_samples_texts = random.sample(unique_candidates, TARGET_SAMPLES)
+    else:
+        final_samples_texts = unique_candidates
+        
+    final_samples = [{"text": t, "source": "Academic_VFND", "status": "raw"} for t in final_samples_texts]
+    print(f"🎲 Đã chọn ngẫu nhiên {len(final_samples)} mẫu Negative (Không chứa keyword y tế).")
+    
+    # Lưu file
+    os.makedirs('datasets/temp', exist_ok=True)
+    out_path = 'datasets/temp/temp_academic.json'
+    with open(out_path, 'w', encoding='utf-8') as f:
+        json.dump(final_samples, f, ensure_ascii=False, indent=2)
+    print(f"💾 Dữ liệu Academic (Negative) đã lưu tại: {out_path}")
+
+def clean_up():
+    print(f"\n🧹 Đang dọn dẹp thư mục {TEMP_GIT_DIR}...")
+    if os.path.exists(TEMP_GIT_DIR):
+        try:
+            import stat
+            def remove_readonly(func, path, excinfo):
+                os.chmod(path, stat.S_IWRITE)
+                func(path)
+            shutil.rmtree(TEMP_GIT_DIR, onerror=remove_readonly)
+        except:
+            pass
+    print("✨ Dọn dẹp hoàn tất.")
+
+if __name__ == "__main__":
+    clone_repos()
+    sample_negative_academic()
+    clean_up()

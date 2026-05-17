@@ -1,0 +1,8 @@
+{
+  "maxResults": 5,
+  "maxComments": 200,
+  "maxRepliesPerComment": 20,
+  "downloadSubtitles": true,
+  "saveSubsToText": true,
+  "batchSize": 3
+}

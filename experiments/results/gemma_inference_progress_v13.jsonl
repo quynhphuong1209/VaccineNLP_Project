@@ -1,0 +1,186 @@
+{"id": "VNLP_V6_0234", "true_m": 2, "pred_m": 2, "true_st": 0, "pred_st": 2, "true_se": 2, "pred_se": 2, "parse_ok": true, "raw_response": "Chinh xac | Trung phan | Tich cuc"}
+{"id": "VNLP_V6_0451", "true_m": 2, "pred_m": 2, "true_st": 2, "pred_st": 0, "true_se": 2, "pred_se": 2, "parse_ok": true, "raw_response": "Chinh xac | Ung ho | Tich cuc"}
+{"id": "VNLP_V6_1202", "true_m": 2, "pred_m": 2, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Chinh xac | Trung phan | Trung tinh"}
+{"id": "VNLP_V6_1344", "true_m": 2, "pred_m": 2, "true_st": 0, "pred_st": 2, "true_se": 2, "pred_se": 1, "parse_ok": true, "raw_response": "Chinh xac | Trung phan | Trung tinh"}
+{"id": "VNLP_V6_0412", "true_m": 2, "pred_m": 2, "true_st": 2, "pred_st": 0, "true_se": 1, "pred_se": 2, "parse_ok": true, "raw_response": "Chinh xac | Ung ho | Tich cuc"}
+{"id": "VNLP_V6_1339", "true_m": 2, "pred_m": 2, "true_st": 0, "pred_st": 0, "true_se": 2, "pred_se": 2, "parse_ok": true, "raw_response": "Chinh xac | Ung ho | Tich cuc"}
+{"id": "VNLP_V6_1801", "true_m": 2, "pred_m": 2, "true_st": 0, "pred_st": 0, "true_se": 2, "pred_se": 2, "parse_ok": true, "raw_response": "Chinh xac | Ung ho | Tich cuc"}
+{"id": "VNLP_V6_1773", "true_m": 1, "pred_m": 0, "true_st": 1, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "[Misinformation] | [Anti-vaccine] | [Negative]"}
+{"id": "VNLP_V6_1170", "true_m": 2, "pred_m": 0, "true_st": 1, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Misinformation | Phản đối | Tiêu cực"}
+{"id": "VNLP_V6_1169", "true_m": 2, "pred_m": 2, "true_st": 0, "pred_st": 0, "true_se": 2, "pred_se": 2, "parse_ok": true, "raw_response": "Chinh xac | Ung ho | Tich cuc"}
+{"id": "VNLP_V6_1844", "true_m": 2, "pred_m": 0, "true_st": 0, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "[Misinformation] | [Phê phán] | [Tiêu cực]"}
+{"id": "VNLP_V6_1651", "true_m": 1, "pred_m": 0, "true_st": 1, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "[Misinformation] | [Chong buoc] | [Tiêu cực]"}
+{"id": "VNLP_V6_1294", "true_m": 1, "pred_m": 0, "true_st": 1, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "[Misinformation] | [Anti-vaccine] | [Negative]"}
+{"id": "VNLP_V6_1284", "true_m": 2, "pred_m": 0, "true_st": 0, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "[Misinformation] | [Chỉ trích] | [Tiêu cực]"}
+{"id": "VNLP_V6_1008", "true_m": 2, "pred_m": 0, "true_st": 2, "pred_st": 0, "true_se": 1, "pred_se": 2, "parse_ok": true, "raw_response": "Chinh xác | Ung ho | Tich cuc"}
+{"id": "VNLP_V6_1692", "true_m": 2, "pred_m": 0, "true_st": 0, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "Misinformation | Phản đối | Tiêu cực"}
+{"id": "VNLP_V6_1051", "true_m": 2, "pred_m": 2, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Chinh xac | Trung phan tích | Trung tinh"}
+{"id": "VNLP_V6_0353", "true_m": 2, "pred_m": 2, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Chinh xac | Trung phan | Trung tinh"}
+{"id": "VNLP_V6_0939", "true_m": 2, "pred_m": 2, "true_st": 2, "pred_st": 0, "true_se": 1, "pred_se": 2, "parse_ok": true, "raw_response": "Chinh xac | Ung ho | Tich cuc"}
+{"id": "VNLP_V6_1388", "true_m": 2, "pred_m": 0, "true_st": 2, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "[Misinformation] | [Neutral] | [Negative]"}
+{"id": "VNLP_V6_0809", "true_m": 2, "pred_m": 2, "true_st": 0, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Chinh xac | Tu van | Trung tinh"}
+{"id": "VNLP_V6_0814", "true_m": 2, "pred_m": 2, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Chinh xac | Trung phan | Trung tinh"}
+{"id": "VNLP_V6_0189", "true_m": 1, "pred_m": 0, "true_st": 1, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "Misinformation | Phản đối | Tiêu cực"}
+{"id": "VNLP_V6_0842", "true_m": 2, "pred_m": 2, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Chinh xac | Trung phan | Trung tinh"}
+{"id": "VNLP_V6_0576", "true_m": 2, "pred_m": 0, "true_st": 2, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "[Không có] | [Hỏi] | [Trung tính]"}
+{"id": "VNLP_V6_1311", "true_m": 2, "pred_m": 2, "true_st": 0, "pred_st": 0, "true_se": 2, "pred_se": 2, "parse_ok": true, "raw_response": "Chinh xac | Ung ho | Tich cuc"}
+{"id": "VNLP_V6_0571", "true_m": 2, "pred_m": 2, "true_st": 0, "pred_st": 2, "true_se": 0, "pred_se": 2, "parse_ok": true, "raw_response": "Chinh xac | Trung phan | Tich cuc"}
+{"id": "VNLP_V6_0399", "true_m": 2, "pred_m": 2, "true_st": 0, "pred_st": 2, "true_se": 1, "pred_se": 2, "parse_ok": true, "raw_response": "Chinh xac | Trung | Tich cuc"}
+{"id": "VNLP_V6_1433", "true_m": 2, "pred_m": 0, "true_st": 0, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "[Misinformation] | [Anti-vaccination] | [Negative]"}
+{"id": "VNLP_V6_1561", "true_m": 2, "pred_m": 0, "true_st": 1, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Không rõ | Trung lập | Trung lập"}
+{"id": "VNLP_V6_1565", "true_m": 2, "pred_m": 0, "true_st": 1, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "[Misinformation] | [Phản đối] | [Tiêu cực]"}
+{"id": "VNLP_V6_1739", "true_m": 2, "pred_m": 2, "true_st": 2, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "Chinh xac | Trung phan | Trung tinh"}
+{"id": "VNLP_V6_0915", "true_m": 2, "pred_m": 0, "true_st": 0, "pred_st": 2, "true_se": 2, "pred_se": 2, "parse_ok": true, "raw_response": "Khong ro rang | Trung lap | Tich cuc"}
+{"id": "VNLP_V6_1109", "true_m": 1, "pred_m": 0, "true_st": 1, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "Misinformation | Phản đối | Tiêu cực"}
+{"id": "VNLP_V6_1423", "true_m": 2, "pred_m": 2, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Chinh xac | Trung phan | Trung tinh"}
+{"id": "VNLP_V6_1007", "true_m": 2, "pred_m": 2, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Chinh xac | Canh bao | Ti cuc"}
+{"id": "VNLP_V6_1781", "true_m": 2, "pred_m": 0, "true_st": 2, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "[Misinformation] | [Neutral] | [Tiêu cực]"}
+{"id": "VNLP_V6_1847", "true_m": 2, "pred_m": 0, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Không rõ | Trung lập | Trung lập"}
+{"id": "VNLP_V6_1103", "true_m": 2, "pred_m": 0, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "[Không] | [Trung lập] | [Trung lập]"}
+{"id": "VNLP_V6_0351", "true_m": 2, "pred_m": 2, "true_st": 0, "pred_st": 0, "true_se": 2, "pred_se": 2, "parse_ok": true, "raw_response": "Chinh xac | Ung ho | Tich cuc"}
+{"id": "VNLP_V6_0530", "true_m": 2, "pred_m": 0, "true_st": 2, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "Misinformation | Ho tro | Ti cuc"}
+{"id": "VNLP_V6_0112", "true_m": 2, "pred_m": 2, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Chinh xac | Trung phan | Trung tinh"}
+{"id": "VNLP_V6_0383", "true_m": 2, "pred_m": 2, "true_st": 0, "pred_st": 0, "true_se": 2, "pred_se": 2, "parse_ok": true, "raw_response": "Chinh xac | Ung ho | Tich cuc"}
+{"id": "VNLP_V6_0507", "true_m": 2, "pred_m": 0, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "[Misinformation] | [Neutral] | [Neutral]"}
+{"id": "VNLP_V6_1337", "true_m": 2, "pred_m": 2, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Chinh xac | Trung phan | Trung tinh"}
+{"id": "VNLP_V6_0298", "true_m": 1, "pred_m": 0, "true_st": 1, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "Misinformation | Phản đối | Tiêu cực"}
+{"id": "VNLP_V6_1789", "true_m": 2, "pred_m": 0, "true_st": 0, "pred_st": 2, "true_se": 2, "pred_se": 1, "parse_ok": true, "raw_response": "[Misinformation] | [Trung lập] | [Tiêu cực]"}
+{"id": "VNLP_V6_0197", "true_m": 2, "pred_m": 2, "true_st": 0, "pred_st": 0, "true_se": 2, "pred_se": 2, "parse_ok": true, "raw_response": "Chinh xac | Ung ho | Tich cuc"}
+{"id": "VNLP_V6_1199", "true_m": 2, "pred_m": 2, "true_st": 2, "pred_st": 0, "true_se": 1, "pred_se": 2, "parse_ok": true, "raw_response": "Chinh xac | Ung ho | Tich cuc"}
+{"id": "VNLP_V6_0430", "true_m": 2, "pred_m": 2, "true_st": 0, "pred_st": 0, "true_se": 1, "pred_se": 2, "parse_ok": true, "raw_response": "Chinh xac | Ung ho | Tich cuc"}
+{"id": "VNLP_V6_1664", "true_m": 2, "pred_m": 0, "true_st": 1, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "[Misinformation] | [Phản đối] | [Tiêu cực]"}
+{"id": "VNLP_V6_1308", "true_m": 2, "pred_m": 2, "true_st": 2, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "Chinh xac | Canh bao | Trung tinh"}
+{"id": "VNLP_V6_1346", "true_m": 2, "pred_m": 0, "true_st": 0, "pred_st": 2, "true_se": 2, "pred_se": 1, "parse_ok": true, "raw_response": "[Misinformation] | [Neutral] | [Neutral]"}
+{"id": "VNLP_V6_0480", "true_m": 1, "pred_m": 0, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "[Misinformation] | [Neutral] | [Neutral]"}
+{"id": "VNLP_V6_1114", "true_m": 1, "pred_m": 0, "true_st": 1, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "Misinformation | Phản đối | Tiêu cực"}
+{"id": "VNLP_V6_1836", "true_m": 2, "pred_m": 0, "true_st": 1, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "[Misinformation] | [Chê bai] | [Tiêu cực]"}
+{"id": "VNLP_V6_1305", "true_m": 2, "pred_m": 0, "true_st": 2, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "Không rõ | Quan tâm/Lo lắng | Trung lập"}
+{"id": "VNLP_V6_1513", "true_m": 1, "pred_m": 0, "true_st": 1, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "[Misinformation] | [Phản đối] | [Tiêu cực]"}
+{"id": "VNLP_V6_1027", "true_m": 2, "pred_m": 2, "true_st": 2, "pred_st": 0, "true_se": 1, "pred_se": 2, "parse_ok": true, "raw_response": "Chinh xac | Ung ho | Tich cuc"}
+{"id": "VNLP_V6_0066", "true_m": 2, "pred_m": 0, "true_st": 0, "pred_st": 0, "true_se": 2, "pred_se": 2, "parse_ok": true, "raw_response": "Chinh xác | Ung ho | Tich cuc"}
+{"id": "VNLP_V6_1215", "true_m": 2, "pred_m": 0, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "[Không có] | [Trung lập] | [Trung lập]"}
+{"id": "VNLP_V6_0352", "true_m": 2, "pred_m": 0, "true_st": 0, "pred_st": 0, "true_se": 2, "pred_se": 2, "parse_ok": true, "raw_response": "Chinh xác | Ung ho | Tich cuc"}
+{"id": "VNLP_V6_0768", "true_m": 2, "pred_m": 0, "true_st": 2, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "Không có thông tin rõ ràng về sự sai lệch (Misinformation) trong đoạn văn. Người dùng đang hỏi về tình trạng sức khỏe của bé sau khi bị cắn.\n[Không có] | [Hỏi] | [Trung tính]"}
+{"id": "VNLP_V6_0304", "true_m": 2, "pred_m": 2, "true_st": 2, "pred_st": 0, "true_se": 1, "pred_se": 2, "parse_ok": true, "raw_response": "Chinh xac | Ung ho | Tich cuc"}
+{"id": "VNLP_V6_0238", "true_m": 2, "pred_m": 2, "true_st": 0, "pred_st": 0, "true_se": 2, "pred_se": 2, "parse_ok": true, "raw_response": "Chinh xac | Ung ho | Tich cuc"}
+{"id": "VNLP_V6_0174", "true_m": 2, "pred_m": 2, "true_st": 0, "pred_st": 0, "true_se": 2, "pred_se": 2, "parse_ok": true, "raw_response": "Chinh xac | Ung ho | Tich cuc"}
+{"id": "VNLP_V6_0966", "true_m": 2, "pred_m": 0, "true_st": 1, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "Misinformation | Phản đối | Tiêu cực"}
+{"id": "VNLP_V6_0030", "true_m": 2, "pred_m": 2, "true_st": 0, "pred_st": 0, "true_se": 2, "pred_se": 2, "parse_ok": true, "raw_response": "Chinh xac | Ung ho | Tich cuc"}
+{"id": "VNLP_V6_0932", "true_m": 2, "pred_m": 0, "true_st": 1, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "Misinformation | Phản đối | Tiêu cực"}
+{"id": "VNLP_V6_1432", "true_m": 1, "pred_m": 0, "true_st": 1, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "Misinformation | Phản đối | Tiêu cực"}
+{"id": "VNLP_V6_0745", "true_m": 2, "pred_m": 2, "true_st": 0, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Chinh xac | Trung phan | Trung tinh"}
+{"id": "VNLP_V6_0271", "true_m": 2, "pred_m": 2, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Chinh xac | Canh bao | Trung tinh"}
+{"id": "VNLP_V6_0585", "true_m": 2, "pred_m": 0, "true_st": 1, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "[Misinformation] | [Phản đối] | [Tiêu cực]"}
+{"id": "VNLP_V6_0670", "true_m": 2, "pred_m": 0, "true_st": 2, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "Không rõ | Quan ngại | Tiêu cực"}
+{"id": "VNLP_V6_0947", "true_m": 2, "pred_m": 0, "true_st": 2, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "Misinformation | Phản đối | Tiêu cực"}
+{"id": "VNLP_V6_0110", "true_m": 2, "pred_m": 2, "true_st": 0, "pred_st": 0, "true_se": 2, "pred_se": 2, "parse_ok": true, "raw_response": "Chinh xac | Ung ho | Tich cuc"}
+{"id": "VNLP_V6_0632", "true_m": 2, "pred_m": 0, "true_st": 2, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "[Misinformation] | [Phản đối] | [Tiêu cực]"}
+{"id": "VNLP_V6_1531", "true_m": 1, "pred_m": 0, "true_st": 1, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "Không có | Phản đối | Tiêu cực"}
+{"id": "VNLP_V6_1793", "true_m": 2, "pred_m": 0, "true_st": 2, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "[Misinformation] | [Phản đối] | [Tiêu cực]"}
+{"id": "VNLP_V6_0484", "true_m": 2, "pred_m": 2, "true_st": 2, "pred_st": 0, "true_se": 1, "pred_se": 2, "parse_ok": true, "raw_response": "Chinh xac | Ung ho | Tich cuc"}
+{"id": "VNLP_V6_1125", "true_m": 2, "pred_m": 0, "true_st": 2, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "Misinformation | Phản đối | Tiêu cực"}
+{"id": "VNLP_V6_0711", "true_m": 2, "pred_m": 2, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Chinh xac | Trung phan | Trung tinh"}
+{"id": "VNLP_V6_1054", "true_m": 2, "pred_m": 2, "true_st": 2, "pred_st": 0, "true_se": 1, "pred_se": 2, "parse_ok": true, "raw_response": "Chinh xac | Ung ho | Tich cuc"}
+{"id": "VNLP_V6_1673", "true_m": 2, "pred_m": 0, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "[Misinformation] | [Neutral] | [Neutral]"}
+{"id": "VNLP_V6_0421", "true_m": 2, "pred_m": 2, "true_st": 2, "pred_st": 0, "true_se": 1, "pred_se": 2, "parse_ok": true, "raw_response": "Chinh xac | Ung ho | Tich cuc"}
+{"id": "VNLP_V6_1491", "true_m": 2, "pred_m": 0, "true_st": 0, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "Misinformation | Phản đối | Tiêu cực"}
+{"id": "VNLP_V6_0232", "true_m": 2, "pred_m": 0, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Không có thông tin sai lệch | Trung lập | Tiêu cực"}
+{"id": "VNLP_V6_0618", "true_m": 1, "pred_m": 0, "true_st": 1, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "Misinformation | Phản đối | Tiêu cực"}
+{"id": "VNLP_V6_1655", "true_m": 1, "pred_m": 0, "true_st": 1, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "Misinformation | Phản đối | Tiêu cực"}
+{"id": "VNLP_V6_0426", "true_m": 2, "pred_m": 0, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Không | Trung lập | Tiêu cực"}
+{"id": "VNLP_V6_0756", "true_m": 2, "pred_m": 2, "true_st": 0, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Chinh xac | Neu cau hoi | Trung tinh"}
+{"id": "VNLP_V6_0644", "true_m": 2, "pred_m": 2, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Chinh xac | Quan tam | Trung tinh"}
+{"id": "VNLP_V6_0860", "true_m": 2, "pred_m": 2, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Chinh xac | Trung phan | Trung tinh"}
+{"id": "VNLP_V6_1332", "true_m": 2, "pred_m": 0, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "[Không] | [Trung lập] | [Trung lập]"}
+{"id": "VNLP_V6_0591", "true_m": 2, "pred_m": 0, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Misinformation | Phản đối | Tiêu cực"}
+{"id": "VNLP_V6_0938", "true_m": 2, "pred_m": 0, "true_st": 2, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "Không | Trung lập | Tiêu cực"}
+{"id": "VNLP_V6_0204", "true_m": 2, "pred_m": 2, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Chinh xac | Trung phan | Trung tinh"}
+{"id": "VNLP_V6_0343", "true_m": 2, "pred_m": 2, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Chinh xac | Trung phan | Trung tinh"}
+{"id": "VNLP_V6_0136", "true_m": 2, "pred_m": 0, "true_st": 0, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "Không | Trung lập | Tiêu cực"}
+{"id": "VNLP_V6_0865", "true_m": 2, "pred_m": 2, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Chinh xac | Trung phan | Trung tinh"}
+{"id": "VNLP_V6_0252", "true_m": 2, "pred_m": 2, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Chinh xac | Quan tam | Buon"}
+{"id": "VNLP_V6_1379", "true_m": 1, "pred_m": 0, "true_st": 1, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "Misinformation | Phản đối | Tiêu cực"}
+{"id": "VNLP_V6_1690", "true_m": 2, "pred_m": 2, "true_st": 0, "pred_st": 0, "true_se": 2, "pred_se": 2, "parse_ok": true, "raw_response": "Chinh xac | Ung ho | Tich cuc"}
+{"id": "VNLP_V6_1447", "true_m": 2, "pred_m": 2, "true_st": 0, "pred_st": 0, "true_se": 2, "pred_se": 2, "parse_ok": true, "raw_response": "Chinh xac | Ung ho | Tich cuc"}
+{"id": "VNLP_V6_1001", "true_m": 1, "pred_m": 0, "true_st": 1, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "Misinformation | Phản đối | Tiêu cực"}
+{"id": "VNLP_V6_1310", "true_m": 2, "pred_m": 0, "true_st": 0, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "[Misinformation] | [Anti-vaccine] | [Negative]"}
+{"id": "VNLP_V6_0927", "true_m": 2, "pred_m": 2, "true_st": 2, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "Chinh xac | Trung phan | Trung tinh"}
+{"id": "VNLP_V6_1458", "true_m": 2, "pred_m": 2, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Chinh xac | Trung phan | Trung tinh"}
+{"id": "VNLP_V6_0586", "true_m": 2, "pred_m": 0, "true_st": 1, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "[Misinformation] | [Phản đối] | [Tiêu cực]"}
+{"id": "VNLP_V6_1620", "true_m": 1, "pred_m": 0, "true_st": 1, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "Misinformation | Phản đối | Tiêu cực"}
+{"id": "VNLP_V6_0943", "true_m": 2, "pred_m": 0, "true_st": 1, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "Không có | Trung lập | Tiêu cực"}
+{"id": "VNLP_V6_0705", "true_m": 2, "pred_m": 2, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Chinh xac | Tuong tuong | Trung tinh"}
+{"id": "VNLP_V6_0597", "true_m": 2, "pred_m": 0, "true_st": 0, "pred_st": 0, "true_se": 2, "pred_se": 2, "parse_ok": true, "raw_response": "[Misinformation] | [Ung ho] | [Tich cuc]"}
+{"id": "VNLP_V6_1340", "true_m": 2, "pred_m": 2, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Chinh xac | Trung phan | Trung tinh"}
+{"id": "VNLP_V6_0652", "true_m": 2, "pred_m": 0, "true_st": 2, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "Misinformation | Phủ nhận | Tiêu cực"}
+{"id": "VNLP_V6_1595", "true_m": 2, "pred_m": 0, "true_st": 1, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "[Misinformation] | [Phản đối] | [Tiêu cực]"}
+{"id": "VNLP_V6_0533", "true_m": 2, "pred_m": 0, "true_st": 2, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "Không rõ | Trung lập | Tiêu cực"}
+{"id": "VNLP_V6_1408", "true_m": 2, "pred_m": 2, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Chinh xac | Trung phan | Trung tinh"}
+{"id": "VNLP_V6_1361", "true_m": 1, "pred_m": 0, "true_st": 1, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "[Misinformation] | [Phản đối] | [Tiêu cực]"}
+{"id": "VNLP_V6_1715", "true_m": 1, "pred_m": 0, "true_st": 1, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "[Misinformation] | [Phản đối] | [Tiêu cực]"}
+{"id": "VNLP_V6_1203", "true_m": 1, "pred_m": 2, "true_st": 2, "pred_st": 0, "true_se": 1, "pred_se": 2, "parse_ok": true, "raw_response": "Chinh xac | Ung ho | Tich cuc"}
+{"id": "VNLP_V6_1499", "true_m": 2, "pred_m": 0, "true_st": 1, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "[Misinformation] | [Neutral] | [Neutral]"}
+{"id": "VNLP_V6_0466", "true_m": 2, "pred_m": 2, "true_st": 0, "pred_st": 2, "true_se": 2, "pred_se": 1, "parse_ok": true, "raw_response": "Chinh xac | Trung khan | Khách quan"}
+{"id": "VNLP_V6_0907", "true_m": 2, "pred_m": 2, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Chinh xac | Trung phan | Trung tinh"}
+{"id": "VNLP_V6_0781", "true_m": 2, "pred_m": 2, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Chinh xac | Trung phan | Trung tinh"}
+{"id": "VNLP_V6_0307", "true_m": 2, "pred_m": 0, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Chinh xác | Trung lập | Trung lập"}
+{"id": "VNLP_V6_0071", "true_m": 2, "pred_m": 0, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Misinformation | Phản đối | Tiêu cực"}
+{"id": "VNLP_V6_0465", "true_m": 2, "pred_m": 0, "true_st": 0, "pred_st": 0, "true_se": 2, "pred_se": 2, "parse_ok": true, "raw_response": "Không có | Ung ho | Tich cuc"}
+{"id": "VNLP_V6_1183", "true_m": 2, "pred_m": 2, "true_st": 0, "pred_st": 0, "true_se": 2, "pred_se": 2, "parse_ok": true, "raw_response": "Chinh xac | Ung ho | Tich cuc"}
+{"id": "VNLP_V6_0693", "true_m": 2, "pred_m": 2, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Chinh xac | Trung phan | Trung tinh"}
+{"id": "VNLP_V6_0317", "true_m": 2, "pred_m": 0, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Không | Trung lập | Trung lập"}
+{"id": "VNLP_V6_0610", "true_m": 2, "pred_m": 0, "true_st": 1, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "Không rõ | Trung lập | Tiêu cực"}
+{"id": "VNLP_V6_1235", "true_m": 2, "pred_m": 0, "true_st": 1, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "Misinformation | Phản đối | Tiêu cực"}
+{"id": "VNLP_V6_1642", "true_m": 2, "pred_m": 2, "true_st": 0, "pred_st": 0, "true_se": 2, "pred_se": 2, "parse_ok": true, "raw_response": "Chinh xac | Ung ho | Tich cuc"}
+{"id": "VNLP_V6_1543", "true_m": 2, "pred_m": 2, "true_st": 1, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "Chinh xac | Trung phan | Trung tinh"}
+{"id": "VNLP_V6_0820", "true_m": 2, "pred_m": 2, "true_st": 0, "pred_st": 0, "true_se": 2, "pred_se": 2, "parse_ok": true, "raw_response": "Chinh xac | Ung ho | Tich cuc"}
+{"id": "VNLP_V6_0213", "true_m": 2, "pred_m": 2, "true_st": 0, "pred_st": 0, "true_se": 2, "pred_se": 2, "parse_ok": true, "raw_response": "Chinh xac | Ung ho | Tich cuc"}
+{"id": "VNLP_V6_1645", "true_m": 2, "pred_m": 0, "true_st": 1, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "Misinformation | Phản đối | Tiêu cực"}
+{"id": "VNLP_V6_0840", "true_m": 2, "pred_m": 2, "true_st": 0, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Chinh xac | Quan tam | Lo lang"}
+{"id": "VNLP_V6_1227", "true_m": 2, "pred_m": 2, "true_st": 0, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Chinh xac | Trung phan | Trung tinh"}
+{"id": "VNLP_V6_0024", "true_m": 2, "pred_m": 2, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Chinh xac | Quan tam | Trung phan"}
+{"id": "VNLP_V6_1508", "true_m": 2, "pred_m": 0, "true_st": 0, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "[Misinformation] | [Chong buoc] | [Tiêu cực]"}
+{"id": "VNLP_V6_0064", "true_m": 2, "pred_m": 2, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Chinh xac | Trung phan tich | Trung tinh"}
+{"id": "VNLP_V6_0367", "true_m": 2, "pred_m": 2, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Chinh xac | Trung phan | Trung tinh"}
+{"id": "VNLP_V6_1030", "true_m": 2, "pred_m": 0, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Không có | Trung lập | Tích cực"}
+{"id": "VNLP_V6_1613", "true_m": 1, "pred_m": 0, "true_st": 1, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "Misinformation | Phản đối | Tiêu cực"}
+{"id": "VNLP_V6_1117", "true_m": 2, "pred_m": 2, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Chinh xac | Trung phan | Trung tinh"}
+{"id": "VNLP_V6_1577", "true_m": 1, "pred_m": 0, "true_st": 1, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "[Misinformation] | [Chong buoc] | [Tiêu cực]"}
+{"id": "VNLP_V6_0299", "true_m": 2, "pred_m": 0, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Trung lập | Trung lập | Trung lập"}
+{"id": "VNLP_V6_0887", "true_m": 2, "pred_m": 2, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Chinh xac | Trung | Thoai ma"}
+{"id": "VNLP_V6_1786", "true_m": 2, "pred_m": 0, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "[Misinformation] | [Phản đối] | [Tiêu cực]"}
+{"id": "VNLP_V6_1449", "true_m": 2, "pred_m": 2, "true_st": 0, "pred_st": 2, "true_se": 2, "pred_se": 1, "parse_ok": true, "raw_response": "Chinh xac | Trung phan | Trung tinh"}
+{"id": "VNLP_V6_0345", "true_m": 2, "pred_m": 2, "true_st": 0, "pred_st": 0, "true_se": 2, "pred_se": 2, "parse_ok": true, "raw_response": "Chinh xac | Ung ho | Tich cuc"}
+{"id": "VNLP_V6_1797", "true_m": 1, "pred_m": 0, "true_st": 1, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "Misinformation | Phản đối | Tiêu cực"}
+{"id": "VNLP_V6_1250", "true_m": 2, "pred_m": 2, "true_st": 0, "pred_st": 2, "true_se": 2, "pred_se": 1, "parse_ok": true, "raw_response": "Chinh xac | Trung phan | Trung tinh"}
+{"id": "VNLP_V6_1845", "true_m": 2, "pred_m": 2, "true_st": 1, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "Chinh xac | Trung phan | Trung tinh"}
+{"id": "VNLP_V6_1264", "true_m": 2, "pred_m": 2, "true_st": 0, "pred_st": 2, "true_se": 2, "pred_se": 1, "parse_ok": true, "raw_response": "Chinh xac | Trung phan | Trung tinh"}
+{"id": "VNLP_V6_1771", "true_m": 2, "pred_m": 2, "true_st": 1, "pred_st": 0, "true_se": 0, "pred_se": 2, "parse_ok": true, "raw_response": "Chinh xac | Ung ho | Tich cuc"}
+{"id": "VNLP_V6_0496", "true_m": 2, "pred_m": 0, "true_st": 0, "pred_st": 2, "true_se": 2, "pred_se": 1, "parse_ok": true, "raw_response": "Misinformation | Phản đối | Tiêu cực"}
+{"id": "VNLP_V6_1193", "true_m": 2, "pred_m": 0, "true_st": 1, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "Misinformation | Trung lập | Tiêu cực"}
+{"id": "VNLP_V6_0527", "true_m": 2, "pred_m": 2, "true_st": 1, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "Chinh xac | Phản đối | Tiêu cực"}
+{"id": "VNLP_V6_0988", "true_m": 2, "pred_m": 0, "true_st": 1, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "Không có | Không rõ | Tiêu cực"}
+{"id": "VNLP_V6_0116", "true_m": 2, "pred_m": 0, "true_st": 0, "pred_st": 2, "true_se": 2, "pred_se": 1, "parse_ok": true, "raw_response": "Không có | Ủng hộ | Tích cực"}
+{"id": "VNLP_V6_0545", "true_m": 1, "pred_m": 0, "true_st": 1, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "Misinformation | Phản đối | Tiêu cực"}
+{"id": "VNLP_V6_0918", "true_m": 1, "pred_m": 0, "true_st": 0, "pred_st": 0, "true_se": 2, "pred_se": 2, "parse_ok": true, "raw_response": "Misinformation | Ung ho | Tich cuc"}
+{"id": "VNLP_V6_0868", "true_m": 2, "pred_m": 2, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Chinh xac | Trung phan | Trung tinh"}
+{"id": "VNLP_V6_1618", "true_m": 1, "pred_m": 0, "true_st": 1, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "[Misinformation] | [Phản đối y học hiện đại] | [Tiêu cực]"}
+{"id": "VNLP_V6_1546", "true_m": 1, "pred_m": 2, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Chinh xac | Trung phan | Khach hang"}
+{"id": "VNLP_V6_1813", "true_m": 2, "pred_m": 0, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Khong xac | Quan tam | Trung tinh"}
+{"id": "VNLP_V6_0583", "true_m": 1, "pred_m": 0, "true_st": 1, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "Khong ro rang | Trung phan | Trung tinh"}
+{"id": "VNLP_V6_0600", "true_m": 2, "pred_m": 0, "true_st": 1, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "Misinformation | Phản đối | Tiêu cực"}
+{"id": "VNLP_V6_0395", "true_m": 2, "pred_m": 2, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Chinh xac | Quan tam | Trung tinh"}
+{"id": "VNLP_V6_0629", "true_m": 2, "pred_m": 0, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "[Misinformation] | [Trung lập] | [Trung lập]"}
+{"id": "VNLP_V6_1088", "true_m": 2, "pred_m": 0, "true_st": 2, "pred_st": 0, "true_se": 1, "pred_se": 2, "parse_ok": true, "raw_response": "Không có | Ung ho | Tich cuc"}
+{"id": "VNLP_V6_0428", "true_m": 2, "pred_m": 0, "true_st": 0, "pred_st": 0, "true_se": 2, "pred_se": 2, "parse_ok": true, "raw_response": "Chinh xác | Ung ho | Tich cuc"}
+{"id": "VNLP_V6_0248", "true_m": 2, "pred_m": 2, "true_st": 0, "pred_st": 0, "true_se": 2, "pred_se": 2, "parse_ok": true, "raw_response": "Chinh xac | Ung ho | Tich cuc"}
+{"id": "VNLP_V6_1689", "true_m": 2, "pred_m": 0, "true_st": 1, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "[Misinformation] | [Phản đối] | [Tiêu cực]"}
+{"id": "VNLP_V6_0519", "true_m": 1, "pred_m": 0, "true_st": 1, "pred_st": 2, "true_se": 0, "pred_se": 1, "parse_ok": true, "raw_response": "[Misinformation] | [Phản đối] | [Tiêu cực]"}
+{"id": "VNLP_V6_0723", "true_m": 2, "pred_m": 2, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Chinh xac | Trung phan | Trung tinh"}
+{"id": "VNLP_V6_0033", "true_m": 2, "pred_m": 2, "true_st": 0, "pred_st": 0, "true_se": 2, "pred_se": 2, "parse_ok": true, "raw_response": "Chinh xac | Ung ho | Tich cuc"}
+{"id": "VNLP_V6_1315", "true_m": 2, "pred_m": 0, "true_st": 1, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "[Misinformation] | [Neutral] | [Neutral]"}
+{"id": "VNLP_V6_0899", "true_m": 2, "pred_m": 2, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Chinh xac | Neu cau | Trung tinh"}
+{"id": "VNLP_V6_1106", "true_m": 2, "pred_m": 0, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Misinformation | Phê phán | Tiêu cực"}
+{"id": "VNLP_V6_0125", "true_m": 2, "pred_m": 2, "true_st": 2, "pred_st": 0, "true_se": 2, "pred_se": 2, "parse_ok": true, "raw_response": "Chinh xac | Ung ho | Tich cuc"}
+{"id": "VNLP_V6_0910", "true_m": 2, "pred_m": 2, "true_st": 2, "pred_st": 2, "true_se": 1, "pred_se": 1, "parse_ok": true, "raw_response": "Chinh xac | Trung phan | Trung tinh"}
+{"id": "VNLP_V6_0164", "true_m": 2, "pred_m": 0, "true_st": 0, "pred_st": 0, "true_se": 2, "pred_se": 2, "parse_ok": true, "raw_response": "Không có | Ung ho | Tich cuc"}

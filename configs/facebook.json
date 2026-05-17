@@ -1,0 +1,8 @@
+{
+  "maxComments": 200,
+  "maxReplies": 30,
+  "viewOption": "RANKED_THREADED",
+  "batchSize": 3,
+  "minLikes": 50,
+  "target_types": ["post", "page", "user"]
+}
