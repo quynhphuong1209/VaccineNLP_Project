@@ -91,6 +91,26 @@ Detailed evaluation charts, including interactive LaTeX calculations, correlatio
 
 ---
 
+## 🎛️ Interactive Gesture-Controlled Presentation (Web Slide Deck)
+
+The project includes an advanced, interactive HTML presentation ([`slide_demo.html`](slide_demo.html)) designed specifically for thesis defense. It features a futuristic **Dark Academic Glassmorphism** design and integrates in-air hand gesture control using **MediaPipe Hands** and local webcam feeds.
+
+### 🖖 Gesture Controls Guide
+- **Next Slide (Forward):** Swipe your hand from **Right to Left** (or press `➡️` / `Space` on keyboard, or click the floating `⟩` mouse button on the right edge).
+- **Previous Slide (Backward):** Swipe your hand from **Left to Right** (or press `⬅️` on keyboard, or click the floating `⟨` mouse button on the left edge).
+
+### ⚙️ How to Run the Presentation Locally
+Because modern browsers strictly block camera access on the raw `file://` protocol, the slide deck must be served over a secure local server:
+1. **VS Code Live Server (Recommended):** Install the "Live Server" extension, right-click `slide_demo.html`, and select **Open with Live Server**.
+2. **Python HTTP Server:** Run `python -m http.server 8000` in the workspace root, and navigate to `http://localhost:8000/slide_demo.html`.
+
+### 🛡️ Smart Safeguards Built-in
+- **Self-Healing Device Selector:** Automatically scans all active cameras, filters out IR/virtual cameras, and connects to the primary physical RGB webcam.
+- **Dynamic Adaptive Distance Threshold:** Automatically rescales the gesture trigger threshold based on the hand size (`6%` of hand size), ensuring ultra-sensitive, reliable swiping whether the presenter is standing close or far away (3-4 meters).
+- **Native Dual Fallback:** If the gesture camera fails due to low light or permissions, the presenter can seamlessly navigate using the keyboard or the beautiful glassmorphic floating mouse buttons (`⟨` and `⟩`) on screen.
+
+---
+
 ## 🤝 Authors & Acknowledgments
 
 - **Kim Mạnh Hưng** (2211090016)
