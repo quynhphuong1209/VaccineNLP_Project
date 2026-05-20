@@ -800,6 +800,134 @@ def render_word_importance(text, is_fake=False):
     st.markdown(html_output, unsafe_allow_html=True)
     st.caption("💡 Các từ được tô màu đóng góp quan trọng nhất vào quyết định phân loại của AI.")
 
+# ─────────────────────────────────────────────────────────────
+# SALIENCY THẬT — Captum Integrated Gradients (XAI khoa học)
+# ─────────────────────────────────────────────────────────────
+@st.cache_data(ttl=3600, show_spinner=False)
+def _compute_saliency_cached(text_key: str, model_key: str):
+    """Cache attribution scores theo (text, model). Tách khỏi render để cache hoạt động."""
+    try:
+        import torch
+        import numpy as np
+        from captum.attr import LayerIntegratedGradients
+    except ImportError:
+        return None, None, -1
+
+    model, tokenizer, _ = load_model(model_key)
+    if model is None:
+        return None, None, -1
+
+    # Tokenize (PhoBERT yêu cầu word_tokenize)
+    processed = text_key
+    if "phobert" in model_key.lower():
+        try:
+            from underthesea import word_tokenize
+            processed = word_tokenize(text_key, format="text")
+        except Exception:
+            pass
+
+    enc = tokenizer(processed, truncation=True, max_length=256,
+                    return_tensors="pt", padding=True)
+    input_ids = enc['input_ids']
+    attention_mask = enc['attention_mask']
+
+    # Forward function (chỉ misinfo logits)
+    def forward_fn(ids, mask):
+        logits_m, _, _ = model(ids, mask)
+        return logits_m
+
+    # Predict
+    with torch.no_grad():
+        logits_m, _, _ = model(input_ids, attention_mask)
+    pred_class = int(torch.argmax(logits_m, dim=1))
+
+    # Integrated Gradients trên embedding layer
+    lig = LayerIntegratedGradients(forward_fn, model.encoder.embeddings)
+    baseline = torch.zeros_like(input_ids) + (tokenizer.pad_token_id or 0)
+
+    attributions = lig.attribute(
+        inputs=input_ids,
+        baselines=baseline,
+        additional_forward_args=(attention_mask,),
+        target=pred_class,
+        n_steps=20,
+    )
+    # Sum theo embedding dim
+    attr = attributions.sum(dim=-1).squeeze(0).detach().numpy()
+    norm_max = np.abs(attr).max() + 1e-9
+    attr_norm = (attr / norm_max).tolist()
+    tokens = tokenizer.convert_ids_to_tokens(input_ids[0])
+
+    return tokens, attr_norm, pred_class
+
+
+def render_real_saliency(text: str, model_key: str):
+    """
+    Saliency THẬT bằng Integrated Gradients (Captum).
+    Cache theo text. Toggle cho phép tắt nếu cần nhanh.
+    """
+    is_dark = st.session_state.get("theme", "Dark") == "Dark"
+    text_color = "#e2e4e9" if is_dark else "#1a1e2e"
+
+    use_real = st.checkbox(
+        "🔬 Bật Saliency THẬT (Integrated Gradients) — chậm ~5-10s nhưng là XAI khoa học",
+        value=True, key=f"sal_toggle_{hash(text[:50])}"
+    )
+
+    if not use_real:
+        result = predict_cached(text, model_key)
+        if result:
+            is_fake = result["misinfo"]["pred"] == 0
+            render_word_importance(text, is_fake=is_fake)
+        return
+
+    try:
+        with st.spinner("⏳ Đang tính Integrated Gradients (XAI nghiêm túc)..."):
+            tokens, attr_norm, pred_class = _compute_saliency_cached(text, model_key)
+
+        if tokens is None:
+            st.warning("⚠️ Không thể tính Saliency — Captum chưa cài hoặc model load fail. Fallback hot-words.")
+            result = predict_cached(text, model_key)
+            if result:
+                render_word_importance(text, is_fake=(result["misinfo"]["pred"] == 0))
+            return
+
+        # Render HTML
+        html = ('<div style="line-height:1.9; padding:20px; border-radius:15px; '
+                'background:rgba(100,255,218,0.05); '
+                'border:1px dashed rgba(100,255,218,0.3);">')
+        for tok, score in zip(tokens, attr_norm):
+            if tok in ['<s>', '</s>', '<pad>', '[CLS]', '[SEP]', '<unk>']:
+                continue
+            tok_clean = tok.replace('▁', ' ').replace('@@', '').replace('Ġ', ' ')
+            abs_score = abs(score)
+            if abs_score < 0.15:
+                html += f'<span style="color:{text_color}; opacity:0.55;">{tok_clean}</span> '
+            else:
+                intensity = min(abs_score, 0.7)
+                if pred_class == 0:  # Tin giả
+                    bg = f"rgba(255,75,75,{intensity})"
+                else:  # Chính xác
+                    bg = f"rgba(100,255,218,{intensity})"
+                html += (f'<span style="background:{bg}; padding:2px 6px; '
+                        f'border-radius:4px; font-weight:bold; color:{text_color};">'
+                        f'{tok_clean}</span> ')
+        html += '</div>'
+
+        st.markdown("##### 🎯 Saliency Map THẬT — Integrated Gradients (Captum)")
+        st.markdown(html, unsafe_allow_html=True)
+        st.caption(
+            f"💡 **XAI khoa học:** Attribution score tính bằng Integrated Gradients "
+            f"trên embedding layer PhoBERT (n_steps=20). "
+            f"Class dự đoán: **{LABEL_MAPS['misinfo'].get(pred_class, '?')}**. "
+            f"Token có màu đậm hơn = đóng góp lớn hơn vào quyết định model."
+        )
+    except Exception as e:
+        st.warning(f"⚠️ Saliency thật lỗi: {type(e).__name__}: {e}. Fallback hot-words.")
+        result = predict_cached(text, model_key)
+        if result:
+            render_word_importance(text, is_fake=(result["misinfo"]["pred"] == 0))
+
 def render_export_report(user_text, result, reasoning):
     """Tạo nút tải báo cáo kết quả phân tích."""
     report_content = f"""# BÁO CÁO PHÂN TÍCH VACCINENLP
@@ -2372,8 +2500,7 @@ def main():
                     # Row 2: Visualizations (Radar + Word Highlighting)
                     v_col1, v_col2 = st.columns([3, 2])
                     with v_col1:
-                        is_fake = result["misinfo"]["pred"] == 0  # 0=Tin giả theo LABEL_MAPS v3
-                        render_word_importance(user_text.strip(), is_fake=is_fake)
+                        render_real_saliency(user_text.strip(), model_selection)
                         st.markdown("<br>", unsafe_allow_html=True)
                         with st.expander("☁️ Đám mây từ khóa (WordCloud)"):
                             render_wordcloud(user_text.strip(), is_dark=is_dark)
