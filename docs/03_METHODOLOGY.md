@@ -43,6 +43,18 @@ Tiến hành **Benchmark Showdown** giữa hai kiến trúc classification/reaso
 2.  **XLM-R Multitask (Baseline)**: Mô hình đa ngôn ngữ phục vụ so sánh baseline. Có sẵn tại: [hung2903/xlmr-vaccine-multitask](https://huggingface.co/hung2903/xlmr-vaccine-multitask).
 3.  **Gemma-4 4B QLoRA (Decoder)**: Huấn luyện theo định dạng Chat Template, bắt chước khả năng lý luận của LLM annotator. Quá trình Inference đánh giá F1-score được thực thi trên Kaggle Cloud để tận dụng phần cứng. Tại bước này, dự án áp dụng cơ chế **Robust Parsing** kết hợp với **Prompt Engineering** cực kỳ chi tiết nhằm chuẩn hóa định dạng kết quả, đồng thời thực hiện **Raw Response Logging** để đảm bảo không thất thoát dữ liệu do sự bất ổn định về cấu trúc trả lời của mô hình ngôn ngữ lớn. Mô hình có sẵn tại: [hung2903/gemma-4-E4B-unsloth-vaccine-xai](https://huggingface.co/hung2903/gemma-4-E4B-unsloth-vaccine-xai).
 
+### Kết quả Benchmark (Macro F1-Score trên Gold Test Set — 186 mẫu)
+
+> Nguồn: `experiments/results/phobert_v2_results.json`, `xlmr_v1_results.json`, `gemma_v3_results.json`
+
+| Mô hình | Loại | Misinfo (F1) | Stance (F1) | Sentiment (F1) |
+|---|---|:---:|:---:|:---:|
+| **PhoBERT-v2** | Classification Engine (Encoder) | **0.7079** | **0.7107** | **0.7260** |
+| **Gemma-4-4B** | XAI Reasoning Engine (Decoder) | 0.6925 | 0.5818 | 0.7196 |
+| **XLM-R-v1** | Baseline (Encoder) | 0.5823 | 0.4217 | 0.1842 |
+
+**Nhận định:** PhoBERT-v2 (Classification Engine) đạt SOTA trên cả 3 trục, minh chứng cho hiệu quả của việc kết hợp Encoder hai chiều chuyên biệt tiếng Việt với kỹ thuật Multi-task Learning. Gemma-4-4B có Parse Failure Rate 33.3% nhưng cung cấp khả năng giải thích (XAI) vượt trội mà các mô hình Encoder không thể thực hiện.
+
 ---
 
 ## 3.5. Tính Đột phá và Ứng dụng Thực tiễn (Scientific Novelty)
@@ -58,3 +70,9 @@ Tiến hành **Benchmark Showdown** giữa hai kiến trúc classification/reaso
 Dự án kế thừa tri thức luận từ các nghiên cứu tiền đề quan trọng:
 *   **UIT-ViCoV19QA**: Định hình cấu trúc QA y tế và các dạng thảo luận về dịch bệnh tại Việt Nam.
 *   **ViGoEmotions**: Truyền cảm hứng cho chiến lược sử dụng LLM làm Annotator chuyên gia cho các dữ liệu văn bản tiếng Việt có độ khó cao.
+*   **MiSoVac**: Bộ dữ liệu đa ngôn ngữ về tin sai lệch vaccine trên mạng xã hội, cung cấp nguồn mẫu ngoại lai đã được xác thực chuyên gia.
+
+---
+
+*Cập nhật: 20/05/2026 | Phiên bản 2.0*
+

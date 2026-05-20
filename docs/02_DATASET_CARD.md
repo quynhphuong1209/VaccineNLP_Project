@@ -49,3 +49,42 @@ Mỗi hàng dữ liệu trong tập Silver/Gold được thiết kế để ph�
 
 > [!IMPORTANT]
 > Việc chuẩn hóa ID này là bắt buộc để đảm bảo sự đồng bộ giữa tập **Silver Labels** (do LLM gán) và tập **Gold Labels** (do chuyên gia HITL duyệt).
+
+## 4. Thống kê Bộ dữ liệu (Dataset Statistics)
+
+### A. Phân chia Tập dữ liệu
+| Tập | File | Số mẫu | Vai trò |
+|-----|------|:------:|---------|
+| **Train** | `datasets/05_model_ready/train_v2_seg_v3.jsonl` | ~1,572 | Huấn luyện (Silver Labels) |
+| **Gold Test** | `datasets/03_processed/benchmark_test_set.jsonl` | 186 | Đánh giá chuẩn mực (Human-validated) |
+| **HITL Review** | `datasets/03_processed/benchmark_review_HITL.xlsx` | 186 | Bản duyệt gốc của chuyên gia |
+
+### B. Phân bố Nhãn trên Gold Test Set (186 mẫu)
+
+**Misinformation (2 lớp):**
+| Nhãn | Số mẫu |
+|------|:------:|
+| Chính xác | 158 |
+| Tin giả | 28 |
+
+**Stance (3 lớp — loại trừ nhãn Fallback 3):**
+| Nhãn | Số mẫu |
+|------|:------:|
+| Trung lập | 84 |
+| Ủng hộ | 54 |
+| Phản đối | 48 |
+
+**Sentiment (3 lớp):**
+| Nhãn | Số mẫu |
+|------|:------:|
+| Trung tính | 75 |
+| Tiêu cực | 71 |
+| Tích cực | 40 |
+
+> [!NOTE]
+> Nguồn: Support counts trích từ `experiments/results/phobert_v2_results.json`. Nhãn Stance ID=3 (Fallback) không xuất hiện trong Gold Test Set do đã được chuyên gia HITL phân loại rõ ràng.
+
+---
+
+*Cập nhật: 20/05/2026 | Phiên bản 2.0*
+

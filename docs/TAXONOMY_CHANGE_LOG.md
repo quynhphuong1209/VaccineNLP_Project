@@ -61,9 +61,9 @@ N_CLASSES = {'misinfo': 2, 'stance': 3, 'sentiment': 3}
 
 | Notebook | Thay đổi |
 |---|---|
-| `notebook_test/vaccinenlp-phobert-v2-multitask-classifier.ipynb` | N_CLASSES, LABEL_NAMES, TRAIN_PATH→_v3, TEST_PATH→_v3, f1_score+labels= |
-| `notebook_test/vaccinenlp-xlm-r-v1-multitask-classifi.ipynb` | N_CLASSES, LABEL_NAMES, TRAIN_PATH→_v3, TEST_PATH→_v3, f1_score+labels= |
-| `notebooks/03_vaccinenlp-gemma-4-qlora-multitask.ipynb` | MISINFO_MAP, HC_MISINFO, REV maps, format_prompt, TRAIN_PATH→_v3, TEST_PATH→_v3 |
+| `notebooks/01_vaccinenlp-phobert-v2-multitask.ipynb` | N_CLASSES, LABEL_NAMES, TRAIN_PATH→_v3, TEST_PATH→_v3, f1_score+labels= |
+| `notebooks/02_vaccinenlp-xlm-r-v1-multitask-classifier.ipynb` | N_CLASSES, LABEL_NAMES, TRAIN_PATH→_v3, TEST_PATH→_v3, f1_score+labels= |
+| `notebooks/03A_vaccinenlp-gemma-4-training.ipynb` | MISINFO_MAP, HC_MISINFO, REV maps, format_prompt, TRAIN_PATH→_v3, TEST_PATH→_v3 |
 
 ---
 

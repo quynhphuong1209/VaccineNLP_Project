@@ -63,4 +63,17 @@ Các mô hình của dự án được lưu trữ công khai tại Hugging Face 
 | **XLMR-Multitask** | Baseline | [hung2903/xlmr-vaccine-multitask](https://huggingface.co/hung2903/xlmr-vaccine-multitask) |
 
 ---
-*Cập nhật: 22/04/2026 | Phiên bản 3.0*
+
+## 6. Kết quả Benchmark (Tóm tắt — Nguồn: `experiments/results/*.json`)
+
+| Mô hình | Loại | Misinfo (F1) | Stance (F1) | Sentiment (F1) |
+|---|---|:---:|:---:|:---:|
+| **PhoBERT-v2** | Classification Engine (Encoder) | **0.7079** | **0.7107** | **0.7260** |
+| **Gemma-4-4B** | XAI Reasoning Engine (Decoder) | 0.6925 | 0.5818 | 0.7196 |
+| **XLM-R-v1** | Baseline (Encoder) | 0.5823 | 0.4217 | 0.1842 |
+
+> Chi tiết per-class breakdown xem tại `experiments/results/benchmark_report.md` và `README.md`.
+
+---
+*Cập nhật: 20/05/2026 | Phiên bản 3.1*
+

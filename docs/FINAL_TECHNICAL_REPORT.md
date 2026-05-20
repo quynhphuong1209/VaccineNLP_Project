@@ -53,7 +53,7 @@
 ### Chương 4: Thực nghiệm và Đánh giá
 - [ ] Mô tả thiết lập tham số (Hyperparameters) của PhoBERT và QLoRA Gemma.
 - [ ] Kẻ bảng so sánh F1-Score của 3 mô hình (XLM-R, PhoBERT, Gemma-4).
-- [ ] Đưa tỷ lệ Parse Failure (2.2%) vào để đánh giá rủi ro của LLM.
+- [ ] Đưa tỷ lệ Parse Failure (33.3% trên v3 — nguồn: `experiments/results/gemma_v3_results.json`) vào để đánh giá rủi ro của LLM.
 
 ### Chương 5: Thảo luận Kết quả (Discussion)
 - [ ] Giải thích nguyên nhân "Classification Engine (PhoBERT) vượt Reasoning Engine (Gemma)" về điểm F1 (Encoder vs Decoder, Domain-specific vs Multilingual).
@@ -61,7 +61,10 @@
 - [ ] Hạn chế của đề tài (Closed-world assumption, yêu cầu phần cứng).
 
 ### Phụ lục & Chuẩn bị Bảo vệ
-- [x] Upload Code lên GitHub (Đã xong).
-- [x] Upload Models lên HuggingFace.
+- [x] Upload Code lên GitHub (sanitized & secured — [hwngkm/VaccineNLP-Thesis](https://github.com/hwngkm/VaccineNLP-Thesis)).
+- [x] Upload 3 Models lên HuggingFace.
+- [x] Tạo 6 figures chuẩn luận văn (`experiments/results/figures/`).
+- [x] Đồng bộ 5 notebooks từ Kaggle (numbered 01–04).
+- [x] Tự động hóa cập nhật README benchmarks.
 - [ ] Quay Video Demo Offline của Streamlit App.
 - [ ] Trả lời 5 câu hỏi Q&A phòng thủ (chuẩn bị bởi Cố vấn học thuật).
