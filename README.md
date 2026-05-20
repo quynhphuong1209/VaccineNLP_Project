@@ -24,19 +24,46 @@
 
 Dưới đây là bảng so sánh hiệu năng (Macro F1-score) giữa các kiến trúc trên tập **Benchmark Test Set (Gold Data)**:
 
+<!-- BENCHMARK_TABLE_START -->
 | Mô hình | Loại | Misinfo (F1) | Stance (F1) | Sentiment (F1) | Trạng thái |
 | :--- | :--- | :---: | :---: | :---: | :--- |
 | **PhoBERT-v2** | Classification Engine (Encoder) | **0.7079** | **0.7107** | **0.7260** | **SOTA (Classification Engine)** |
 | **Gemma-4-4B** | XAI Reasoning Engine (Decoder) | 0.6925 | 0.5818 | 0.7196 | **SOTA (XAI Reasoning Engine)** |
-| **XLM-R-v1** | Baseline (Encoder) | 0.6632 | 0.5618 | 0.6394 | Baseline |
+| **XLM-R-v1** | Baseline (Encoder) | 0.5823 | 0.4217 | 0.1842 | Baseline |
 
 > Số liệu các mô hình đã được xác nhận qua Kaggle LIVE run (20/05/2026).
+<!-- BENCHMARK_TABLE_END -->
 
 
 > [!TIP]
 > **PhoBERT-v2** hiện là mô hình có hiệu năng cao nhất cho các tác vụ phân loại tiếng Việt trong dự án này, minh chứng cho hiệu quả của việc gán nhãn hỗ trợ LLM (LLM-assisted Annotation) vào các mô hình Encoder chuyên biệt.
 
 **Nhận định:** Trong khi Gemma-4 (XAI Reasoning Engine) cung cấp khả năng giải thích (XAI) vượt trội, các mô hình classification engine (PhoBERT) lại cho thấy sự ổn định và chính xác cao hơn trong việc gán nhãn phân loại nhờ cấu trúc Encoder hai chiều mạnh mẽ.
+
+## 📊 Phân tích & Trực quan hóa Thực nghiệm (Visualizations & Analysis)
+
+Dưới đây là các biểu đồ phân tích trực quan thu được từ quá trình huấn luyện và đánh giá mô hình trên hệ thống đám mây Kaggle:
+
+### 1. So sánh Hiệu năng Tổng thể (Overall Performance Comparison)
+![So sánh hiệu năng Macro F1](experiments/results/figures/macro_f1_comparison.png)
+* **Mô tả:** Biểu đồ so sánh trực tiếp Macro F1-score của **PhoBERT-v2**, **Gemma-4-4B (XAI)**, và **XLM-R-v1 (Baseline)** trên 3 trục tác vụ. PhoBERT-v2 vượt trội ở tác vụ phân tích thái độ (Stance: 0.7107) và cảm xúc (Sentiment: 0.7260) nhờ việc tinh chỉnh tốt trên ngôn ngữ tiếng Việt. Gemma-4-4B bám đuổi sát nút trên trục Tin giả (Misinfo: 0.6925) nhờ khả năng lập luận ngôn ngữ sâu sắc.
+
+### 2. Hiệu năng theo Từng Lớp Phân loại (Per-class F1-score Analysis)
+![Hiệu năng F1 theo từng lớp cụ thể](experiments/results/figures/per_class_f1.png)
+* **Mô tả:** Phân tích chi tiết F1-score trên từng nhãn phân loại cụ thể của 3 tác vụ. Biểu đồ này chỉ ra khả năng xử lý mất cân bằng lớp (class imbalance) cực tốt của PhoBERT-v2 khi áp dụng kỹ thuật *Weighted Loss*, đặc biệt là trên các nhãn thiểu số (như nhãn Phản đối vắc-xin hay Tin sai lệch).
+
+### 3. Ma trận nhầm lẫn và Phân tích Lỗi (Confusion Matrices)
+| PhoBERT-v2 & XLM-R Baseline | Gemma-4-4B Reasoning Engine |
+| :---: | :---: |
+| ![Ma trận nhầm lẫn PhoBERT & XLM-R](experiments/results/figures/confusion_matrices.png) | ![Ma trận nhầm lẫn Gemma-4](experiments/results/figures/gemma_confusion_matrix.png) |
+* **Mô tả:** Ma trận nhầm lẫn chuẩn hóa (Normalized Confusion Matrices) chỉ ra phân phối dự đoán sai của các mô hình. Đây là cơ sở thực nghiệm cốt lõi cho Chương 4 & 5 của Luận văn nhằm phân tích các trường hợp lỗi biên (Edge Cases), ví dụ như sự nhầm lẫn giữa nhãn "Trung lập" và "Ủng hộ", hoặc các từ lóng ẩn dụ chưa được bao phủ hết.
+
+### 4. Quá trình hội tụ của mô hình (Multitask Training Curves)
+| PhoBERT-v2 Multitask Learning | XLM-R-v1 Baseline |
+| :---: | :---: |
+| ![Đường cong huấn luyện PhoBERT-v2](experiments/results/figures/training_curves.png) | ![Đường cong huấn luyện XLM-R-v1](experiments/results/figures/xlmr_training_curves.png) |
+* **Mô tả:** Đường cong biểu diễn sự sụt giảm của hàm Loss đa nhiệm (Multitask Weighted Loss) và sự cải thiện của Macro F1 qua từng epoch huấn luyện. Điểm checkpoint tối ưu (Best Epoch) được tự động lưu lại nhờ cơ chế Early Stopping, tránh hiện tượng overfitting trên tập dữ liệu nhỏ.
+
 
 ## 📂 Cấu Trúc Thư Mục
 * `datasets/`: Quản lý dữ liệu phân lớp nghiêm ngặt.

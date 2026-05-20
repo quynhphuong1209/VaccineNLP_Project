@@ -11,8 +11,6 @@ VaccineNLP-Thesis (Public Repo)/
 │
 ├── 📄 .env.template
 ├── 📄 .gitignore
-├── 📂 .streamlit/
-│   └── 📄 secrets.toml
 ├── 📄 README.md
 ├── 📂 app/
 │   ├── 📄 README.md
@@ -69,12 +67,7 @@ VaccineNLP-Thesis (Public Repo)/
 │   ├── 📄 03A_vaccinenlp-gemma-4-training.ipynb
 │   ├── 📄 03B_vaccinenlp-gemma-4-inference.ipynb
 │   ├── 📄 04_vaccinenlp-model-benchmark-report.ipynb
-│   ├── 📄 README.md
-│   ├── 📄 vaccinenlp-gemma-4-qlora-multitask.ipynb
-│   ├── 📄 vaccinenlp-model-benchmark-report.ipynb
-│   ├── 📄 vaccinenlp-phobert-v2-multitask-classifier.ipynb
-│   └── 📄 vaccinenlp-xlm-r-v1-multitask-classifier.ipynb
-├── 📄 push_to_github.bat
+│   └── 📄 README.md
 ├── 📄 requirements.txt
 ├── 📂 scripts/
 │   ├── 📄 vaccinenlp_gemma_4_qlora_multitask.py
