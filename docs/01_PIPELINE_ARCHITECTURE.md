@@ -14,7 +14,7 @@ Dữ liệu trong VaccineNLP được phân lớp theo độ tin chuẩn:
 
 ### 🥈 Tầng Silver (Dữ liệu Làm sạch & Gán nhãn)
 *   **Silver-Unlabeled** (`datasets/02_processed/`): Dữ liệu đã qua bộ lọc 3 lớp (Unicode, Teen-code, Domain filter).
-*   **Silver-Labeled** (`datasets/04_silver_labels/`): Dữ liệu được gán nhãn tự động bởi **Teacher Model (31B)**. Mỗi record bao gồm nhãn 3 trục và chuỗi lý luận (CoT Reasoning) để phục vụ việc chưng cất tri thức.
+*   **Silver-Labeled** (`datasets/04_silver_labels/`): Dữ liệu được gán nhãn tự động bởi **LLM annotator (31B)**. Mỗi record bao gồm nhãn 3 trục và chuỗi lý luận (XAI Reasoning) để phục vụ việc gán nhãn hỗ trợ bởi LLM.
 
 ### 🥇 Tầng Gold (Dữ liệu Vàng & Benchmark)
 *   **Đường dẫn**: `datasets/03_processed/`
@@ -58,8 +58,8 @@ Các mô hình của dự án được lưu trữ công khai tại Hugging Face 
 
 | Mô hình | Loại | Link |
 | :--- | :--- | :--- |
-| **Gemma-4-XAI** | Student (Decoder) | [hung2903/gemma-4-E4B-unsloth-vaccine-xai](https://huggingface.co/hung2903/gemma-4-E4B-unsloth-vaccine-xai) |
-| **PhoBERT-Multitask** | Student (Encoder) | [hung2903/phobert-vaccine-multitask](https://huggingface.co/hung2903/phobert-vaccine-multitask) |
+| **Gemma-4-XAI** | Reasoning Engine (Decoder) | [hung2903/gemma-4-E4B-unsloth-vaccine-xai](https://huggingface.co/hung2903/gemma-4-E4B-unsloth-vaccine-xai) |
+| **PhoBERT-Multitask** | Classification Engine (Encoder) | [hung2903/phobert-vaccine-multitask](https://huggingface.co/hung2903/phobert-vaccine-multitask) |
 | **XLMR-Multitask** | Baseline | [hung2903/xlmr-vaccine-multitask](https://huggingface.co/hung2903/xlmr-vaccine-multitask) |
 
 ---

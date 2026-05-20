@@ -38,7 +38,7 @@ Mỗi hàng dữ liệu trong tập Silver/Gold được thiết kế để ph�
 {
   "id": "uuid-v4",
   "text_cleaned": "Nội dung đã tiền xử lý...",
-  "llm_reasoning": "Chuỗi lý luận nội bộ (Chain-of-Thought) trích xuất từ Teacher Model 31B.",
+  "llm_reasoning": "Chuỗi lý luận nội bộ (XAI Reasoning) trích xuất từ LLM annotator 31B.",
   "llm_parsed_labels": {
     "Misinformation": "...",
     "Stance": "...",

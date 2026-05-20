@@ -12,7 +12,7 @@ Hệ thống VaccineNLP tuân thủ **Medallion Architecture**, đảm bảo tí
 *   **Phase 2**: Preprocessing & Cleaning (Làm sạch sâu).
 *   **Phase 3**: Taxonomy Definition (Định nghĩa hệ thống nhãn đa chiều).
 *   **Phase 4**: LLM Inference & HITL (Gán nhãn tự động & Tinh chỉnh chuyên gia).
-*   **Phase 5**: Explainable AI Distillation & Training (Chưng cất tri thức và huấn luyện mô hình Student).
+*   **Phase 5**: Explainable AI & Training (Gán nhãn hỗ trợ bởi LLM và huấn luyện classification/reasoning engine).
 
 ---
 
@@ -28,7 +28,7 @@ Hệ thống VaccineNLP tuân thủ **Medallion Architecture**, đảm bảo tí
 
 ## 3.3. Phase 3 & 4: Gán nhãn LLM và Human-in-the-Loop
 
-Dự án sử dụng **Gemma-4 31B** làm Teacher Model để gán nhãn cho toàn bộ 1,856 câu.
+Dự án sử dụng **Gemma-4 31B** làm LLM annotator để gán nhãn cho toàn bộ 1,856 câu.
 
 *   **Silver Data (90% Train)**: Giữ nguyên nhãn của LLM để tận dụng quy mô lớn, chấp nhận tỷ lệ nhiễu cực nhỏ như một dạng Regularization tự nhiên.
 *   **Gold Data (10% Benchmark)**: Áp dụng quy trình **Human-in-the-Loop (HITL)**. Chuyên gia y tế tiến hành kiểm duyệt mù (Blind review), tinh chỉnh các sai lệch về văn hóa và ngữ cảnh địa phương để tạo ra bộ "Đề thi quốc gia" (Ground Truth) khách quan tuyệt đối.
@@ -37,17 +37,17 @@ Dự án sử dụng **Gemma-4 31B** làm Teacher Model để gán nhãn cho to�
 
 ## 3.4. Phase 5: Huấn luyện và Đánh giá
 
-Tiến hành **Benchmark Showdown** giữa hai kiến trúc Student chính:
+Tiến hành **Benchmark Showdown** giữa hai kiến trúc classification/reasoning engine chính:
 
 1.  **PhoBERT Multitask (Encoder)**: Sử dụng kỹ thuật *Weighted CrossEntropy* và `class_weight='balanced'` để xử lý triệt để bài toán mất cân bằng dữ liệu. Mô hình hiện có sẵn tại: [hung2903/phobert-vaccine-multitask](https://huggingface.co/hung2903/phobert-vaccine-multitask).
 2.  **XLM-R Multitask (Baseline)**: Mô hình đa ngôn ngữ phục vụ so sánh baseline. Có sẵn tại: [hung2903/xlmr-vaccine-multitask](https://huggingface.co/hung2903/xlmr-vaccine-multitask).
-3.  **Gemma-4 4B QLoRA (Decoder)**: Huấn luyện theo định dạng Chat Template, bắt chước khả năng lý luận của Teacher Model. Quá trình Inference đánh giá F1-score được thực thi trên Kaggle Cloud để tận dụng phần cứng. Tại bước này, dự án áp dụng cơ chế **Robust Parsing** kết hợp với **Prompt Engineering** cực kỳ chi tiết nhằm chuẩn hóa định dạng kết quả, đồng thời thực hiện **Raw Response Logging** để đảm bảo không thất thoát dữ liệu do sự bất ổn định về cấu trúc trả lời của mô hình ngôn ngữ lớn. Mô hình có sẵn tại: [hung2903/gemma-4-E4B-unsloth-vaccine-xai](https://huggingface.co/hung2903/gemma-4-E4B-unsloth-vaccine-xai).
+3.  **Gemma-4 4B QLoRA (Decoder)**: Huấn luyện theo định dạng Chat Template, bắt chước khả năng lý luận của LLM annotator. Quá trình Inference đánh giá F1-score được thực thi trên Kaggle Cloud để tận dụng phần cứng. Tại bước này, dự án áp dụng cơ chế **Robust Parsing** kết hợp với **Prompt Engineering** cực kỳ chi tiết nhằm chuẩn hóa định dạng kết quả, đồng thời thực hiện **Raw Response Logging** để đảm bảo không thất thoát dữ liệu do sự bất ổn định về cấu trúc trả lời của mô hình ngôn ngữ lớn. Mô hình có sẵn tại: [hung2903/gemma-4-E4B-unsloth-vaccine-xai](https://huggingface.co/hung2903/gemma-4-E4B-unsloth-vaccine-xai).
 
 ---
 
 ## 3.5. Tính Đột phá và Ứng dụng Thực tiễn (Scientific Novelty)
 
-1.  **Explainable AI (XAI) via CoT Distillation**: Giải quyết bài toán "Hộp đen" trong y tế. Mô hình 4B được huấn luyện để học "Chuỗi lý luận" (Chain-of-Thought) từ mô hình 31B, giúp bác sĩ hiểu rõ TẠI SAO AI lại đưa ra kết luận đó.
+1.  **Explainable AI (XAI) via LLM-assisted Annotation**: Giải quyết bài toán "Hộp đen" trong y tế. Mô hình 4B được huấn luyện để học "Chuỗi lý luận" (Chain-of-Thought) từ mô hình 31B (LLM annotator), giúp bác sĩ hiểu rõ TẠI SAO AI lại đưa ra kết luận đó.
 2.  **Zero-Cost Local Deployment**: Kiến trúc QLoRA 4-bit giúp đưa AI giải thích lên được các Local Server tại CDC hoặc VNVC, đảm bảo bảo mật dữ liệu công dân và chi phí vận hành tiệm cận bằng 0.
 3.  **Linguistic Camouflage Detection**: Phân tích lý luận của AI giúp phát hiện các "mật mã" ngụy trang ngôn ngữ (vd: nước cất, sinh tố, chốt,...) mà cộng đồng anti-vaccine thường dùng để lách các bộ lọc mạng xã hội.
 

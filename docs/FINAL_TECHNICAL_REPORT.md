@@ -19,18 +19,18 @@
 - **Vai trò:** Mô hình SLM (Small Language Model) tối ưu cho tốc độ và triển khai thực tế.
 - **Kiến trúc:** Multi-task Learning với 3 heads độc lập. Dựa trên pre-trained `vinai/phobert-base-v2`.
 - **Kết quả Benchmark (Macro F1):**
-  - Misinformation: 0.4547
-  - Stance: 0.6608
-  - Sentiment: 0.7325
+  - Misinformation: 0.7079
+  - Stance: 0.7107
+  - Sentiment: 0.7260
 
 ### 4. Giai đoạn 4: Động cơ Giải thích (Explainability - Gemma-4 4B)
 - **Vai trò:** Mô hình sinh văn bản cung cấp lý luận minh bạch (Chain-of-Thought).
 - **Kỹ thuật huấn luyện:** QLoRA 4-bit Quantization (Rank 16) thông qua framework Unsloth.
-- **Kiểm định Parse Failure:** Đạt tỷ lệ thành công 97.8% (182 mẫu OK), tỷ lệ lỗi định dạng 2.2% (4 mẫu Fail) do mô hình sinh câu mào đầu ngoài lề.
+- **Kiểm định Parse Failure:** Đạt tỷ lệ lỗi định dạng 33.3% trên tập v3 mới do mô hình có xu hướng sinh câu giải thích dài hơi trước khi đưa ra nhãn (sẽ tối ưu tiếp ở các phiên bản sau bằng phương pháp answer-first).
 - **Kết quả Benchmark (Macro F1):**
-  - Misinformation: 0.44
-  - Stance: 0.62
-  - Sentiment: 0.66
+  - Misinformation: 0.6925
+  - Stance: 0.5818
+  - Sentiment: 0.7196
 
 ### 5. Giai đoạn 5: Kiến trúc Hybrid System (Deployment)
 - **Bản chất:** Dual-Student Hybrid (PhoBERT dự đoán + Gemma giải thích).
@@ -43,7 +43,7 @@
 
 ### Chương 1 & 2: Mở đầu và Tổng quan tài liệu
 - [ ] Định nghĩa bài toán Tin giả Vắc-xin tại VN.
-- [ ] Review các bài báo về SLM vs LLM, Knowledge Distillation, LLM-assisted Annotation.
+- [ ] Review các bài báo về SLM vs LLM, LLM-assisted Annotation + HITL, Explainable AI.
 
 ### Chương 3: Phương pháp nghiên cứu
 - [ ] Vẽ sơ đồ kiến trúc 3 tầng: Oracle (31B) -> Knowledge Base -> Dual-Student.
@@ -56,12 +56,12 @@
 - [ ] Đưa tỷ lệ Parse Failure (2.2%) vào để đánh giá rủi ro của LLM.
 
 ### Chương 5: Thảo luận Kết quả (Discussion)
-- [ ] Giải thích nguyên nhân "Student (PhoBERT) vượt Teacher (Gemma)" về điểm F1 (Encoder vs Decoder, Domain-specific vs Multilingual).
+- [ ] Giải thích nguyên nhân "Classification Engine (PhoBERT) vượt Reasoning Engine (Gemma)" về điểm F1 (Encoder vs Decoder, Domain-specific vs Multilingual).
 - [ ] Biện luận giá trị của Kiến trúc Hybrid: PhoBERT cho Accuracy, Gemma cho Transparency.
 - [ ] Hạn chế của đề tài (Closed-world assumption, yêu cầu phần cứng).
 
 ### Phụ lục & Chuẩn bị Bảo vệ
 - [x] Upload Code lên GitHub (Đã xong).
-- [ ] Upload Models lên HuggingFace.
+- [x] Upload Models lên HuggingFace.
 - [ ] Quay Video Demo Offline của Streamlit App.
 - [ ] Trả lời 5 câu hỏi Q&A phòng thủ (chuẩn bị bởi Cố vấn học thuật).
