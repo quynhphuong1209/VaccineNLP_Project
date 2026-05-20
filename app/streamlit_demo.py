@@ -87,6 +87,83 @@ LABEL_ICONS = {
 }
 
 # ─────────────────────────────────────────────────────────────
+# AUTO-SYNC: Load benchmark từ JSON LIVE (experiments/results/)
+# ─────────────────────────────────────────────────────────────
+@st.cache_data(ttl=300)
+def load_live_benchmarks():
+    """
+    Load số liệu LIVE từ JSON files trong experiments/results/.
+    Fallback về số đã xác minh nếu file chưa có (notebook chưa chạy).
+    Nguồn: phobert_v2_results.json, xlmr_v1_results.json, gemma_v3_results.json
+    """
+    results_dir = PROJECT_ROOT / "experiments" / "results"
+
+    # Fallback values — đã xác minh từ Kaggle LIVE run 20/05/2026
+    fallback = {
+        'phobert': {'name': 'PhoBERT-v2 (Classification Engine)',
+                    'misinfo': 0.7079, 'stance': 0.7107, 'sentiment': 0.7260,
+                    'per_class_misinfo': [0.5085, 0.9073],
+                    'per_class_stance': [0.6476, 0.6869, 0.7976],
+                    'per_class_sentiment': [0.7808, 0.8026, 0.5946],
+                    'support_misinfo': [28, 158],
+                    'support_stance': [54, 48, 84],
+                    'support_sentiment': [71, 75, 40],
+                    'source': 'fallback'},
+        'xlmr':    {'name': 'XLM-R-v1 (Baseline)',
+                    'misinfo': 0.5823, 'stance': 0.4217, 'sentiment': 0.1842,
+                    'per_class_misinfo': [0.4478, 0.7168],
+                    'per_class_stance': [0.4706, 0.3636, 0.4308],
+                    'per_class_sentiment': [0.2759, 0.2162, 0.0606],
+                    'support_misinfo': [28, 158],
+                    'support_stance': [54, 48, 84],
+                    'support_sentiment': [71, 75, 40],
+                    'source': 'fallback'},
+        'gemma':   {'name': 'Gemma-4-4B (XAI Reasoning Engine)',
+                    'misinfo': 0.6925, 'stance': 0.5818, 'sentiment': 0.7196,
+                    'per_class_misinfo': [0.5135, 0.8714],
+                    'per_class_stance': [0.4068, 0.6458, 0.6929],
+                    'per_class_sentiment': [0.7609, 0.7934, 0.6047],
+                    'support_misinfo': [28, 149],
+                    'support_stance': [35, 42, 64],
+                    'support_sentiment': [50, 56, 22],
+                    'source': 'fallback'},
+    }
+
+    file_map = {
+        'phobert': 'phobert_v2_results.json',
+        'xlmr':    'xlmr_v1_results.json',
+        'gemma':   'gemma_v3_results.json',
+    }
+
+    benchmarks = {}
+    for key, fname in file_map.items():
+        fpath = results_dir / fname
+        if fpath.exists():
+            try:
+                with open(fpath, 'r', encoding='utf-8') as f:
+                    raw = json.load(f)
+                benchmarks[key] = {
+                    'name':       fallback[key]['name'],
+                    'misinfo':    raw.get('misinfo', {}).get('macro_f1', fallback[key]['misinfo']),
+                    'stance':     raw.get('stance', {}).get('macro_f1', fallback[key]['stance']),
+                    'sentiment':  raw.get('sentiment', {}).get('macro_f1', fallback[key]['sentiment']),
+                    'per_class_misinfo':   raw.get('misinfo', {}).get('per_class', fallback[key]['per_class_misinfo']),
+                    'per_class_stance':    raw.get('stance', {}).get('per_class', fallback[key]['per_class_stance']),
+                    'per_class_sentiment': raw.get('sentiment', {}).get('per_class', fallback[key]['per_class_sentiment']),
+                    'support_misinfo':     raw.get('misinfo', {}).get('support', fallback[key]['support_misinfo']),
+                    'support_stance':      raw.get('stance', {}).get('support', fallback[key]['support_stance']),
+                    'support_sentiment':   raw.get('sentiment', {}).get('support', fallback[key]['support_sentiment']),
+                    'timestamp': raw.get('timestamp', 'N/A'),
+                    'source':    'LIVE',
+                }
+            except Exception as e:
+                print(f"⚠️ Lỗi đọc {fpath}: {e}, dùng fallback")
+                benchmarks[key] = fallback[key]
+        else:
+            benchmarks[key] = fallback[key]
+    return benchmarks
+
+# ─────────────────────────────────────────────────────────────
 # SAMPLE TEXTS
 # ─────────────────────────────────────────────────────────────
 SAMPLE_TEXTS = {
@@ -668,13 +745,13 @@ def render_radar_chart(result_data, is_dark=True):
     """Vẽ biểu đồ Radar phân tích đa chiều bằng Plotly."""
     import plotly.graph_objects as go
     
-    # Chuẩn bị dữ liệu (Lấy xác suất cao nhất của mỗi task)
+    # Chuẩn bị dữ liệu — sử dụng xác suất softmax THẬT từ mô hình
     categories = ['Tin giả (Fake)', 'Phản đối (Oppose)', 'Tiêu cực (Neg)']
     
-    # Giả lập mức độ dựa trên dự đoán (Trong thực tế sẽ lấy từ Softmax)
-    misinfo_score = 0.9 if result_data['misinfo']['pred'] == 1 else 0.1
-    stance_score = 0.9 if result_data['stance']['pred'] == 1 else 0.1
-    sentiment_score = 0.9 if result_data['sentiment']['pred'] == 0 else (0.1 if result_data['sentiment']['pred'] == 2 else 0.4)
+    # Lấy xác suất thực từ softmax confidence (không giả lập)
+    misinfo_score = result_data['misinfo']['conf'][0]   # P(Tin giả)
+    stance_score = result_data['stance']['conf'][1]      # P(Phản đối)
+    sentiment_score = result_data['sentiment']['conf'][0] # P(Tiêu cực)
     
     values = [misinfo_score, stance_score, sentiment_score]
     
@@ -885,11 +962,12 @@ def render_benchmark_tab():
         </div>
     """, unsafe_allow_html=True)
 
-    # Dữ liệu gốc
+    # Dữ liệu LIVE từ JSON (auto-sync)
+    live = load_live_benchmarks()
     benchmark_data = [
-        {"Model": "PhoBERT-v2", "Misinfo": 0.6886, "Stance": 0.6383, "Sentiment": 0.7289},
-        {"Model": "XLM-R-v1",   "Misinfo": 0.6632, "Stance": 0.5618, "Sentiment": 0.6394},
-        {"Model": "Gemma-4-4B", "Misinfo": 0.3588, "Stance": 0.2862, "Sentiment": 0.2883},
+        {"Model": live['phobert']['name'], "Misinfo": live['phobert']['misinfo'], "Stance": live['phobert']['stance'], "Sentiment": live['phobert']['sentiment']},
+        {"Model": live['xlmr']['name'],    "Misinfo": live['xlmr']['misinfo'],    "Stance": live['xlmr']['stance'],    "Sentiment": live['xlmr']['sentiment']},
+        {"Model": live['gemma']['name'],   "Misinfo": live['gemma']['misinfo'],   "Stance": live['gemma']['stance'],   "Sentiment": live['gemma']['sentiment']},
     ]
 
     # Hiệu ứng Live Evaluation (Xây dựng bảng từng dòng bằng HTML)
@@ -1034,8 +1112,9 @@ def render_evaluation_tab():
     categories = ['Misinfo F1', 'Stance F1', 'Sentiment F1', 'Lý luận (XAI)', 'Tốc độ (Speed)']
     fig_radar = go.Figure()
 
+    live = load_live_benchmarks()
     fig_radar.add_trace(go.Scatterpolar(
-        r=[0.6886, 0.6383, 0.7289, 0.20, 0.95],
+        r=[live['phobert']['misinfo'], live['phobert']['stance'], live['phobert']['sentiment'], 0.20, 0.95],
         theta=categories,
         fill='toself',
         name='PhoBERT-v2 (Discriminator)',
@@ -1043,7 +1122,7 @@ def render_evaluation_tab():
         fillcolor='rgba(61, 184, 130, 0.25)'
     ))
     fig_radar.add_trace(go.Scatterpolar(
-        r=[0.6632, 0.5618, 0.6394, 0.15, 0.85],
+        r=[live['xlmr']['misinfo'], live['xlmr']['stance'], live['xlmr']['sentiment'], 0.15, 0.85],
         theta=categories,
         fill='toself',
         name='XLM-R-v1 (Baseline)',
@@ -1051,7 +1130,7 @@ def render_evaluation_tab():
         fillcolor='rgba(74, 158, 237, 0.25)'
     ))
     fig_radar.add_trace(go.Scatterpolar(
-        r=[0.3588, 0.2862, 0.2883, 0.95, 0.20],
+        r=[live['gemma']['misinfo'], live['gemma']['stance'], live['gemma']['sentiment'], 0.95, 0.20],
         theta=categories,
         fill='toself',
         name='Gemma-4 4B (Reasoning)',
@@ -2220,6 +2299,46 @@ def main():
             
             st.info("💡 **Lưu ý:** Nếu gặp lỗi 403 Forbidden, vui lòng kiểm tra lại quyền 'Inference' của Token trên Hugging Face.")
 
+        # ─── BATCH ANALYSIS MODE ─────────────────────────────────────
+        with st.expander("📋 PHÂN TÍCH HÀNG LOẠT (Batch Mode)", expanded=False):
+            st.markdown("Nhập nhiều văn bản, mỗi dòng một mẫu. Kết quả có thể tải xuống CSV.")
+            batch_text = st.text_area(
+                "Danh sách văn bản (1 dòng = 1 mẫu):",
+                height=150,
+                placeholder="Dòng 1: Vắc-xin COVID gây vô sinh...\nDòng 2: Tiêm vaccine phòng bệnh rất tốt...",
+                key="batch_input_area"
+            )
+            batch_btn = st.button("🚀 Phân tích Batch", key="batch_analyze_btn")
+            
+            if batch_btn and batch_text.strip():
+                lines = [l.strip() for l in batch_text.strip().split("\n") if l.strip()]
+                if len(lines) > 50:
+                    st.warning("⚠️ Tối đa 50 mẫu mỗi lần. Đã cắt bớt.")
+                    lines = lines[:50]
+                
+                import pandas as pd
+                results_list = []
+                progress = st.progress(0)
+                for i, line in enumerate(lines):
+                    r = predict_cached(line, model_selection)
+                    if r:
+                        results_list.append({
+                            "STT": i + 1,
+                            "Văn bản": line[:100] + ("..." if len(line) > 100 else ""),
+                            "Tin giả": LABEL_MAPS["misinfo"].get(r["misinfo"]["pred"], "?"),
+                            "Conf Misinfo": f"{r['misinfo']['conf'][r['misinfo']['pred']]:.2%}",
+                            "Quan điểm": LABEL_MAPS["stance"].get(r["stance"]["pred"], "?"),
+                            "Cảm xúc": LABEL_MAPS["sentiment"].get(r["sentiment"]["pred"], "?"),
+                        })
+                    progress.progress((i + 1) / len(lines))
+                progress.empty()
+                
+                if results_list:
+                    df = pd.DataFrame(results_list)
+                    st.dataframe(df, use_container_width=True, hide_index=True)
+                    csv = df.to_csv(index=False).encode("utf-8-sig")
+                    st.download_button("📥 Tải CSV", csv, "batch_results.csv", "text/csv", key="batch_download")
+
         if analyze_btn and user_text.strip():
             with st.spinner(f"🧠 {model_selection} đang xử lý..."):
                 # Thực hiện dự đoán và lấy cả nhãn lẫn lời giải thích
@@ -2253,7 +2372,7 @@ def main():
                     # Row 2: Visualizations (Radar + Word Highlighting)
                     v_col1, v_col2 = st.columns([3, 2])
                     with v_col1:
-                        is_fake = result["misinfo"]["pred"] == 1
+                        is_fake = result["misinfo"]["pred"] == 0  # 0=Tin giả theo LABEL_MAPS v3
                         render_word_importance(user_text.strip(), is_fake=is_fake)
                         st.markdown("<br>", unsafe_allow_html=True)
                         with st.expander("☁️ Đám mây từ khóa (WordCloud)"):
@@ -2306,36 +2425,23 @@ def main():
                 </div>
             """, unsafe_allow_html=True)
             
-            # Dữ liệu kết quả thực nghiệm chi tiết từ vaccinenlp-model-benchmark-report.ipynb
-            benchmark_results = {
-                'phobert': {
-                    'name': 'PhoBERT-v2 (Discriminator Tối ưu nhất)',
-                    'avg_f1': 0.6853,
+            # Dữ liệu LIVE từ JSON (auto-sync từ experiments/results/)
+            live = load_live_benchmarks()
+            benchmark_results = {}
+            for key in ['phobert', 'xlmr', 'gemma']:
+                d = live[key]
+                avg_f1 = round((d['misinfo'] + d['stance'] + d['sentiment']) / 3, 4)
+                benchmark_results[key] = {
+                    'name': d['name'],
+                    'avg_f1': avg_f1,
                     'tasks': {
-                        'misinfo':   {'macro_f1': 0.6886, 'per_class': [0.4933, 0.8839], 'support': [28, 158]},
-                        'stance':    {'macro_f1': 0.6383, 'per_class': [0.5817, 0.6316, 0.6923], 'support': [54, 48, 84]},
-                        'sentiment': {'macro_f1': 0.7289, 'per_class': [0.7606, 0.7671, 0.6600], 'support': [71, 75, 40]}
-                    }
-                },
-                'xlmr': {
-                    'name': 'XLM-R-v1 (Baseline Đa ngôn ngữ)',
-                    'avg_f1': 0.6215,
-                    'tasks': {
-                        'misinfo':   {'macro_f1': 0.6632, 'per_class': [0.4478, 0.8785], 'support': [28, 158]},
-                        'stance':    {'macro_f1': 0.5618, 'per_class': [0.4706, 0.5660, 0.6489], 'support': [54, 48, 84]},
-                        'sentiment': {'macro_f1': 0.6394, 'per_class': [0.6993, 0.6618, 0.5571], 'support': [71, 75, 40]}
-                    }
-                },
-                'gemma': {
-                    'name': 'Gemma-4 4B (Reasoning Engine XAI)',
-                    'avg_f1': 0.3111,
-                    'tasks': {
-                        'misinfo':   {'macro_f1': 0.3588, 'per_class': [0.3429, 0.3747], 'support': [28, 158]},
-                        'stance':    {'macro_f1': 0.2862, 'per_class': [0.5660, 0.3721, 0.5106], 'support': [54, 48, 84]},
-                        'sentiment': {'macro_f1': 0.2883, 'per_class': [0.5623, 0.1579, 0.0247], 'support': [71, 75, 40]}
+                        'misinfo':   {'macro_f1': d['misinfo'],   'per_class': d['per_class_misinfo'],   'support': d['support_misinfo']},
+                        'stance':    {'macro_f1': d['stance'],    'per_class': d['per_class_stance'],    'support': d['support_stance']},
+                        'sentiment': {'macro_f1': d['sentiment'], 'per_class': d['per_class_sentiment'], 'support': d['support_sentiment']},
                     }
                 }
-            }
+            # Xác định badge LIVE/Fallback
+            data_source_badge = "🟢 LIVE" if live['phobert'].get('source') == 'LIVE' else "🟡 Fallback"
             
             # Bộ chọn chế độ xem dữ liệu
             selected_model_view = st.selectbox(
@@ -2347,15 +2453,20 @@ def main():
             # KPI Metric Cards
             st.markdown("<div style='margin-bottom: 15px;'></div>", unsafe_allow_html=True)
             if selected_model_view == "Tất cả mô hình (So sánh chéo)":
+                # Tìm best model cho mỗi task
+                best_m = max(benchmark_results, key=lambda k: benchmark_results[k]['tasks']['misinfo']['macro_f1'])
+                best_s = max(benchmark_results, key=lambda k: benchmark_results[k]['tasks']['stance']['macro_f1'])
+                best_se = max(benchmark_results, key=lambda k: benchmark_results[k]['tasks']['sentiment']['macro_f1'])
+                best_avg = max(benchmark_results, key=lambda k: benchmark_results[k]['avg_f1'])
                 col1, col2, col3, col4 = st.columns(4)
                 with col1:
-                    st.metric("🚨 Best Misinfo F1", "0.6886", "PhoBERT-v2")
+                    st.metric("🚨 Best Misinfo F1", f"{benchmark_results[best_m]['tasks']['misinfo']['macro_f1']:.4f}", benchmark_results[best_m]['name'].split('(')[0].strip())
                 with col2:
-                    st.metric("🚩 Best Stance F1", "0.6383", "PhoBERT-v2")
+                    st.metric("🚩 Best Stance F1", f"{benchmark_results[best_s]['tasks']['stance']['macro_f1']:.4f}", benchmark_results[best_s]['name'].split('(')[0].strip())
                 with col3:
-                    st.metric("🎭 Best Sentiment F1", "0.7289", "PhoBERT-v2")
+                    st.metric("🎭 Best Sentiment F1", f"{benchmark_results[best_se]['tasks']['sentiment']['macro_f1']:.4f}", benchmark_results[best_se]['name'].split('(')[0].strip())
                 with col4:
-                    st.metric("🏆 Best Avg F1", "0.6853", "PhoBERT-v2")
+                    st.metric("🏆 Best Avg F1", f"{benchmark_results[best_avg]['avg_f1']:.4f}", f"{benchmark_results[best_avg]['name'].split('(')[0].strip()} {data_source_badge}")
             else:
                 model_key = 'phobert' if 'PhoBERT' in selected_model_view else ('xlmr' if 'XLM-R' in selected_model_view else 'gemma')
                 m_data = benchmark_results[model_key]
@@ -2374,6 +2485,31 @@ def main():
             # Bảng Leaderboard
             st.markdown("### 🏆 1. Bảng so sánh hiệu năng tổng thể (Macro F1 Leaderboard)")
             
+            # Sắp xếp theo avg_f1 giảm dần cho leaderboard
+            sorted_models = sorted(benchmark_results.items(), key=lambda x: x[1]['avg_f1'], reverse=True)
+            model_colors = {'phobert': '#64ffda', 'xlmr': '#007bff', 'gemma': '#FFA500'}
+            model_medals = ['🥇', '🥈', '🎖️']
+            model_descs = {
+                'phobert': 'Phân loại tối ưu nhất, xử lý sắc thái tiếng Việt vượt trội.',
+                'xlmr': 'Baseline đa ngôn ngữ.',
+                'gemma': 'Tập trung giải thích (XAI), không tối ưu phân loại nhãn.'
+            }
+            
+            leaderboard_rows = ""
+            for rank, (mkey, mdata) in enumerate(sorted_models):
+                bg_extra = " background: rgba(100, 255, 218, 0.05);" if rank == 0 else ""
+                fw = " font-weight:bold;" if rank == 0 else ""
+                leaderboard_rows += f"""
+                    <tr style="border-bottom:1px solid {table_border};{bg_extra}">
+                        <td style="padding:12px; font-weight:bold;">{rank+1}</td>
+                        <td style="padding:12px; text-align:left; font-weight:bold; color:{model_colors[mkey]};">{mdata['name']}</td>
+                        <td style="padding:12px;{fw}">{mdata['tasks']['misinfo']['macro_f1']:.4f}</td>
+                        <td style="padding:12px;{fw}">{mdata['tasks']['stance']['macro_f1']:.4f}</td>
+                        <td style="padding:12px;{fw}">{mdata['tasks']['sentiment']['macro_f1']:.4f}</td>
+                        <td style="padding:12px; font-weight:bold; color:#FFD700;">{mdata['avg_f1']:.4f}</td>
+                        <td style="padding:12px; text-align:left; font-style:italic;">{model_medals[rank]} {model_descs[mkey]}</td>
+                    </tr>"""
+            
             leaderboard_html = f"""
             <table style="width:100%; border-collapse:collapse; background:{table_bg}; border:1px solid {table_border}; border-radius:10px; overflow:hidden; font-family:'Times New Roman', serif; text-align:center;">
                 <thead style="background:{header_bg}; color:{text_col}; font-weight:bold;">
@@ -2387,68 +2523,26 @@ def main():
                         <th style="padding:12px; text-align:left;">Đặc tính & Định vị</th>
                     </tr>
                 </thead>
-                <tbody style="color:{text_col};">
-                    <tr style="border-bottom:1px solid {table_border}; background: rgba(100, 255, 218, 0.05);">
-                        <td style="padding:12px; font-weight:bold;">1</td>
-                        <td style="padding:12px; text-align:left; font-weight:bold; color:#64ffda;">PhoBERT-v2 (Fine-tuned)</td>
-                        <td style="padding:12px; font-weight:bold;">0.6886</td>
-                        <td style="padding:12px; font-weight:bold;">0.6383</td>
-                        <td style="padding:12px; font-weight:bold; color:#38ef7d;">0.7289</td>
-                        <td style="padding:12px; font-weight:bold; color:#FFD700;">0.6853</td>
-                        <td style="padding:12px; text-align:left; font-style:italic;">🥇 Phân loại tối ưu nhất, xử lý sắc thái tiếng Việt vượt trội.</td>
-                    </tr>
-                    <tr style="border-bottom:1px solid {table_border};">
-                        <td style="padding:12px; font-weight:bold;">2</td>
-                        <td style="padding:12px; text-align:left; font-weight:bold; color:#007bff;">XLM-R-v1 (Fine-tuned)</td>
-                        <td style="padding:12px;">0.6632</td>
-                        <td style="padding:12px;">0.5618</td>
-                        <td style="padding:12px;">0.6394</td>
-                        <td style="padding:12px; font-weight:bold;">0.6215</td>
-                        <td style="padding:12px; text-align:left; font-style:italic;">🥈 Baseline ổn định, thích hợp đa ngôn ngữ chéo.</td>
-                    </tr>
-                    <tr style="border-bottom:1px solid {table_border};">
-                        <td style="padding:12px; font-weight:bold;">3</td>
-                        <td style="padding:12px; text-align:left; font-weight:bold; color:#FFA500;">Gemma-4 4B (QLoRA)</td>
-                        <td style="padding:12px;">0.3588</td>
-                        <td style="padding:12px;">0.2862</td>
-                        <td style="padding:12px;">0.2883</td>
-                        <td style="padding:12px;">0.3111</td>
-                        <td style="padding:12px; text-align:left; font-style:italic;">🎖️ Tập trung giải thích (XAI), không tối ưu phân loại nhãn.</td>
-                    </tr>
-                </tbody>
+                <tbody style="color:{text_col};">{leaderboard_rows}</tbody>
             </table>
             """
             st.markdown(leaderboard_html, unsafe_allow_html=True)
             st.markdown("<div style='margin-bottom: 25px;'></div>", unsafe_allow_html=True)
             
-            # Biểu đồ Macro F1 Comparison
+            # Biểu đồ Macro F1 Comparison (auto-sync)
             st.markdown("#### 📊 So sánh trực quan Macro F1 Score giữa các kiến trúc")
             categories_macro = ['Phân loại Tin giả (Misinfo)', 'Lập trường (Stance)', 'Cảm xúc (Sentiment)', 'Macro F1 Trung bình']
             fig_macro = go.Figure()
-            fig_macro.add_trace(go.Bar(
-                x=categories_macro,
-                y=[0.6886, 0.6383, 0.7289, 0.6853],
-                name='PhoBERT-v2',
-                marker_color='#64ffda',
-                text=['0.6886', '0.6383', '0.7289', '0.6853'],
-                textposition='auto',
-            ))
-            fig_macro.add_trace(go.Bar(
-                x=categories_macro,
-                y=[0.6632, 0.5618, 0.6394, 0.6215],
-                name='XLM-R-v1',
-                marker_color='#007bff',
-                text=['0.6632', '0.5618', '0.6394', '0.6215'],
-                textposition='auto',
-            ))
-            fig_macro.add_trace(go.Bar(
-                x=categories_macro,
-                y=[0.3588, 0.2862, 0.2883, 0.3111],
-                name='Gemma-4 4B',
-                marker_color='#FFA500',
-                text=['0.3588', '0.2862', '0.2883', '0.3111'],
-                textposition='auto',
-            ))
+            for mkey, mdata in sorted_models:
+                vals = [mdata['tasks']['misinfo']['macro_f1'], mdata['tasks']['stance']['macro_f1'],
+                        mdata['tasks']['sentiment']['macro_f1'], mdata['avg_f1']]
+                fig_macro.add_trace(go.Bar(
+                    x=categories_macro, y=vals,
+                    name=mdata['name'].split('(')[0].strip(),
+                    marker_color=model_colors[mkey],
+                    text=[f'{v:.4f}' for v in vals],
+                    textposition='auto',
+                ))
             fig_macro.update_layout(
                 barmode='group',
                 paper_bgcolor='rgba(0,0,0,0)',
@@ -2468,192 +2562,74 @@ def main():
             
             task_tab1, task_tab2, task_tab3 = st.tabs(["🚨 PHÂN LOẠI TIN GIẢ (MISINFO)", "🚩 QUAN ĐIỂM (STANCE)", "🎭 CẢM XÚC (SENTIMENT)"])
             
-            with task_tab1:
-                fig_misinfo = go.Figure()
-                classes_misinfo = ['Tin giả (n=28)', 'Chính xác (n=158)']
-                fig_misinfo.add_trace(go.Bar(
-                    x=classes_misinfo, y=[0.4933, 0.8839], name='PhoBERT-v2', marker_color='#64ffda',
-                    text=['0.4933', '0.8839'], textposition='auto'
-                ))
-                fig_misinfo.add_trace(go.Bar(
-                    x=classes_misinfo, y=[0.4478, 0.8785], name='XLM-R-v1', marker_color='#007bff',
-                    text=['0.4478', '0.8785'], textposition='auto'
-                ))
-                fig_misinfo.add_trace(go.Bar(
-                    x=classes_misinfo, y=[0.3429, 0.3747], name='Gemma-4 4B', marker_color='#FFA500',
-                    text=['0.3429', '0.3747'], textposition='auto'
-                ))
-                fig_misinfo.update_layout(
+            # Helper: render per-class chart + table dynamically
+            def render_per_class_tab(task_key, class_names, class_colors, header_label):
+                br = benchmark_results
+                support = br['phobert']['tasks'][task_key]['support']
+                labels = [f'{name} (n={sup})' for name, sup in zip(class_names, support)]
+                
+                fig = go.Figure()
+                for mkey, mdata in sorted_models:
+                    pc = mdata['tasks'][task_key]['per_class']
+                    fig.add_trace(go.Bar(
+                        x=labels, y=pc, name=mdata['name'].split('(')[0].strip(),
+                        marker_color=model_colors[mkey],
+                        text=[f'{v:.4f}' for v in pc], textposition='auto'
+                    ))
+                fig.update_layout(
                     barmode='group', paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
                     font=dict(family='Times New Roman', color=text_col, size=13),
                     yaxis=dict(title='F1 Score', range=[0, 1.05], gridcolor='rgba(128,128,128,0.1)'),
                     height=350, margin=dict(l=20, r=20, t=30, b=20),
                     legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
                 )
-                st.plotly_chart(fig_misinfo, use_container_width=True)
+                st.plotly_chart(fig, use_container_width=True)
                 
-                st.markdown(f"""
+                # Table
+                rows_html = ""
+                for i, (name, color) in enumerate(zip(class_names, class_colors)):
+                    sup = support[i]
+                    p_f1 = br['phobert']['tasks'][task_key]['per_class'][i]
+                    x_f1 = br['xlmr']['tasks'][task_key]['per_class'][i]
+                    g_f1 = br['gemma']['tasks'][task_key]['per_class'][i]
+                    rows_html += f'''<tr style="border-bottom:1px solid {table_border};">
+                        <td style="padding:10px; text-align:left; font-weight:bold; color:{color};">{name}</td>
+                        <td style="padding:10px; font-family:monospace;">{sup}</td>
+                        <td style="padding:10px; font-weight:bold; color:#64ffda;">{p_f1:.4f}</td>
+                        <td style="padding:10px;">{x_f1:.4f}</td>
+                        <td style="padding:10px;">{g_f1:.4f}</td>
+                    </tr>'''
+                st.markdown(f'''
                 <table style="width:100%; border-collapse:collapse; background:{table_bg}; border:1px solid {table_border}; font-family:'Times New Roman', serif; text-align:center;">
                     <thead style="background:{header_bg}; color:{text_col}; font-weight:bold;">
                         <tr style="border-bottom:1px solid #64ffda;">
-                            <th style="padding:10px; text-align:left;">Nhãn phân loại</th>
-                            <th style="padding:10px;">Support (Số mẫu)</th>
+                            <th style="padding:10px; text-align:left;">{header_label}</th>
+                            <th style="padding:10px;">Support</th>
                             <th style="padding:10px;">PhoBERT-v2 F1</th>
                             <th style="padding:10px;">XLM-R-v1 F1</th>
                             <th style="padding:10px;">Gemma-4 4B F1</th>
                         </tr>
                     </thead>
-                    <tbody style="color:{text_col};">
-                        <tr style="border-bottom:1px solid {table_border};">
-                            <td style="padding:10px; text-align:left; font-weight:bold; color:#ff4b4b;">Tin giả</td>
-                            <td style="padding:10px; font-family:monospace;">28</td>
-                            <td style="padding:10px; font-weight:bold; color:#64ffda;">0.4933</td>
-                            <td style="padding:10px;">0.4478</td>
-                            <td style="padding:10px;">0.3429</td>
-                        </tr>
-                        <tr style="border-bottom:1px solid {table_border};">
-                            <td style="padding:10px; text-align:left; font-weight:bold; color:#38ef7d;">Chính xác</td>
-                            <td style="padding:10px; font-family:monospace;">158</td>
-                            <td style="padding:10px; font-weight:bold; color:#64ffda;">0.8839</td>
-                            <td style="padding:10px;">0.8785</td>
-                            <td style="padding:10px;">0.3747</td>
-                        </tr>
-                    </tbody>
-                </table>
-                """, unsafe_allow_html=True)
-                
-                st.markdown("""
-                💡 **Nhận xét thực nghiệm**: Nhãn **Chính xác** có số lượng mẫu áp đảo (158 mẫu) đạt hiệu năng cực kỳ tốt (~0.88 F1 trên cả 2 mô hình Discriminator), cho thấy hệ thống hoạt động vô cùng tin cậy trong việc xác thực nguồn tin chuẩn. Nhãn **Tin giả** (28 mẫu) có F1 đạt cao nhất là 0.4933 (PhoBERT-v2), đây là bài toán khó do số lượng mẫu huấn luyện hạn chế và sự tinh vi của các thông tin chống vắc-xin cực đoan.
+                    <tbody style="color:{text_col};">{rows_html}</tbody>
+                </table>''', unsafe_allow_html=True)
+            
+            with task_tab1:
+                render_per_class_tab('misinfo', ['Tin giả', 'Chính xác'], ['#ff4b4b', '#38ef7d'], 'Nhãn phân loại')
+                best_mis = max(sorted_models, key=lambda x: x[1]['tasks']['misinfo']['per_class'][0])[1]['tasks']['misinfo']['per_class'][0]
+                st.markdown(f"""
+                💡 **Nhận xét thực nghiệm**: Nhãn **Tin giả** (28 mẫu) có F1 đạt cao nhất là **{best_mis:.4f}** (PhoBERT-v2), đây là bài toán khó do số lượng mẫu huấn luyện hạn chế và sự tinh vi của các thông tin chống vắc-xin cực đoan.
                 """)
                 
             with task_tab2:
-                fig_stance = go.Figure()
-                classes_stance = ['Ủng hộ (n=54)', 'Phản đối (n=48)', 'Trung lập (n=84)']
-                fig_stance.add_trace(go.Bar(
-                    x=classes_stance, y=[0.5817, 0.6316, 0.6923], name='PhoBERT-v2', marker_color='#64ffda',
-                    text=['0.5817', '0.6316', '0.6923'], textposition='auto'
-                ))
-                fig_stance.add_trace(go.Bar(
-                    x=classes_stance, y=[0.4706, 0.5660, 0.6489], name='XLM-R-v1', marker_color='#007bff',
-                    text=['0.4706', '0.5660', '0.6489'], textposition='auto'
-                ))
-                fig_stance.add_trace(go.Bar(
-                    x=classes_stance, y=[0.5660, 0.3721, 0.5106], name='Gemma-4 4B', marker_color='#FFA500',
-                    text=['0.5660', '0.3721', '0.5106'], textposition='auto'
-                ))
-                fig_stance.update_layout(
-                    barmode='group', paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-                    font=dict(family='Times New Roman', color=text_col, size=13),
-                    yaxis=dict(title='F1 Score', range=[0, 1.05], gridcolor='rgba(128,128,128,0.1)'),
-                    height=350, margin=dict(l=20, r=20, t=30, b=20),
-                    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
-                )
-                st.plotly_chart(fig_stance, use_container_width=True)
-                
-                st.markdown(f"""
-                <table style="width:100%; border-collapse:collapse; background:{table_bg}; border:1px solid {table_border}; font-family:'Times New Roman', serif; text-align:center;">
-                    <thead style="background:{header_bg}; color:{text_col}; font-weight:bold;">
-                        <tr style="border-bottom:1px solid #64ffda;">
-                            <th style="padding:10px; text-align:left;">Nhãn lập trường</th>
-                            <th style="padding:10px;">Support (Số mẫu)</th>
-                            <th style="padding:10px;">PhoBERT-v2 F1</th>
-                            <th style="padding:10px;">XLM-R-v1 F1</th>
-                            <th style="padding:10px;">Gemma-4 4B F1</th>
-                        </tr>
-                    </thead>
-                    <tbody style="color:{text_col};">
-                        <tr style="border-bottom:1px solid {table_border};">
-                            <td style="padding:10px; text-align:left; font-weight:bold; color:#38ef7d;">Ủng hộ</td>
-                            <td style="padding:10px; font-family:monospace;">54</td>
-                            <td style="padding:10px; font-weight:bold; color:#64ffda;">0.5817</td>
-                            <td style="padding:10px;">0.4706</td>
-                            <td style="padding:10px;">0.5660</td>
-                        </tr>
-                        <tr style="border-bottom:1px solid {table_border};">
-                            <td style="padding:10px; text-align:left; font-weight:bold; color:#ff4b4b;">Phản đối</td>
-                            <td style="padding:10px; font-family:monospace;">48</td>
-                            <td style="padding:10px; font-weight:bold; color:#64ffda;">0.6316</td>
-                            <td style="padding:10px;">0.5660</td>
-                            <td style="padding:10px;">0.3721</td>
-                        </tr>
-                        <tr style="border-bottom:1px solid {table_border};">
-                            <td style="padding:10px; text-align:left; font-weight:bold; color:#007bff;">Trung lập</td>
-                            <td style="padding:10px; font-family:monospace;">84</td>
-                            <td style="padding:10px; font-weight:bold; color:#64ffda;">0.6923</td>
-                            <td style="padding:10px;">0.6489</td>
-                            <td style="padding:10px;">0.5106</td>
-                        </tr>
-                    </tbody>
-                </table>
-                """, unsafe_allow_html=True)
-                
+                render_per_class_tab('stance', ['Ủng hộ', 'Phản đối', 'Trung lập'], ['#38ef7d', '#ff4b4b', '#007bff'], 'Nhãn lập trường')
                 st.markdown("""
-                💡 **Nhận xét thực nghiệm**: Nhãn **Trung lập** (84 mẫu) có kết quả tốt nhất do cách diễn đạt khách quan, không chứa nhiều yếu tố nhiễu cảm xúc. **Phản đối** (48 mẫu) đạt 0.6316 F1, chứng tỏ khả năng nhận diện thái độ phản biện cực đoan rất tốt từ PhoBERT-v2. Đáng chú ý, Gemma-4 4B đạt F1 0.5660 ở nhãn **Ủng hộ**, gần bằng với PhoBERT-v2.
+                💡 **Nhận xét thực nghiệm**: Nhãn **Trung lập** có kết quả tốt nhất do cách diễn đạt khách quan. **Phản đối** chứng tỏ khả năng nhận diện thái độ phản biện cực đoan rất tốt từ PhoBERT-v2.
                 """)
                 
             with task_tab3:
-                fig_sentiment = go.Figure()
-                classes_sentiment = ['Tiêu cực (n=71)', 'Trung tính (n=75)', 'Tích cực (n=40)']
-                fig_sentiment.add_trace(go.Bar(
-                    x=classes_sentiment, y=[0.7606, 0.7671, 0.6600], name='PhoBERT-v2', marker_color='#64ffda',
-                    text=['0.7606', '0.7671', '0.6600'], textposition='auto'
-                ))
-                fig_sentiment.add_trace(go.Bar(
-                    x=classes_sentiment, y=[0.6993, 0.6618, 0.5571], name='XLM-R-v1', marker_color='#007bff',
-                    text=['0.6993', '0.6618', '0.5571'], textposition='auto'
-                ))
-                fig_sentiment.add_trace(go.Bar(
-                    x=classes_sentiment, y=[0.5623, 0.1579, 0.0247], name='Gemma-4 4B', marker_color='#FFA500',
-                    text=['0.5623', '0.1579', '0.0247'], textposition='auto'
-                ))
-                fig_sentiment.update_layout(
-                    barmode='group', paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-                    font=dict(family='Times New Roman', color=text_col, size=13),
-                    yaxis=dict(title='F1 Score', range=[0, 1.05], gridcolor='rgba(128,128,128,0.1)'),
-                    height=350, margin=dict(l=20, r=20, t=30, b=20),
-                    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
-                )
-                st.plotly_chart(fig_sentiment, use_container_width=True)
-                
-                st.markdown(f"""
-                <table style="width:100%; border-collapse:collapse; background:{table_bg}; border:1px solid {table_border}; font-family:'Times New Roman', serif; text-align:center;">
-                    <thead style="background:{header_bg}; color:{text_col}; font-weight:bold;">
-                        <tr style="border-bottom:1px solid #64ffda;">
-                            <th style="padding:10px; text-align:left;">Sắc thái cảm xúc</th>
-                            <th style="padding:10px;">Support (Số mẫu)</th>
-                            <th style="padding:10px;">PhoBERT-v2 F1</th>
-                            <th style="padding:10px;">XLM-R-v1 F1</th>
-                            <th style="padding:10px;">Gemma-4 4B F1</th>
-                        </tr>
-                    </thead>
-                    <tbody style="color:{text_col};">
-                        <tr style="border-bottom:1px solid {table_border};">
-                            <td style="padding:10px; text-align:left; font-weight:bold; color:#ff4b4b;">Tiêu cực</td>
-                            <td style="padding:10px; font-family:monospace;">71</td>
-                            <td style="padding:10px; font-weight:bold; color:#64ffda;">0.7606</td>
-                            <td style="padding:10px;">0.6993</td>
-                            <td style="padding:10px;">0.5623</td>
-                        </tr>
-                        <tr style="border-bottom:1px solid {table_border};">
-                            <td style="padding:10px; text-align:left; font-weight:bold; color:#007bff;">Trung tính</td>
-                            <td style="padding:10px; font-family:monospace;">75</td>
-                            <td style="padding:10px; font-weight:bold; color:#64ffda;">0.7671</td>
-                            <td style="padding:10px;">0.6618</td>
-                            <td style="padding:10px;">0.1579</td>
-                        </tr>
-                        <tr style="border-bottom:1px solid {table_border};">
-                            <td style="padding:10px; text-align:left; font-weight:bold; color:#38ef7d;">Tích cực</td>
-                            <td style="padding:10px; font-family:monospace;">40</td>
-                            <td style="padding:10px; font-weight:bold; color:#64ffda;">0.6600</td>
-                            <td style="padding:10px;">0.5571</td>
-                            <td style="padding:10px;">0.0247</td>
-                        </tr>
-                    </tbody>
-                </table>
-                """, unsafe_allow_html=True)
-                
+                render_per_class_tab('sentiment', ['Tiêu cực', 'Trung tính', 'Tích cực'], ['#ff4b4b', '#007bff', '#38ef7d'], 'Sắc thái cảm xúc')
                 st.markdown("""
-                💡 **Nhận xét thực nghiệm**: Nhãn **Tiêu cực** (71 mẫu) và **Trung tính** (75 mẫu) đạt hiệu năng cực kỳ ấn tượng (>0.76 F1 trên PhoBERT-v2). Tuy nhiên, nhãn **Tích cực** (40 mẫu) tỏ ra thách thức hơn trên mọi kiến trúc, đặc biệt là Gemma-4 (F1 score giảm sâu xuống 0.0247) do mô hình tạo sinh lớn thường có xu hướng gán mọi trải nghiệm vắc-xin chia sẻ bình thường là "tiêu cực" hoặc "trung tính".
+                💡 **Nhận xét thực nghiệm**: Nhãn **Tích cực** tỏ ra thách thức hơn trên mọi kiến trúc do chia sẻ tích cực của người dân Việt Nam về tiêm vắc-xin thường đi kèm các từ mang sắc thái lo lắng.
                 """)
                 
             st.markdown("---")
@@ -2676,7 +2652,7 @@ def main():
                 #### 🤖 2. Tại sao F1-Score của Gemma-4 4B lại thấp hơn?
                 * **Bản chất kiến trúc**: Gemma-4 là mô hình Generative (tạo sinh) được tinh chỉnh qua QLoRA nhằm phục vụ việc tạo lập **Giải thích khoa học (XAI - Explainable AI)** và **Tư vấn chiến lược phản ứng** dưới dạng ngôn ngữ tự nhiên.
                 * **Trade-off giữa Giải thích & Phân loại**:
-                  * Mô hình Encoder (như PhoBERT-v2) được thiết kế đặc thù cho bài toán phân loại đa nhãn (Multi-task Classification), giúp trích xuất nhãn cực nhanh và chính xác cao (Avg F1 = 0.6853).
+                  * Mô hình Encoder (như PhoBERT-v2) được thiết kế đặc thù cho bài toán phân loại đa nhãn (Multi-task Classification), giúp trích xuất nhãn cực nhanh và chính xác cao (Avg F1 = {benchmark_results['phobert']['avg_f1']:.4f}).
                   * Gemma-4 4B đóng vai trò lý luận sâu, giúp người dùng hiểu *tại sao* đó là tin giả và đề xuất kịch bản phản hồi, chứ không cạnh tranh hiệu năng ở bài toán gán nhãn cứng.
                 """)
                 
