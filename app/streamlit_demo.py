@@ -578,7 +578,7 @@ def hien_thi_footer_chung(is_dark=True):
     import base64
     
     # Xác định đường dẫn logo an toàn
-    logo_path_local = PROJECT_ROOT / "abc1.png"
+    logo_path_local = PROJECT_ROOT / "huph_logo.png"
     logo_src = "https://huph.edu.vn/uploads/logo/logo-huph.png" # Link dự phòng
     
     try:
@@ -958,10 +958,10 @@ Hệ thống VaccineNLP Framework
 
 def render_wordcloud(text, is_dark=True):
     """Vẽ đám mây từ khóa (WordCloud) từ văn bản đầu vào."""
-    from wordcloud import WordCloud
-    import matplotlib.pyplot as plt
-    
     try:
+        from wordcloud import WordCloud
+        import matplotlib.pyplot as plt
+        
         # Tạo WordCloud
         wc = WordCloud(
             width=800, height=400, 
@@ -974,7 +974,7 @@ def render_wordcloud(text, is_dark=True):
         ax.axis('off')
         st.pyplot(fig)
     except Exception as e:
-        st.info("💡 Tính năng WordCloud đang được khởi tạo...")
+        st.warning("⚠️ Không thể tạo WordCloud. Vui lòng cài đặt thư viện bằng `pip install wordcloud`.")
 
 def render_news_scraper():
     """Giao diện quét nội dung từ URL với gợi ý link."""
