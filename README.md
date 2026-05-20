@@ -25,6 +25,7 @@
 Dưới đây là bảng so sánh hiệu năng (Macro F1-score) giữa các kiến trúc trên tập **Benchmark Test Set (Gold Data)**:
 
 <!-- BENCHMARK_TABLE_START -->
+### 📊 1. Hiệu Năng Macro F1 Tổng Thể (Macro F1 Summary)
 | Mô hình | Loại | Misinfo (F1) | Stance (F1) | Sentiment (F1) | Trạng thái |
 | :--- | :--- | :---: | :---: | :---: | :--- |
 | **PhoBERT-v2** | Classification Engine (Encoder) | **0.7079** | **0.7107** | **0.7260** | **SOTA (Classification Engine)** |
@@ -32,6 +33,28 @@ Dưới đây là bảng so sánh hiệu năng (Macro F1-score) giữa các ki�
 | **XLM-R-v1** | Baseline (Encoder) | 0.5823 | 0.4217 | 0.1842 | Baseline |
 
 > Số liệu các mô hình đã được xác nhận qua Kaggle LIVE run (20/05/2026).
+
+### 🔍 2. Đánh Giá Chi Tiết Theo Từng Nhãn Lớp (Per-Class F1-Score Breakdown)
+
+#### A. Trục Phát hiện Tin sai lệch (Misinformation Detection)
+| Nhãn lớp | XLM-R-v1 | PhoBERT-v2 | Gemma-4-4B | Số mẫu Gold Test |
+| :--- | :---: | :---: | :---: | :---: |
+| Tin giả (Misinfo) | 0.4274 | 0.5085 | **0.5135** | 28 |
+| Chính xác (Correct) | 0.7373 | **0.9073** | 0.8714 | 158 |
+
+#### B. Trục Phân tích Thái độ (Stance Analysis)
+| Nhãn lớp | XLM-R-v1 | PhoBERT-v2 | Gemma-4-4B | Số mẫu Gold Test |
+| :--- | :---: | :---: | :---: | :---: |
+| Ủng hộ (Support) | 0.0000 | **0.6476** | 0.4068 | 54 |
+| Phản đối (Against) | 0.5950 | **0.6869** | 0.6458 | 48 |
+| Trung lập (Neutral) | 0.6701 | **0.7976** | 0.6929 | 84 |
+
+#### C. Trục Phân tích Cảm xúc (Sentiment Analysis)
+| Nhãn lớp | XLM-R-v1 | PhoBERT-v2 | Gemma-4-4B | Số mẫu Gold Test |
+| :--- | :---: | :---: | :---: | :---: |
+| Tiêu cực (Negative) | 0.5525 | **0.7808** | 0.7609 | 71 |
+| Trung tính (Neutral) | 0.0000 | **0.8026** | 0.7934 | 75 |
+| Tích cực (Positive) | 0.0000 | 0.5946 | **0.6047** | 40 |
 <!-- BENCHMARK_TABLE_END -->
 
 
