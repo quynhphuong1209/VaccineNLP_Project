@@ -67,7 +67,7 @@ political rhetoric, or manipulative half-truths. Focus entirely on identifying
 the author's TRUE attitude toward VACCINATION.
 
 Analyze the comment, reason step-by-step, and classify it based on these 3 criteria:
-1. Misinformation: [Chính xác] or [Tin giả / Sai lệch] or [Không chắc chắn / Không liên quan]
+1. Misinformation: [Chính xác] or [Tin giả]
 2. Stance: [Ủng hộ] or [Phản đối] or [Trung lập]
 3. Sentiment: [Tích cực] or [Tiêu cực] or [Trung tính]
 

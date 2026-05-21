@@ -14,21 +14,19 @@ Tài liệu này đặc tả các thuộc tính, nguồn gốc và hệ thống 
 
 Các giá trị ID dưới đây đã được chuẩn hóa để khớp với logic huấn luyện mô hình đa nhiệm (**Multi-task Training**):
 
-### A. Misinformation (Trục Tin giả)
-- `0` - **Không chắc chắn / Không liên quan**: Dành cho dữ liệu nhiễu, các bình luận không thể kiểm chứng được hoặc không liên quan trực tiếp đến vaccine.
-- `1` - **Tin giả / Sai lệch**: Thông tin sai sự thật hoặc gây hiểu lầm dựa trên các tiêu chí y khoa.
-- `2` - **Chính xác**: Thông tin đúng chuẩn y khoa và các tuyên bố chính thống.
+### A. Misinformation (Trục Tin giả - 2 lớp)
+- `0` - **Tin giả**: Thông tin sai lệch, thiếu cơ sở khoa học, gây hoang mang hoặc bóp méo sự thật về vắc-xin.
+- `1` - **Chính xác**: Thông tin đúng chuẩn y khoa, chia sẻ kiến thức khoa học hoặc các tuyên bố chính thống từ tổ chức y tế.
 
-### B. Stance (Trục Quan điểm)
-- `0` - **Ủng hộ**: Thể hiện sự tin tưởng, thúc đẩy hoặc đã thực hiện tiêm chủng.
-- `1` - **Phản đối**: Thể hiện sự bài trừ, do dự hoặc khuyên không tiêm.
-- `2` - **Trung lập**: Chỉ đặt câu hỏi hoặc chia sẻ thông tin khách quan.
-- `3` - **Không rõ / Fallback Bucket**: Nhãn dự phòng cho các trường hợp LLM không thể suy luận rõ ràng.
+### B. Stance (Trục Quan điểm - 3 lớp)
+- `0` - **Ủng hộ**: Thể hiện thái độ đồng tình, tin tưởng, khuyên tiêm hoặc đã tiêm vắc-xin.
+- `1` - **Phản đối**: Thể hiện thái độ bài trừ, từ chối, do dự lo ngại tác dụng phụ hoặc khuyên không nên tiêm.
+- `2` - **Trung lập**: Chia sẻ thông tin khách quan, đặt câu hỏi thắc mắc thuần túy hoặc không bày tỏ quan điểm rõ ràng.
 
-### C. Sentiment (Trục Sắc thái)
-- `0` - **Tiêu cực**: Giận dữ, lo lắng, sợ hãi hoặc mỉa mai.
-- `1` - **Trung tính / Trung lập**: Không mang sắc thái cảm xúc rõ rệt.
-- `2` - **Tích cực**: Hy vọng, vui mừng, cảm ơn.
+### C. Sentiment (Trục Sắc thái - 3 lớp)
+- `0` - **Tiêu cực**: Giận dữ, lo sợ, mỉa mai, hoang mang.
+- `1` - **Trung tính**: Không mang sắc thái cảm xúc rõ rệt, khách quan.
+- `2` - **Tích cực**: Hy vọng, biết ơn, vui mừng.
 
 ## 3. Cấu trúc Schema (JSONL) có tính năng XAI
 
@@ -67,7 +65,7 @@ Mỗi hàng dữ liệu trong tập Silver/Gold được thiết kế để ph�
 | Chính xác | 158 |
 | Tin giả | 28 |
 
-**Stance (3 lớp — loại trừ nhãn Fallback 3):**
+**Stance (3 lớp):**
 | Nhãn | Số mẫu |
 |------|:------:|
 | Trung lập | 84 |
@@ -82,7 +80,7 @@ Mỗi hàng dữ liệu trong tập Silver/Gold được thiết kế để ph�
 | Tích cực | 40 |
 
 > [!NOTE]
-> Nguồn: Support counts trích từ `experiments/results/phobert_v2_results.json`. Nhãn Stance ID=3 (Fallback) không xuất hiện trong Gold Test Set do đã được chuyên gia HITL phân loại rõ ràng.
+> Nguồn: Support counts trích từ `experiments/results/phobert_v2_results.json` khớp hoàn toàn với nhãn chuẩn hóa Taxonomy v3 trong thực tế huấn luyện mô hình.
 
 ---
 
