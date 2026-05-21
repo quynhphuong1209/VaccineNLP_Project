@@ -608,7 +608,7 @@ Các metadata files này track kernel information cho notebook reproduction.
 
 ---
 
-**📅 Updated:** April 22, 2026 (v1.1)  
+**📅 Updated:** May 21, 2026 (v1.2)  
 **🔬 Framework:** PyTorch + Transformers (HuggingFace)  
 **📊 Integration:** MLflow tracking + Unsloth optimization  
 **🖥️ GPU Support:** CUDA 12.1, bitsandbytes 4-bit quantization  

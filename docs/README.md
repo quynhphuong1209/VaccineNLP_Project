@@ -1,6 +1,6 @@
 # 📚 Thư Mục Tài Liệu (docs/)
 
-**Cập nhật:** 20/05/2026 | Phase 6 — Thesis Finalization
+**Cập nhật:** 21/05/2026 | Phase 6 — Thesis Finalization
 **Trạng thái:** ✅ Complete (6 technical docs + 1 roadmap)
 
 ---

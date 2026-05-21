@@ -1,6 +1,6 @@
-# 🤖 Modeling Module (src/modeling/) - v1.1
+# 🤖 Modeling Module (src/modeling/) - v1.2
 
-**Cập nhật:** May 21, 2026 | Trạng thái: ✅ Active
+**Cập nhật:** May 21, 2026 | Trạng thái: ✅ Active & Optimized
 Cung cấp các công cụ cho Model Training, Inference, và Evaluation.
 
 Bao gồm 2 mô hình chính:
@@ -509,6 +509,6 @@ class VaccineNLPInference:
 
 ---
 
-**📅 Updated:** April 2026  
+**📅 Updated:** May 21, 2026 | Phiên bản 1.2
 **🤖 Models:** PhoBERT 110M, Gemma-4 4B  
 **🔧 Frameworks:** PyTorch, Transformers, PEFT, Bitsandbytes

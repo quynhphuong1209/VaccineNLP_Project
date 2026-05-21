@@ -1,6 +1,6 @@
-# 🧹 Text Preprocessing Module (src/preprocessing/) - v1.1
+# 🧹 Text Preprocessing Module (src/preprocessing/) - v1.2
 
-**Cập nhật:** May 21, 2026 | Trạng thái: ✅ Active
+**Cập nhật:** May 21, 2026 | Trạng thái: ✅ Active & Optimized
 
 ## Mục Đích
 
@@ -400,7 +400,7 @@ experiments/logs/preprocessing.log
 
 ---
 
-**📅 Updated:** April 23, 2026 (v1.0)  
+**📅 Updated:** May 21, 2026 (v1.2)
 **👤 Owner:** VaccineNLP Team  
 **🔬 Framework:** PyVi + Underthesea + FastText  
 **📊 Integration:** Part of Medallion Architecture (Bronze → Silver → Gold)

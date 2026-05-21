@@ -1044,8 +1044,8 @@ def render_wordcloud(text, is_dark=True):
     except Exception as e:
         st.warning("⚠️ Không thể tạo WordCloud. Vui lòng cài đặt thư viện bằng `pip install wordcloud`.")
 
-def render_news_scraper():
-    """Giao diện quét nội dung từ URL với gợi ý link."""
+def render_news_scraper_legacy():
+    """[LEGACY BACKUP] Giao diện quét nội dung từ URL với gợi ý link."""
     st.markdown("### 🌐 Quét nội dung từ URL")
     st.info("💡 Tính năng này cho phép bạn dán một đường link bài báo. AI sẽ tự trích xuất nội dung và phân tích.")
     
@@ -1080,6 +1080,149 @@ def render_news_scraper():
                 st.error(f"❌ Lỗi khi quét URL: {str(e)}")
         else:
             st.warning("⚠️ Vui lòng nhập URL.")
+
+
+def render_multi_source_fetcher():
+    """Multi-source fetcher: News + YouTube + Apify (FB/TikTok/Threads)."""
+    import sys, os
+    sys.path.insert(0, os.path.dirname(__file__))
+    from data_fetchers.router import detect_source, fetch, FETCHER_INFO
+    from data_fetchers.text_cleaner import clean_text, is_human_vaccine_context
+    
+    st.markdown("### 🌐 Quét nội dung đa nguồn")
+    st.caption("Hỗ trợ: Báo điện tử (15+ trang) · YouTube · Facebook · TikTok · Threads")
+    
+    # Gợi ý links theo từng loại
+    with st.expander("🔗 Link gợi ý để thử nghiệm"):
+        st.markdown("**📰 Báo điện tử (nhanh, 1-3s):**")
+        st.code("https://vnexpress.net/hon-15-7-trieu-tre-em-da-duoc-tiem-chung-mo-rong-4740150.html")
+        st.code("https://suckhoedoisong.vn/tin-gia-ve-vaccine-covid-19-hiem-hoa-khon-luong-169210720235544777.htm")
+        st.markdown("**📺 YouTube (5-15s):**")
+        st.code("https://www.youtube.com/watch?v=...")
+        st.markdown("**📘 Facebook / 🎵 TikTok (30-120s, cần Apify token):**")
+        st.code("https://www.facebook.com/...")
+        st.code("https://www.tiktok.com/@.../video/...")
+    
+    url = st.text_input("Dán URL vào đây:", placeholder="https://...", key="multi_url")
+    
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        max_comments = st.slider(
+            "Số comments tối đa (cho YouTube/FB/TikTok):",
+            min_value=10, max_value=100, value=30, step=10,
+            key="max_cmts"
+        )
+    with col2:
+        st.write("")  # spacing
+        fetch_btn = st.button("🚀 Lấy nội dung", use_container_width=True)
+    
+    # Preview thông tin nguồn TRƯỚC khi fetch
+    if url:
+        kind = detect_source(url)
+        if kind:
+            info = FETCHER_INFO.get(kind, {})
+            badge = f"{info.get('icon','🌐')} **{info.get('label', kind)}**"
+            time_est = info.get('estimated_secs', '?')
+            has_cmt = '✅ Có comments' if info.get('has_comments') else '❌ Không có comments'
+            needs_tk = '🔑 Cần Apify token' if info.get('needs_token') else '🆓 Miễn phí'
+            st.info(f"{badge} · ⏱️ {time_est} · {has_cmt} · {needs_tk}")
+    
+    if fetch_btn:
+        if not url:
+            st.warning("⚠️ Vui lòng nhập URL.")
+            return
+        
+        kind = detect_source(url)
+        info = FETCHER_INFO.get(kind or 'news', {})
+        
+        with st.spinner(f"⏳ Đang lấy nội dung ({info.get('estimated_secs','?')})..."):
+            result = fetch(url, max_comments=max_comments)
+        
+        if not result:
+            st.error("❌ Không lấy được nội dung.")
+            return
+        if 'error' in result:
+            st.error(f"❌ {result['error']}")
+            return
+        
+        # Hiển thị kết quả
+        st.success(f"✅ Đã lấy: **{result.get('title','(không có tiêu đề)')}**")
+        
+        # Metadata
+        meta_cols = st.columns(4)
+        meta_cols[0].metric("Nguồn", result.get('kind','?').upper())
+        meta_cols[1].metric("Số từ (content)", len(result.get('text','').split()))
+        meta_cols[2].metric("Comments", len(result.get('comments') or []))
+        meta_cols[3].metric("Fetcher", result.get('fetcher','?'))
+        
+        # Tabs hiển thị: Content | Comments | Send to Analyzer
+        if result.get('comments'):
+            tab_c, tab_cm, tab_send = st.tabs(["📄 Nội dung chính", "💬 Comments", "🚀 Phân tích"])
+        else:
+            tab_c, tab_send = st.tabs(["📄 Nội dung chính", "🚀 Phân tích"])
+            tab_cm = None
+        
+        with tab_c:
+            text_content = result.get('text', '')
+            cleaned = clean_text(text_content)
+            
+            # Cảnh báo nếu nội dung không thuộc domain vaccine
+            if not is_human_vaccine_context(cleaned):
+                st.warning(
+                    "⚠️ Nội dung này có thể KHÔNG liên quan vaccine y tế người "
+                    "(có thể là thú y, showbiz, hoặc chủ đề khác). "
+                    "Model vẫn sẽ phân tích nhưng kết quả có thể không chính xác."
+                )
+            
+            st.text_area("Nội dung (đã làm sạch):", cleaned, height=200,
+                         key="fetched_content_preview")
+        
+        if tab_cm and result.get('comments'):
+            with tab_cm:
+                st.markdown(f"**Top {len(result['comments'])} comments:**")
+                for i, c in enumerate(result['comments'][:max_comments], 1):
+                    with st.expander(f"💬 Comment #{i} (♥ {c.get('likes',0)})"):
+                        st.write(c.get('text',''))
+        
+        with tab_send:
+            st.markdown("**Chọn cách phân tích:**")
+            
+            mode = st.radio(
+                "Mode phân tích:",
+                ["📄 Chỉ nội dung chính",
+                 "💬 Nội dung + tất cả comments (batch mode)",
+                 "🎯 Chỉ comments (loại nội dung gốc)"],
+                key="analyze_mode"
+            )
+            
+            if st.button("✅ Đưa vào phân tích", key="send_to_analyzer"):
+                if mode.startswith("📄"):
+                    # Single content
+                    st.session_state.scraped_temp = clean_text(result.get('text',''))
+                    st.session_state.url_batch_lines = None
+                elif mode.startswith("💬"):
+                    # Content + comments → batch
+                    lines = [clean_text(result.get('text',''))]
+                    for c in (result.get('comments') or []):
+                        ct = clean_text(c.get('text',''))
+                        if ct and len(ct.split()) >= 3:
+                            lines.append(ct)
+                    st.session_state.url_batch_lines = lines
+                    st.session_state.scraped_temp = None
+                else:  # comments only
+                    lines = []
+                    for c in (result.get('comments') or []):
+                        ct = clean_text(c.get('text',''))
+                        if ct and len(ct.split()) >= 3:
+                            lines.append(ct)
+                    st.session_state.url_batch_lines = lines
+                    st.session_state.scraped_temp = None
+                
+                st.success(
+                    f"✅ Đã chuyển sang tab Phân tích. "
+                    f"({1 if mode.startswith('📄') else len(st.session_state.get('url_batch_lines') or [])} mẫu)"
+                )
+                st.info("👉 Vui lòng chuyển sang tab '🔍 PHÂN TÍCH VĂN BẢN'")
 
 def render_result_card(task_name: str, task_key: str, result: dict):
     """Render a styled result card for one task with premium aesthetics."""
@@ -1634,19 +1777,17 @@ def render_resources_tab():
         
         with st.container():
             st.markdown('<div class="resource-card"><div class="resource-header">📘 I. KAGGLE</div>'
-                        '• <a href="https://www.kaggle.com/code/kimmnhhng/vaccinenlp-gemma-4-qlora-multitask">Gemma-4 QLoRA</a><br>'
-                        '• <a href="https://www.kaggle.com/code/kimmnhhng/vaccinenlp-phobert-v2-multitask">PhoBERT-v2 Multitask</a><br>'
-                        '• <a href="https://www.kaggle.com/code/kimmnhhng/gemma-e4b-it">Gemma E4B-IT</a><br>'
-                        '• <a href="https://www.kaggle.com/code/kimmnhhng/vaccinenlp-xlm-r-v1-multitask-classifier">XLM-R-v1 Classifier</a>'
+                        '• <a href="https://www.kaggle.com/code/kimmnhhng/vaccinenlp-phobert-v2-multitask">PhoBERT Multitask Classifier</a><br>'
+                        '• <a href="https://www.kaggle.com/code/kimmnhhng/vaccinenlp-xlm-r-v1-multitask-classifier">XLM-R Multitask Classifier</a><br>'
+                        '• <a href="https://www.kaggle.com/code/kimmnhhng/vaccinenlp-gemma-4-training">Gemma QLoRA Training (03A)</a><br>'
+                        '• <a href="https://www.kaggle.com/code/kimmnhhng/vaccinenlp-gemma-4-inference">Gemma XAI Inference (03B)</a><br>'
+                        '• <a href="https://www.kaggle.com/code/kimmnhhng/vaccinenlp-model-benchmark-report">Model Benchmark Report (04)</a>'
                         '</div>', unsafe_allow_html=True)
             
             st.markdown('<div class="resource-card"><div class="resource-header">🤗 II. HUGGINGFACE</div>'
-                        '• <a href="https://huggingface.co/hung2903/gemma-4-E4B-unsloth-vaccine-xai">Gemma-4-E4B XAI</a><br>'
-                        '• <a href="https://huggingface.co/hung2903/xlmr-vaccine-multitask">XLM-R Multitask</a><br>'
                         '• <a href="https://huggingface.co/hung2903/phobert-vaccine-multitask">PhoBERT Multitask</a><br>'
-                        '• <a href="https://huggingface.co/hung2903/gemma-4-4b-lora-v1">Gemma-4-4B LoRA</a><br>'
-                        '• <a href="https://huggingface.co/hung2903/gemma4-vaccinenlp-reasoning">Gemma-4 Reasoning</a><br>'
-                        '• <a href="https://huggingface.co/hung2903/synapse-unet-light/tree/main">Synapse UNet Light</a>'
+                        '• <a href="https://huggingface.co/hung2903/xlmr-vaccine-multitask">XLM-R Multitask</a><br>'
+                        '• <a href="https://huggingface.co/hung2903/gemma-4-E4B-unsloth-vaccine-xai">Gemma XAI Reasoning</a>'
                         '</div>', unsafe_allow_html=True)
             
             st.markdown('<div class="resource-card"><div class="resource-header">💻 III. GITHUB</div>'
@@ -1658,20 +1799,17 @@ def render_resources_tab():
         
         with st.container():
             st.markdown('<div class="resource-card"><div class="resource-header">📘 I. KAGGLE</div>'
-                        '• <a href="https://www.kaggle.com/code/inhlqunhphng/vaccinenlp-gemma-4-qlora-multitask">Gemma-4 QLoRA (Main)</a><br>'
-                        '• <a href="https://www.kaggle.com/code/inhlqunhphng/vaccinenlp-xlm-r-v1-multitask-classifier">XLM-R-v1 Baseline</a><br>'
-                        '• <a href="https://www.kaggle.com/code/inhlqunhphng/01-phobert-multitask-training">PhoBERT Training (01)</a><br>'
-                        '• <a href="https://www.kaggle.com/code/inhlqunhphng/vaccinenlp-phobert-v2-multitask-classifier">PhoBERT-v2 Classifier</a><br>'
-                        '• <a href="https://www.kaggle.com/code/inhlqunhphng/vaccine-nlp-eval-final-t4">Final Evaluation</a><br>'
-                        '• <a href="https://www.kaggle.com/code/inhlqunhphng/02-gemma4-4b-qlora-training">Gemma-4 4B Training</a><br>'
-                        '• <a href="https://www.kaggle.com/code/inhlqunhphng/gemma-e4b-it">Gemma E4B-IT</a><br>'
-                        '• <a href="https://www.kaggle.com/code/inhlqunhphng/vaccinenlp-model-benchmark-report">Model Benchmark Report</a>'
+                        '• <a href="https://www.kaggle.com/code/inhlqunhphng/vaccinenlp-phobert-v2-multitask-classifier">PhoBERT Multitask Classifier</a><br>'
+                        '• <a href="https://www.kaggle.com/code/inhlqunhphng/vaccinenlp-xlm-r-v1-multitask-classifier">XLM-R Multitask Classifier</a><br>'
+                        '• <a href="https://www.kaggle.com/code/inhlqunhphng/vaccinenlp-gemma-4-training">Gemma QLoRA Training (03A)</a><br>'
+                        '• <a href="https://www.kaggle.com/code/inhlqunhphng/vaccinenlp-gemma-4-inference">Gemma XAI Inference (03B)</a><br>'
+                        '• <a href="https://www.kaggle.com/code/inhlqunhphng/vaccinenlp-model-benchmark-report">Model Benchmark Report (04)</a>'
                         '</div>', unsafe_allow_html=True)
             
             st.markdown('<div class="resource-card"><div class="resource-header">🤗 II. HUGGINGFACE</div>'
                         '• <a href="https://huggingface.co/quynhphuong1209/phobert-multitask">PhoBERT Multitask</a><br>'
                         '• <a href="https://huggingface.co/quynhphuong1209/xlmr-multitask">XLM-R Multitask</a><br>'
-                        '• <a href="https://huggingface.co/quynhphuong1209/gemma-4-E4B-unsloth-vaccine-xai">Gemma-4-E4B XAI</a>'
+                        '• <a href="https://huggingface.co/quynhphuong1209/gemma-4-E4B-unsloth-vaccine-xai">Gemma XAI Reasoning</a>'
                         '</div>', unsafe_allow_html=True)
             
             st.markdown('<div class="resource-card"><div class="resource-header">💻 III. GITHUB</div>'
@@ -2462,47 +2600,13 @@ def main():
     </div>
     """, unsafe_allow_html=True)
 
-    tabs = st.tabs(["🔍 PHÂN TÍCH VĂN BẢN", "📊 BENCHMARK & BÁO CÁO KHOA HỌC", "📈 ĐÁNH GIÁ CHUYÊN SÂU", "📚 TÀI LIỆU & NOTEBOOKS", "📜 PHƯƠOSNG PHÁP LUẬN", "📑 ĐỀ CƯƠNG"])
+    tabs = st.tabs(["🔍 PHÂN TÍCH VĂN BẢN", "📊 BENCHMARK & BÁO CÁO KHOA HỌC", "📈 ĐÁNH GIÁ CHUYÊN SÂU", "📚 TÀI LIỆU & NOTEBOOKS", "📜 PHƯƠNG PHÁP LUẬN", "📑 ĐỀ CƯƠNG"])
     
     with tabs[0]:
-        # Nếu chọn Tự nhập, hiển thị thêm bộ quét URL ngay tại đây
+        # Nếu chọn Tự nhập, hiển thị thêm bộ quét URL đa nguồn
         if selected_sample == "Tự nhập":
-            st.markdown("##### 🌐 Nhập nhanh từ URL hoặc Tự viết")
-            with st.expander("📌 Xem danh sách URL gợi ý", expanded=False):
-                st.caption("Bạn có thể copy các đường link dưới đây để thử nghiệm tính năng quét tin tự động:")
-                urls = [
-                    "https://www.vietnamplus.vn/nhan-dien-va-xu-ly-tin-gia-xuyen-tac-ve-tiem-chung-vaccine-phong-covid19/726667.vnp",
-                    "https://thanhnien.vn/canh-bao-tin-gia-ve-tiem-chung-vaccine-covid-19-1851086435.htm",
-                    "https://suckhoedoisong.vn/tin-gia-ve-vaccine-covid-19-hiem-hoa-khon-luong-169210720235544777.htm"
-                ]
-                for url in urls:
-                    st.code(url, language=None)
-            
-            sc_col1, sc_col2 = st.columns([4, 1])
-            with sc_col1:
-                url_input = st.text_input("Dán link báo chí vào đây:", placeholder="https://...", key="tab0_url")
-            with sc_col2:
-                st.write("<div style='height: 28px;'></div>", unsafe_allow_html=True)
-                if st.button("🚀 Lấy tin", use_container_width=True):
-                    if url_input:
-                        import requests
-                        from bs4 import BeautifulSoup
-                        import urllib3
-                        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-                        try:
-                            headers = {'User-Agent': 'Mozilla/5.0'}
-                            res = requests.get(url_input, headers=headers, timeout=10, verify=False)
-                            res.encoding = 'utf-8'
-                            soup = BeautifulSoup(res.text, 'html.parser')
-                            paragraphs = soup.find_all('p')
-                            scraped_text = " ".join([p.get_text() for p in paragraphs[:10]])
-                            if len(scraped_text.strip()) > 50:
-                                st.session_state.scraped_temp = scraped_text
-                                st.success("✅ Đã lấy nội dung!")
-                            else:
-                                st.error("❌ Link không có nội dung.")
-                        except Exception as e:
-                            st.error(f"❌ Lỗi: {str(e)}")
+            with st.expander("🌐 Quét nội dung đa nguồn (News · YouTube · Facebook · TikTok)", expanded=False):
+                render_multi_source_fetcher()
 
         # Lấy nội dung hiển thị
         if st.session_state.get("scraped_temp"):
@@ -2545,10 +2649,20 @@ def main():
             st.info("💡 **Lưu ý:** Nếu gặp lỗi 403 Forbidden, vui lòng kiểm tra lại quyền 'Inference' của Token trên Hugging Face.")
 
         # ─── BATCH ANALYSIS MODE ─────────────────────────────────────
-        with st.expander("📋 PHÂN TÍCH HÀNG LOẠT (Batch Mode)", expanded=False):
+        # Auto-fill from multi-source fetcher (url_batch_lines)
+        _batch_expanded = bool(st.session_state.get('url_batch_lines'))
+        with st.expander("📋 PHÂN TÍCH HÀNG LOẠT (Batch Mode)", expanded=_batch_expanded):
+            if st.session_state.get('url_batch_lines'):
+                _lines = st.session_state.url_batch_lines
+                st.info(f"📋 Đã có **{len(_lines)} mẫu** từ URL fetcher. Tự động chuyển sang Batch mode.")
+                st.session_state.url_batch_lines = None
+                _prefill = '\n'.join(_lines)
+            else:
+                _prefill = ""
             st.markdown("Nhập nhiều văn bản, mỗi dòng một mẫu. Kết quả có thể tải xuống CSV.")
             batch_text = st.text_area(
                 "Danh sách văn bản (1 dòng = 1 mẫu):",
+                value=_prefill if _prefill else "",
                 height=150,
                 placeholder="Dòng 1: Vắc-xin COVID gây vô sinh...\nDòng 2: Tiêm vaccine phòng bệnh rất tốt...",
                 key="batch_input_area"
