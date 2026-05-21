@@ -47,7 +47,7 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 # ─────────────────────────────────────────────────────────────
 APP_DIR = Path(__file__).parent
 PROJECT_ROOT = APP_DIR.parent
-XAI_CACHE_PATH = APP_DIR / "xai_cache.json"
+XAI_CACHE_PATH = APP_DIR / "xai_cache_backup_20260520_2317.json"
 
 MODEL_CONFIGS = {
     "PhoBERT-v2": {
@@ -327,7 +327,7 @@ def load_model(model_key="PhoBERT-v2"):
     
     try:
         # Tải file checkpoint (.pt) trực tiếp từ Hugging Face (luôn online)
-        model_path = hf_hub_download(repo_id=cfg["repo_id"], filename="best_model.pt", token=hf_token)
+        model_path = hf_hub_download(repo_id=cfg["repo_id"], filename="best_model.pt", token=hf_token, force_download=True)
             
         tokenizer = AutoTokenizer.from_pretrained(cfg["base_repo"], token=hf_token, trust_remote_code=True)
         model = VaccineMultitaskModel(model_name=cfg["base_repo"], token=hf_token)
