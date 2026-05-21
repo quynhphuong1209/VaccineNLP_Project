@@ -528,7 +528,7 @@
     <div id="slide-progress-fill"></div>
   </div>
   
-  <div id="slide-counter">1 / 8</div>
+  <div id="slide-counter">1 / 9</div>
   
   <div id="camera-container">
     <video id="videoElement" autoplay playsinline></video>
@@ -600,10 +600,10 @@
           </ul>
         </div>
         <div class="slide-col">
-          <h3 class="col-title gold-accent">🛡️ Quy trình Medallion & Tập Vàng</h3>
+          <h3 class="col-title gold-accent">🛡️ Quy trình Medallion & Taxonomy v3</h3>
           <ul class="slide-list">
             <li class="slide-list-item check"><b>Bronze ➔ Silver ➔ Gold:</b> Dữ liệu thô sau khi thu thập được chuẩn hóa, loại bỏ nhiễu, gán nhãn tự động đa nhiệm và chuyển vào các tầng lưu trữ tương ứng.</li>
-            <li class="slide-list-item check"><b>Học đa nhiệm (Multi-task Labeling):</b> Mỗi mẫu dữ liệu được gán nhãn 3 trục độc lập: <i>Tính xác thực (Misinfo)</i>, <i>Lập trường (Stance)</i>, và <i>Cảm xúc (Sentiment)</i>.</li>
+            <li class="slide-list-item check"><b>Taxonomy v3 (2-3-3):</b> Khung phân loại tinh gọn mới nhất với 3 trục độc lập: <i>Misinfo (2 nhãn)</i>, <i>Stance (3 nhãn)</i>, và <i>Sentiment (3 nhãn)</i>, loại bỏ triệt để nhiễu.</li>
             <li class="slide-list-item check"><b>Gold Benchmark Set (n=186):</b> Tập kiểm thử vàng tinh lọc cao, được thẩm định thủ công bởi hội đồng chuyên gia Y tế Công cộng HUPH làm thước đo đánh giá các mô hình AI.</li>
           </ul>
         </div>
@@ -624,10 +624,10 @@
         </div>
         <div class="slide-col" style="padding: 25px;">
           <h3 class="col-title gold-accent" style="font-size: 1.3rem;">🧠 Gemma-4 4B (Reasoning Engine)</h3>
-          <p style="font-size: 1rem; line-height: 1.4; color: #94a3b8; margin-bottom: 15px;">Mô hình ngôn ngữ lớn (LLM) được tinh chỉnh bằng QLoRA để sinh lời giải thích y khoa sâu sắc.</p>
+          <p style="font-size: 1rem; line-height: 1.4; color: #94a3b8; margin-bottom: 15px;">Mô hình ngôn ngữ lớn (LLM) tinh chỉnh QLoRA cung cấp khả năng Trí tuệ Nhân tạo có thể giải thích (XAI).</p>
           <ul class="slide-list" style="font-size: 0.95rem;">
-            <li class="slide-list-item star" style="font-size: 1.05rem; margin-bottom: 10px;">Sử dụng chat template Việt hóa tối ưu để tạo ra chuỗi lập luận logic giải thích tại sao thông tin bị gán nhãn là sai lệch.</li>
-            <li class="slide-list-item star" style="font-size: 1.05rem; margin-bottom: 10px;">Đóng vai trò như Chuyên gia Y tế ảo hỗ trợ ra quyết định.</li>
+            <li class="slide-list-item star" style="font-size: 1.05rem; margin-bottom: 10px;"><b>Explainable AI (XAI):</b> Tự động tạo chuỗi lập luận logic (Chain-of-Thought) trích xuất bằng chứng y khoa giải thích nguyên nhân tin giả.</li>
+            <li class="slide-list-item star" style="font-size: 1.05rem; margin-bottom: 10px;"><b>Chuyên gia Y tế ảo:</b> Sử dụng prompt template đặc thù tiêm chủng để phản biện và dập tắt tin đồn nguy hại một cách khách quan.</li>
           </ul>
         </div>
         <div class="slide-col" style="padding: 25px;">
@@ -637,6 +637,7 @@
             <li class="slide-list-item star" style="font-size: 1.05rem; margin-bottom: 10px;"><b>Màng lọc trực tuyến:</b> PhoBERT-v2 phân loại nhanh chóng tất cả luồng dữ liệu thu thập.</li>
             <li class="slide-list-item star" style="font-size: 1.05rem; margin-bottom: 10px;"><b>Kiểm định chiều sâu:</b> Đẩy các mẫu tin giả hoặc có cảm xúc tiêu cực gay gắt vào hàng đợi để Gemma-4 phân tích chi tiết.</li>
           </ul>
+          <img src="ai_medical.png" alt="AI Medical" style="width: 100%; height: 120px; object-fit: cover; border-radius: 12px; margin-top: auto; box-shadow: 0 5px 15px rgba(0, 123, 255, 0.3); border: 1px solid rgba(0, 123, 255, 0.4);">
         </div>
       </div>
     </div>
@@ -649,7 +650,7 @@
         <div style="display: flex; flex-direction: row; justify-content: space-between; width: 100%; gap: 20px;">
           <div style="flex: 1; background: rgba(100, 255, 218, 0.05); border: 1px solid rgba(100, 255, 218, 0.2); padding: 15px; border-radius: 12px; text-align: center;">
             <span style="font-size: 0.9rem; color: #94a3b8; text-transform: uppercase;">PhoBERT-v2 Average F1</span>
-            <h3 style="font-size: 2.2rem; color: #64ffda; margin: 5px 0;">0.6853</h3>
+            <h3 style="font-size: 2.2rem; color: #64ffda; margin: 5px 0;">0.7453</h3>
             <span style="font-size: 0.8rem; color: #38ef7d;">🥇 Top 1 Leaderboard</span>
           </div>
           <div style="flex: 1; background: rgba(0, 123, 255, 0.05); border: 1px solid rgba(0, 123, 255, 0.2); padding: 15px; border-radius: 12px; text-align: center;">
@@ -679,26 +680,26 @@
           <tbody>
             <tr class="highlight-row">
               <td style="font-weight: bold; color: #64ffda; text-align: left;">PhoBERT-v2 (Fine-tuned)</td>
-              <td>0.6886</td>
-              <td>0.6383</td>
-              <td>0.7289</td>
-              <td style="font-weight: bold; color: #FFD700;">0.6853</td>
+              <td>0.7096</td>
+              <td>0.7426</td>
+              <td>0.7837</td>
+              <td style="font-weight: bold; color: #FFD700;">0.7453</td>
               <td style="font-weight: bold; color: #38ef7d;">120.5 mẫu/giây</td>
             </tr>
             <tr>
               <td style="text-align: left; color: #007bff;">XLM-R-v1 (Baseline)</td>
-              <td>0.6632</td>
-              <td>0.5618</td>
-              <td>0.6394</td>
-              <td>0.6215</td>
+              <td>0.6631</td>
+              <td>0.6329</td>
+              <td>0.7475</td>
+              <td>0.6811</td>
               <td>85.2 mẫu/giây</td>
             </tr>
             <tr>
               <td style="text-align: left; color: #ffa500;">Gemma-4 4B (QLoRA)</td>
               <td>0.3588</td>
-              <td>0.2862</td>
-              <td>0.2883</td>
-              <td>0.3111</td>
+              <td>0.3288</td>
+              <td>0.2174</td>
+              <td>0.3016</td>
               <td>1.8 mẫu/giây</td>
             </tr>
           </tbody>
@@ -730,9 +731,33 @@
       </div>
     </div>
     
-    <!-- SLIDE 7: INTERACTIVE DASHBOARD -->
+    <!-- SLIDE 7: GIỚI THIỆU GIAO DIỆN WEB -->
     <div class="slide">
-      <h2 class="slide-header">6. GIAO DIỆN INTERACTIVE ACADEMIC DASHBOARD</h2>
+      <h2 class="slide-header">6. GIỚI THIỆU GIAO DIỆN ỨNG DỤNG VACCINENLP</h2>
+      <div class="slide-body" style="gap: 20px;">
+        <div class="slide-col" style="padding: 25px;">
+          <h3 class="col-title green-accent" style="font-size: 1.3rem;">🎨 Trải nghiệm Người dùng (UX/UI)</h3>
+          <ul class="slide-list" style="font-size: 0.95rem;">
+            <li class="slide-list-item check" style="font-size: 1.05rem; margin-bottom: 12px;"><b>Giao diện Hiện đại:</b> Tích hợp Streamlit framework với thiết kế tùy biến, hỗ trợ chuyển đổi linh hoạt chế độ Sáng (Light Mode) / Tối (Dark Mode).</li>
+            <li class="slide-list-item check" style="font-size: 1.05rem; margin-bottom: 12px;"><b>Thẻ trạng thái Trực quan (Cards):</b> Sử dụng hệ thống màu sắc y tế (Đỏ: Cảnh báo/Tiêu cực, Xanh lục: An toàn/Tích cực) kèm thanh Progress Bar sinh động.</li>
+            <li class="slide-list-item check" style="font-size: 1.05rem; margin-bottom: 12px;"><b>Responsive Design:</b> Tự động thích ứng trên mọi thiết bị từ Desktop đến Mobile.</li>
+          </ul>
+        </div>
+        <div class="slide-col" style="padding: 25px;">
+          <h3 class="col-title gold-accent" style="font-size: 1.3rem;">⚡ Tính năng Cốt lõi</h3>
+          <ul class="slide-list" style="font-size: 0.95rem;">
+            <li class="slide-list-item star" style="font-size: 1.05rem; margin-bottom: 12px;"><b>Thao tác Đa dạng:</b> Cho phép nhập tay trực tiếp từng câu, hoặc chọn tự động từ kho <i>Mẫu thử nghiệm</i> có sẵn (Chống tiêm chủng, Vô sinh,...).</li>
+            <li class="slide-list-item star" style="font-size: 1.05rem; margin-bottom: 12px;"><b>Chuyển đổi Mô hình 1-Click:</b> Người dùng dễ dàng switch qua lại giữa <b>PhoBERT-v2</b> (Ưu tiên bản địa) và <b>XLM-R-v1</b> (Đa ngôn ngữ) để so sánh chéo kết quả.</li>
+            <li class="slide-list-item star" style="font-size: 1.05rem; margin-bottom: 12px;"><b>Trợ lý Âm thanh:</b> Tích hợp gTTS (Google Text-to-Speech) tự động đọc báo cáo phân tích, hỗ trợ người khiếm thị.</li>
+          </ul>
+          <img src="dashboard_ui.png" alt="Dashboard UI" style="width: 100%; height: 150px; object-fit: cover; border-radius: 12px; margin-top: auto; box-shadow: 0 5px 25px rgba(255, 215, 0, 0.2); border: 1px solid rgba(255, 215, 0, 0.3);">
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 8: INTERACTIVE DASHBOARD -->
+    <div class="slide">
+      <h2 class="slide-header">7. TÍNH NĂNG DASHBOARD CHUYÊN SÂU</h2>
       <div class="slide-body" style="gap: 20px;">
         <div class="slide-col" style="padding: 25px;">
           <h3 class="col-title green-accent" style="font-size: 1.3rem;">💻 Phân hệ Phân tích & Trực quan</h3>
