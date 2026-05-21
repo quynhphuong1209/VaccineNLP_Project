@@ -1,65 +1,41 @@
 import os
 from pathlib import Path
+import sys
 
-# =============================================================================
-# VaccineNLP Centralized Path Management
-# =============================================================================
+# Project root (VaccineNLP_Clean_V1)
+ROOT_DIR = Path(__file__).parent.parent.parent.absolute()
 
-# Đường dẫn gốc của dự án (Gốc là thư mục VaccineNLP_ĐỒ_ÁN)
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
+# Configs & Docs
+CONFIGS_DIR = ROOT_DIR / "configs"
+DOCS_DIR = ROOT_DIR / "docs"
 
-# --- Thư mục Cấu hình & Tài liệu ---
-CONFIG_DIR = BASE_DIR / "configs"
-DOCS_DIR = BASE_DIR / "docs"
-APP_DIR = BASE_DIR / "app"
+# Datasets (Medallion Architecture)
+DATA_RAW_DIR = ROOT_DIR / "datasets" / "01_raw"                 # Bronze Data
+DATA_UNLABELED_DIR = ROOT_DIR / "datasets" / "02_processed"     # Silver Data (Unlabeled)
+DATA_GOLD_DIR = ROOT_DIR / "datasets" / "03_processed"          # Gold Data (Manual Labels)
+DATA_SILVER_DIR = ROOT_DIR / "datasets" / "04_silver_labels"    # Silver Data (LLM Labels)
+DATA_MODEL_READY_DIR = ROOT_DIR / "datasets" / "05_model_ready" # Model-Ready Data (Segmented + Remapped)
+DATA_TEMP_DIR = ROOT_DIR / "datasets" / "temp"                  # Temp processing
 
-# --- Thư mục Dữ liệu (Medallion Architecture) ---
-DATA_DIR = BASE_DIR / "datasets"
-RAW_DATA_DIR = DATA_DIR / "01_raw"          # BRONZE
-INTERIM_DATA_DIR = DATA_DIR / "02_interim"  # SILVER (WIP)
-PROCESSED_DATA_DIR = DATA_DIR / "02_processed" # SILVER (Cleaned, Unlabeled)
-GOLD_DATA_DIR = DATA_DIR / "03_processed"      # GOLD (Validated/Benchmark)
-SILVER_LABELS_DIR = DATA_DIR / "04_silver_labels" # SILVER (Auto-labeled)
-MODEL_READY_DIR = DATA_DIR / "05_model_ready"    # Final training ready
-TEMP_DATA_DIR = DATA_DIR / "temp"
+# Experiments (MLflow & trained models)
+EXPERIMENTS_DIR = ROOT_DIR / "experiments"
+MODELS_DIR = EXPERIMENTS_DIR / "models"
+RESULTS_DIR = EXPERIMENTS_DIR / "results"
 
-# --- Thư mục Thực nghiệm (Experiments) ---
-EXPERIMENTS_DIR = BASE_DIR / "experiments"
-MODEL_DIR = EXPERIMENTS_DIR / "models"
-RESULT_DIR = EXPERIMENTS_DIR / "results"
+# Ensure core directories exist
+for d in [DATA_RAW_DIR, DATA_UNLABELED_DIR, DATA_GOLD_DIR, DATA_SILVER_DIR, DATA_MODEL_READY_DIR, DATA_TEMP_DIR, EXPERIMENTS_DIR, MODELS_DIR, RESULTS_DIR, CONFIGS_DIR]:
+    d.mkdir(parents=True, exist_ok=True)
 
-# --- Thư mục Mã nguồn & Scripts ---
-NOTEBOOK_DIR = BASE_DIR / "notebooks"
-SCRIPT_DIR = BASE_DIR / "scripts"
-SRC_DIR = BASE_DIR / "src"
-SCRATCH_DIR = BASE_DIR / "scratch"
-
-# --- Helper Functions ---
-def get_model_path(model_name: str) -> Path:
-    """Trả về đường dẫn đến một model cụ thể trong experiments/models/"""
-    path = MODEL_DIR / model_name
-    path.mkdir(parents=True, exist_ok=True)
-    return path
-
-def get_result_path(result_name: str) -> Path:
-    """Trả về đường dẫn đến một file/thư mục kết quả cụ thể"""
-    return RESULT_DIR / result_name
-
-def ensure_dirs():
-    """Tạo tất cả các thư mục cần thiết nếu chưa tồn tại"""
-    directories = [
-        RAW_DATA_DIR, INTERIM_DATA_DIR, PROCESSED_DATA_DIR, 
-        GOLD_DATA_DIR, SILVER_LABELS_DIR, MODEL_READY_DIR,
-        TEMP_DATA_DIR, MODEL_DIR, RESULT_DIR, SCRATCH_DIR,
-        CONFIG_DIR, APP_DIR
-    ]
-    for d in directories:
-        d.mkdir(parents=True, exist_ok=True)
+def ensure_src_in_sys_path():
+    """Add the project's 'src' directory to sys.path if not already present."""
+    src_path = str(ROOT_DIR / "src")
+    if src_path not in sys.path:
+        sys.path.insert(0, src_path)
+    if str(ROOT_DIR) not in sys.path:
+        sys.path.insert(0, str(ROOT_DIR))
 
 if __name__ == "__main__":
-    # Chạy thử để kiểm tra
-    print(f"🚀 VaccineNLP Project Base: {BASE_DIR}")
-    print(f"📊 Raw Data: {RAW_DATA_DIR}")
-    print(f"🤖 Models: {MODEL_DIR}")
-    
-    # ensure_dirs() # Uncomment to create structure
+    print(f"VaccineNLP Path Registry Synced:")
+    print(f"  ROOT       : {ROOT_DIR}")
+    print(f"  UNLABELED  : {DATA_UNLABELED_DIR}")
+    print(f"  SILVER_LLM : {DATA_SILVER_DIR}")

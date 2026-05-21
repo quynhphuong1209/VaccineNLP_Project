@@ -35,8 +35,9 @@ if str(_ROOT / "src") not in sys.path:
 if str(_HERE) not in sys.path:
     sys.path.insert(0, str(_HERE))
 
+from src.common.paths import DATA_RAW_DIR, DATA_UNLABELED_DIR, ensure_src_in_sys_path
 from common.versioning_manager import VersioningManager
-from common.paths import DATA_RAW_DIR, DATA_INTERIM_DIR
+ensure_src_in_sys_path()
 
 try:
     # Try relative first, then script-dir based
@@ -276,7 +277,7 @@ def process_raw_files(raw_dir: Path = None, output_dir: Path = None) -> list[dic
     if raw_dir is None:
         raw_dir = DATA_RAW_DIR
     if output_dir is None:
-        output_dir = DATA_INTERIM_DIR
+        output_dir = DATA_UNLABELED_DIR
 
     output_dir.mkdir(parents=True, exist_ok=True)
     raw_files = list(raw_dir.glob("*.json"))
