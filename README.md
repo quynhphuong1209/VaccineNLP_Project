@@ -10,8 +10,9 @@
 **VaccineNLP** is a production-grade research framework designed to combat vaccine-related misinformation in the Vietnamese digital landscape. Utilizing a **Dual-Student Hybrid Architecture**, the system balances high-reasoning explainability (via LLMs like Gemma-4) with high-efficiency classification (via encoders like PhoBERT).
 
 ### Key Features:
+- **Taxonomy v3 (2-3-3)**: Streamlined, highly-optimized label taxonomy eliminating noisy classes.
 - **Multi-task Learning**: Simultaneous detection of Misinformation, Stance, and Sentiment.
-- **Explainable AI (XAI)**: Generates reasoning chains for every classification using fine-tuned QLoRA models.
+- **Explainable AI (XAI)**: Generates reasoning chains for every classification using fine-tuned QLoRA models (Gemma-4).
 - **Medallion Data Architecture**: Robust pipeline from raw social media crawls to gold-standard benchmark sets.
 - **Vietnamese Optimized**: Specifically tuned for the nuances of the Vietnamese language using `vinai/phobert-base-v2`.
 - **Interactive Academic Dashboard**: Visualizes operational throughput (samples/sec), statistical accuracy (F1), and correlation flows.
@@ -82,8 +83,8 @@ python scripts/unify_pipeline.py
 
 ## 📊 Results & Scientific Deep-dive
 
-The models are evaluated on a **Human-in-the-Loop Gold Benchmark Set (n=186)**. 
-- **Statistical accuracy**: PhoBERT-v2 achieves a macro average F1-Score of **0.6853** (Misinfo F1: 0.6886, Stance F1: 0.6383, Sentiment F1: 0.7289).
+The models are evaluated on a **Human-in-the-Loop Gold Benchmark Set (n=186)** using the latest **Taxonomy v3**. 
+- **Statistical accuracy**: PhoBERT-v2 achieves a macro average F1-Score of **0.7453** (Misinfo F1: 0.7096, Stance F1: 0.7426, Sentiment F1: 0.7837).
 - **Operational efficiency**: PhoBERT-v2 reaches an inference throughput of **120.5 samples/second**, making it highly suitable for real-time social media scanning.
 - **Explainable AI (XAI)**: Gemma-4 4B excels in producing high-quality reasoning chains for medical mislabeling, making it an essential backend consultant tool for HUPH experts.
 
