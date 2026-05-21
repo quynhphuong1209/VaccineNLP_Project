@@ -11,7 +11,7 @@ Lưu trữ tài liệu kỹ thuật, báo cáo khoa học, phương pháp luận
 
 ---
 
-## 📋 Danh Sách Tài Liệu (7 files)
+## 📋 Danh Sách Tài Liệu (8 files)
 
 | # | Tệp | Mô Tả | Phiên Bản |
 |---|------|--------|----------|
@@ -20,8 +20,9 @@ Lưu trữ tài liệu kỹ thuật, báo cáo khoa học, phương pháp luận
 | 3 | **02_DATASET_CARD.md** | Dataset Card: taxonomy 3 trục, schema JSONL, thống kê Gold Test Set | v2.0 |
 | 4 | **03_METHODOLOGY.md** | Phương pháp 5 phases + Benchmark Results + Novelty | v2.0 |
 | 5 | **04_FUTURE_WORKS_XAI.md** | Blueprint: Real-time XAI với LM Studio (frozen) | v1.0 |
-| 6 | **FOLDER_STRUCTURE.md** | Cây thư mục public sanitized (auto-generated) | ✅ Final |
-| 7 | **DOCUMENTATION_INDEX.md** | Master index toàn bộ tài liệu dự án | v2.0 |
+| 6 | **DEPLOYMENT_GUIDE.md** | Hướng dẫn deploy ứng dụng lên Streamlit Community Cloud | v1.0 |
+| 7 | **FOLDER_STRUCTURE.md** | Cây thư mục public sanitized (auto-generated) | ✅ Final |
+| 8 | **DOCUMENTATION_INDEX.md** | Master index toàn bộ tài liệu dự án | v2.0 |
 
 > Ngoài ra còn có `TAXONOMY_CHANGE_LOG.md` ghi lại lịch sử thay đổi hệ thống nhãn.
 

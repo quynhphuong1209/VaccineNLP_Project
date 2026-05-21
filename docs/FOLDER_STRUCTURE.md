@@ -13,6 +13,13 @@ VaccineNLP-Thesis (Public Repo)/
 ├── 📄 .gitignore
 ├── 📄 README.md
 ├── 📂 app/
+│   ├── 📂 data_fetchers/
+│   │   ├── 📄 __init__.py
+│   │   ├── 📄 apify_fetcher.py
+│   │   ├── 📄 news_fetcher.py
+│   │   ├── 📄 router.py
+│   │   ├── 📄 text_cleaner.py
+│   │   └── 📄 youtube_fetcher.py
 │   ├── 📄 README.md
 │   ├── 📄 README_demo.md
 │   ├── 📄 requirements_demo.txt
@@ -41,6 +48,7 @@ VaccineNLP-Thesis (Public Repo)/
 │   ├── 📄 02_DATASET_CARD.md
 │   ├── 📄 03_METHODOLOGY.md
 │   ├── 📄 04_FUTURE_WORKS_XAI.md
+│   ├── 📄 DEPLOYMENT_GUIDE.md
 │   ├── 📄 DOCUMENTATION_INDEX.md
 │   ├── 📄 FINAL_TECHNICAL_REPORT.md
 │   ├── 📄 FOLDER_STRUCTURE.md

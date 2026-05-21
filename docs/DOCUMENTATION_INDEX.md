@@ -58,6 +58,7 @@ Tài liệu này cung cấp **cây thư mục chi tiết, mô tả từng file, 
 | **02_DATASET_CARD.md** | Dataset Card: taxonomy, schema, thống kê | v2.0 ✅ |
 | **03_METHODOLOGY.md** | 5 phases nghiên cứu + benchmark results | v2.0 ✅ |
 | **04_FUTURE_WORKS_XAI.md** | Real-time XAI với LM Studio (frozen) | v1.0 ✅ |
+| **DEPLOYMENT_GUIDE.md** | Hướng dẫn deploy ứng dụng lên Streamlit Community Cloud | v1.0 ✅ |
 | **TAXONOMY_CHANGE_LOG.md** | Lịch sử thay đổi hệ thống nhãn | ✅ |
 
 ### 📔 Notebooks (Kaggle — 5 files)
