@@ -1,12 +1,7 @@
 {
   "phobert_v2": {
-    "misinfo": 1.15,
-    "stance": 1.25,
-    "sentiment": 1.20
-  },
-  "xlmr_v1": {
-    "misinfo": 1.45,
-    "stance": 1.65,
-    "sentiment": 1.80
+    "misinfo": 1.8197,
+    "stance": 1.6666,
+    "sentiment": 1.3474
   }
 }
