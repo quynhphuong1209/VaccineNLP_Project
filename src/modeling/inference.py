@@ -29,7 +29,7 @@ class VaccineInferencePipeline:
         
         # Initialize model and tokenizer (Baseline model has 2 misinfo, 3 stance, 3 sentiment classes)
         self.tokenizer = AutoTokenizer.from_pretrained(model_dir)
-        self.model = VaccineMultitaskModel(num_misinfo=3, num_stance=4, num_sentiment=3)
+        self.model = VaccineMultitaskModel(num_misinfo=2, num_stance=3, num_sentiment=3)
         
         weights_path = Path(model_dir) / "pytorch_model.bin"
         if weights_path.exists():

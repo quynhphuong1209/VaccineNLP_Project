@@ -253,7 +253,7 @@ class VaccineMultitaskModel(nn.Module):
     """Multitask model with shared PhoBERT encoder and task-specific heads."""
 
     def __init__(self, model_name="vinai/phobert-base-v2",
-                 num_misinfo=3, num_stance=4, num_sentiment=3, token=None):
+                 num_misinfo=2, num_stance=3, num_sentiment=3, token=None):
         from transformers import AutoConfig, AutoModel
         super(VaccineMultitaskModel, self).__init__()
         import transformers
@@ -577,22 +577,15 @@ def predict_cached(text: str, model_key: str) -> dict:
     p_st_cal  = F.softmax(logits_st / Ts['stance'], dim=1).cpu().numpy()[0]
     p_sen_cal = F.softmax(logits_se / Ts['sentiment'], dim=1).cpu().numpy()[0]
 
-    # Remap model's class space to UI space:
-    # Model misinfo: 0: Không liên quan, 1: Tin giả, 2: Chính xác
-    # UI misinfo: 0: Tin giả, 1: Chính xác
-    import numpy as np
-    p_mis_raw_ui = np.array([p_mis_raw[1], p_mis_raw[2] + p_mis_raw[0]])
-    p_mis_cal_ui = np.array([p_mis_cal[1], p_mis_cal[2] + p_mis_cal[0]])
+    # Bỏ qua remapping vì model mới trên Hugging Face đã chuẩn cấu trúc v3
+    p_mis_raw_ui = p_mis_raw
+    p_mis_cal_ui = p_mis_cal
 
-    # Model stance: 0: Trung lập, 1: Ủng hộ, 2: Phản đối, 3: Không rõ
-    # UI stance: 0: Ủng hộ, 1: Phản đối, 2: Trung lập
-    p_st_raw_ui = np.array([p_st_raw[1], p_st_raw[2], p_st_raw[0] + p_st_raw[3]])
-    p_st_cal_ui = np.array([p_st_cal[1], p_st_cal[2], p_st_cal[0] + p_st_cal[3]])
+    p_st_raw_ui = p_st_raw
+    p_st_cal_ui = p_st_cal
 
-    # Model sentiment: 0: Trung tính, 1: Tích cực, 2: Tiêu cực
-    # UI sentiment: 0: Tiêu cực, 1: Trung tính, 2: Tích cực
-    p_sen_raw_ui = np.array([p_sen_raw[2], p_sen_raw[0], p_sen_raw[1]])
-    p_sen_cal_ui = np.array([p_sen_cal[2], p_sen_cal[0], p_sen_cal[1]])
+    p_sen_raw_ui = p_sen_raw
+    p_sen_cal_ui = p_sen_cal
 
     # Dự đoán của mô hình (khớp 1-to-1 hoàn hảo với LABEL_MAPS chuẩn hung2903)
     pred_m = int(np.argmax(p_mis_raw_ui))
