@@ -46,3 +46,7 @@ gTTS
 beautifulsoup4
 requests
 wordcloud
+captum>=0.7.0
+trafilatura>=1.12.0
+yt-dlp>=2024.10.7
+apify-client>=1.7.0
