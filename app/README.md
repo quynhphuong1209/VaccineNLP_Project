@@ -1,31 +1,69 @@
-# 📱 VaccineNLP Dashboard (app/) - v1.3
+# 📱 VaccineNLP Dashboard (app/) - v1.4
 
-**Cập nhật:** April 23, 2026 | Trạng thái: ✅ Active & Ready for Demo
+**Cập nhật:** May 21, 2026 | Trạng thái: ✅ Active & Ready for Demo
 
-**Ghi chú:** Ứng dụng Streamlit chính để demo XAI capabilities của hệ thống VaccineNLP
+**Mục đích:** Giao diện người dùng interactiv dành cho demo XAI capabilities của hệ thống VaccineNLP. Cho phép phân tích văn bản về vaccine với giải thích từ AI.
 
-## 🚀 Thành Phần Chính
+---
 
-### 1. `streamlit_demo.py`
-Ứng dụng Streamlit chính cung cấp 3 tính năng cốt lõi:
-- **Real-time Classification**: Nhập văn bản và nhận kết quả phân tích đa chiều (Misinfo, Stance, Sentiment).
-- **Explainable AI (XAI)**: Hiển thị chuỗi lý luận (Chain-of-Thought) giúp giải thích các dự đoán của AI.
-- **Model Comparison (Benchmark)**: Trực quan hóa hiệu năng của PhoBERT-v2, XLM-R và Gemma-4 trên tập Gold Benchmark.
+## 📋 Danh Sách Files
 
-### 2. `xai_cache.json`
-Bộ nhớ đệm chứa các phản hồi reasoning chất lượng cao từ Teacher Model (Gemma-4 31B), giúp tăng tốc độ demo và đảm bảo độ chính xác của giải thích.
+### 1. 📄 `streamlit_demo.py` - Main Application
+**Chức Năng:** Ứng dụng web Streamlit chính (Entry point)
 
-## 🛠️ Hướng Dẫn Chạy
-Để chạy dashboard cục bộ, bạn cần cài đặt các thư viện trong `requirements.txt` và chạy lệnh sau:
+**Tính Năng Chính:**
+- 🔍 **Real-time Text Classification**: Nhập văn bản bất kỳ và nhận phân loại đa chiều instant
+  - Misinfo Detection (Phát hiện tin sai lệch)
+  - Stance Analysis (Phân tích thái độ): Support/Against/Neutral
+  - Sentiment Classification (Phân tích cảm xúc)
 
+- 🧠 **Explainable AI (XAI)**: Hiển thị Chain-of-Thought reasoning từ Gemma-4
+- 📊 **Model Comparison**: So sánh PhoBERT-v2 vs XLM-R vs Gemma-4
+- 🎛️ **Sidebar Controls**: Chọn mô hình & settings
+
+**Chạy Ứng Dụng:**
 ```bash
+pip install -r app/requirements_demo.txt
 streamlit run app/streamlit_demo.py
 ```
 
-## 📊 Mô Hình Hỗ Trợ
-Ứng dụng cho phép chuyển đổi giữa các mô hình Encoder tại Sidebar:
-- **PhoBERT-v2**: Tốt nhất cho tiếng Việt.
-- **XLM-R-v1**: Baseline đa ngôn ngữ.
+### 2. 💾 `xai_cache.json` - Reasoning Cache
+Bộ nhớ đệm chứa Chain-of-Thought explanations từ Gemma-4 31B Teacher.
+- Lưu trữ phản hồi reasoning chất lượng cao
+- Format: text_hash → reasoning explanations
+- Tăng tốc độ demo & đảm bảo độ chính xác
+
+**Backup Files:**
+- `xai_cache_backup_20260520_2317.json` - Previous version backup
+
+### 3. 📦 `requirements_demo.txt` - Dependencies
+Các Python packages cần cho Streamlit app
 
 ---
-*Cập nhật: 23/04/2026 | Phiên bản 1.3*
+
+## 📊 Mô Hình Được Hỗ Trợ
+
+| Mô Hình | Kích Thước | Hiệu Năng Misinfo F1 | Ghi Chú |
+|---|---|---|---|
+| **PhoBERT-v2** | 110M | **0.7079** ⭐ | Gợi ý sử dụng |
+| **XLM-R-v1** | 370M | 0.5823 | Đa ngôn ngữ |
+| **Gemma-4-4B** | 4B | 0.6925 | Với XAI |
+
+---
+
+## 🚀 Hướng Dẫn Nhanh
+
+```bash
+# 1. Cài đặt dependencies
+pip install -r app/requirements_demo.txt
+
+# 2. Chạy app
+streamlit run app/streamlit_demo.py
+
+# 3. Truy cập
+http://localhost:8501
+```
+
+---
+
+*Cập nhật: 21/05/2026 | Phiên bản 1.4*

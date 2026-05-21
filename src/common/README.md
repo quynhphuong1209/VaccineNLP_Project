@@ -1,6 +1,6 @@
-# 🔧 Shared Utilities (src/common/) - v1.0
+# 🔧 Shared Utilities (src/common/) - v1.1
 
-**Cập nhật:** April 23, 2026 | Trạng thái: ✅ Maintained
+**Cập nhật:** May 21, 2026 | Trạng thái: ✅ Maintained
 
 ## Mục Đích
 Cung cấp utilities chung và configuration được sử dụng bởi tất cả các modules khác trong dự án.

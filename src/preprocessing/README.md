@@ -1,6 +1,6 @@
-# 🧹 Text Preprocessing Module (src/preprocessing/) - v1.0
+# 🧹 Text Preprocessing Module (src/preprocessing/) - v1.1
 
-**Cập nhật:** April 23, 2026 | Trạng thái: ✅ Active
+**Cập nhật:** May 21, 2026 | Trạng thái: ✅ Active
 
 ## Mục Đích
 

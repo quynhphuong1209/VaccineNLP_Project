@@ -1,6 +1,6 @@
-# 🤖 Modeling Module (src/modeling/)
+# 🤖 Modeling Module (src/modeling/) - v1.1
 
-## Mục Đích
+**Cập nhật:** May 21, 2026 | Trạng thái: ✅ Active
 Cung cấp các công cụ cho Model Training, Inference, và Evaluation.
 
 Bao gồm 2 mô hình chính:

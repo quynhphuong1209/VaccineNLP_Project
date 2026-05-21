@@ -1,8 +1,8 @@
-# ⚙️ Thư Mục Cấu Hình (configs/) - v1.0
+# ⚙️ Cấu Hình Hệ Thống (configs/) - v1.1
 
-**Cập nhật:** April 23, 2026 | Trạng thái: ✅ Maintained
+**Cập nhật:** May 21, 2026 | Trạng thái: ✅ Maintained
 
-## Mục Đích
+## 🎯 Mục Đích
 Tập trung quản lý tất cả file cấu hình JSON để điều khiển hành vi của các thành phần hệ thống. Giúp dễ dàng thay đổi cấu hình mà không cần sửa code.
 
 ---

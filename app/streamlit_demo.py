@@ -163,6 +163,32 @@ def load_live_benchmarks():
             benchmarks[key] = fallback[key]
     return benchmarks
 
+@st.cache_data(ttl=300)
+def load_temperature_params():
+    """Load Temperature Scaling parameters từ experiments/results/.
+    Fallback T=1.0 (no scaling) nếu file chưa có."""
+    params = {
+        'phobert_v2': {'misinfo': 1.0, 'stance': 1.0, 'sentiment': 1.0},
+        'xlmr_v1':    {'misinfo': 1.0, 'stance': 1.0, 'sentiment': 1.0},
+    }
+    paths = [
+        PROJECT_ROOT / "experiments" / "results" / "temperature_params.json",
+        PROJECT_ROOT / "app" / "temperature_params.json",
+    ]
+    for p in paths:
+        if p.exists():
+            try:
+                with open(p) as f:
+                    loaded = json.load(f)
+                params.update(loaded)
+                params['_source'] = 'LIVE'
+                break
+            except Exception as e:
+                print(f"Lỗi load {p}: {e}")
+    else:
+        params['_source'] = 'fallback (T=1.0)'
+    return params
+
 # ─────────────────────────────────────────────────────────────
 # SAMPLE TEXTS
 # ─────────────────────────────────────────────────────────────
@@ -528,9 +554,26 @@ def predict_cached(text: str, model_key: str) -> dict:
         logits_m, logits_st, logits_se = model(enc["input_ids"], enc["attention_mask"])
 
     # Lấy xác suất
-    p_mis = F.softmax(logits_m, dim=1).cpu().numpy()[0]
-    p_st  = F.softmax(logits_st, dim=1).cpu().numpy()[0]
-    p_sen = F.softmax(logits_se, dim=1).cpu().numpy()[0]
+    # Load T params
+    T_params = load_temperature_params()
+    model_key_lower = model_key.lower().replace('-', '_').replace(' ', '_')
+    # Map: "PhoBERT-v2" → "phobert_v2"; "XLM-R-v1" → "xlmr_v1"
+    if 'phobert' in model_key_lower:
+        Ts = T_params.get('phobert_v2', {'misinfo': 1.0, 'stance': 1.0, 'sentiment': 1.0})
+    elif 'xlm' in model_key_lower:
+        Ts = T_params.get('xlmr_v1', {'misinfo': 1.0, 'stance': 1.0, 'sentiment': 1.0})
+    else:
+        Ts = {'misinfo': 1.0, 'stance': 1.0, 'sentiment': 1.0}
+
+    # Raw softmax (original)
+    p_mis_raw = F.softmax(logits_m, dim=1).cpu().numpy()[0]
+    p_st_raw  = F.softmax(logits_st, dim=1).cpu().numpy()[0]
+    p_sen_raw = F.softmax(logits_se, dim=1).cpu().numpy()[0]
+
+    # Calibrated softmax (Temperature Scaling)
+    p_mis_cal = F.softmax(logits_m / Ts['misinfo'], dim=1).cpu().numpy()[0]
+    p_st_cal  = F.softmax(logits_st / Ts['stance'], dim=1).cpu().numpy()[0]
+    p_sen_cal = F.softmax(logits_se / Ts['sentiment'], dim=1).cpu().numpy()[0]
 
     # Dự đoán của mô hình (khớp 1-to-1 hoàn hảo với LABEL_MAPS chuẩn hung2903)
     pred_m = int(torch.argmax(logits_m, dim=1))
@@ -558,9 +601,27 @@ def predict_cached(text: str, model_key: str) -> dict:
         reasoning = translate_to_vietnamese(reasoning)
 
     res_dict = {
-        "misinfo":   {"pred": pred_m, "conf": list(p_mis)},
-        "stance":    {"pred": pred_st, "conf": list(p_st)},
-        "sentiment": {"pred": pred_se, "conf": list(p_sen)},
+        "misinfo": {
+            "pred": pred_m,
+            "conf": list(p_mis_raw),            # giữ tương thích ngược (raw)
+            "conf_raw": list(p_mis_raw),
+            "conf_calibrated": list(p_mis_cal),
+            "temperature": Ts['misinfo'],
+        },
+        "stance": {
+            "pred": pred_st,
+            "conf": list(p_st_raw),             # giữ tương thích ngược (raw)
+            "conf_raw": list(p_st_raw),
+            "conf_calibrated": list(p_st_cal),
+            "temperature": Ts['stance'],
+        },
+        "sentiment": {
+            "pred": pred_se,
+            "conf": list(p_sen_raw),            # giữ tương thích ngược (raw)
+            "conf_raw": list(p_sen_raw),
+            "conf_calibrated": list(p_sen_cal),
+            "temperature": Ts['sentiment'],
+        }
     }
     
     # Nếu tất cả các cách trên bị lỗi, tự động tạo fallback thông minh bằng tiếng Việt
@@ -1018,17 +1079,39 @@ def render_result_card(task_name: str, task_key: str, result: dict):
     pred_id = result["pred"]
     if pred_id not in LABEL_MAPS[task_key]:
         pred_id = list(LABEL_MAPS[task_key].keys())[0] # Phòng tránh lỗi cache cũ out-of-bounds
-    conf_list = result["conf"]
+    conf_raw_list = result.get("conf_raw", result["conf"])
+    conf_cal_list = result.get("conf_calibrated", result["conf"])
+    T_val = result.get("temperature", 1.0)
+    has_calibration = "conf_calibrated" in result and abs(T_val - 1.0) > 0.001
+
     label = LABEL_MAPS[task_key][pred_id]
     color = LABEL_COLORS[task_key][pred_id]
     icon = LABEL_ICONS[task_key][pred_id]
-    confidence = max(conf_list) * 100
+    
+    confidence_raw = max(conf_raw_list) * 100
+    confidence_cal = max(conf_cal_list) * 100
 
     is_dark = st.session_state.get("theme", "Dark") == "Dark"
     card_bg = "rgba(255, 255, 255, 0.03)" if is_dark else "#ffffff"
     text_color = "#e2e4e9" if is_dark else "#1a1e2e"
     secondary_text = "#888" if is_dark else "#666"
     shadow = "0 10px 20px rgba(0,0,0,0.3)" if is_dark else "0 10px 20px rgba(0,0,0,0.1)"
+
+    if has_calibration:
+        conf_html = f"""
+        <div style="font-size: 0.9rem; color: {secondary_text}; margin-top: 5px;">
+            Thô: <span style="text-decoration: line-through;">{confidence_raw:.1f}%</span>
+        </div>
+        <div style="font-size: 1.1rem; color: {color}; font-weight: bold; margin-top: 2px;">
+            Đã hiệu chuẩn (T={T_val:.2f}): {confidence_cal:.1f}%
+        </div>
+        """
+    else:
+        conf_html = f"""
+        <div style="font-size: 1.0rem; color: {secondary_text}; margin-top: 5px;">
+            Độ tin cậy: <strong style="color: {color};">{confidence_raw:.1f}%</strong>
+        </div>
+        """
 
     st.markdown(f"""
     <div style="
@@ -1045,32 +1128,46 @@ def render_result_card(task_name: str, task_key: str, result: dict):
                     letter-spacing: 0.15em; margin-bottom: 8px;">{task_name}</div>
         <div style="font-size: 1.6rem; font-weight: 700; color: {color};
                     margin-bottom: 10px;">{label}</div>
-        <div style="font-size: 1rem; color: {secondary_text};">
-            Độ tin cậy: <strong style="color: {color};">{confidence:.1f}%</strong>
-        </div>
+        {conf_html}
     </div>
     """, unsafe_allow_html=True)
 
     with st.expander(f"📊 Chi tiết {task_name}", expanded=False):
-        for idx, prob in enumerate(conf_list):
+        for idx, prob_raw in enumerate(conf_raw_list):
             if idx not in LABEL_MAPS[task_key]:
                 continue # Bỏ qua nếu cache cũ có nhiều class hơn cấu hình hiện tại
+            prob_cal = conf_cal_list[idx]
             class_label = LABEL_MAPS[task_key][idx]
             class_color = LABEL_COLORS[task_key][idx]
-            pct = prob * 100
+            pct_raw = prob_raw * 100
+            pct_cal = prob_cal * 100
             bar_bg = "#262730" if is_dark else "#e6eaf1"
             label_text_color = "#a0a5b0" if is_dark else "#000"
-            st.markdown(f"""
-            <div style="margin-bottom: 8px;">
-                <div style="display: flex; justify-content: space-between; font-size: 13px; color: {label_text_color};">
-                    <span>{class_label}</span>
-                    <span style="color: {class_color}; font-weight: bold;">{pct:.1f}%</span>
+            
+            if has_calibration:
+                st.markdown(f"""
+                <div style="margin-bottom: 12px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 13px; color: {label_text_color}; margin-bottom: 2px;">
+                        <span>{class_label}</span>
+                        <span style="font-size: 11px; color: {secondary_text};">Thô: {pct_raw:.1f}% ➔ <strong style="color: {class_color};">Hiệu chuẩn: {pct_cal:.1f}%</strong></span>
+                    </div>
+                    <div style="background: {bar_bg}; border-radius: 10px; height: 8px; margin-top: 4px;">
+                        <div style="background: {class_color}; width: {pct_cal}%; height: 8px; border-radius: 10px; box-shadow: 0 0 10px {class_color}40;"></div>
+                    </div>
                 </div>
-                <div style="background: {bar_bg}; border-radius: 10px; height: 8px; margin-top: 4px;">
-                    <div style="background: {class_color}; width: {pct}%; height: 8px; border-radius: 10px; box-shadow: 0 0 10px {class_color}40;"></div>
+                """, unsafe_allow_html=True)
+            else:
+                st.markdown(f"""
+                <div style="margin-bottom: 8px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 13px; color: {label_text_color};">
+                        <span>{class_label}</span>
+                        <span style="color: {class_color}; font-weight: bold;">{pct_raw:.1f}%</span>
+                    </div>
+                    <div style="background: {bar_bg}; border-radius: 10px; height: 8px; margin-top: 4px;">
+                        <div style="background: {class_color}; width: {pct_raw}%; height: 8px; border-radius: 10px; box-shadow: 0 0 10px {class_color}40;"></div>
+                    </div>
                 </div>
-            </div>
-            """, unsafe_allow_html=True)
+                """, unsafe_allow_html=True)
 
 def render_benchmark_tab():
     import pandas as pd

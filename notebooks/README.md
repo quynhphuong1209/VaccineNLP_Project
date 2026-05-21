@@ -1,6 +1,9 @@
-# 📔 Thư Mục Notebooks (notebooks/) - v1.1 Updated
+# 📔 Thư Mục Notebooks (notebooks/) - v1.2
 
-## Mục Đích (Updated v1.1)
+**Cập nhật:** May 21, 2026 | Trạng thái: ✅ Complete
+
+## 🎯 Mục Đích
+
 Lưu trữ các Jupyter Notebooks tương tác để:
 - 🔍 Exploratory Data Analysis (EDA) - Data profiling
 - 🧠 Model training & hyperparameter tuning - PhoBERT & Gemma-4
@@ -8,11 +11,11 @@ Lưu trữ các Jupyter Notebooks tương tác để:
 - 🧪 Experiments & prototyping - Rapid development
 - 🔮 Inference & evaluation - Model predictions & explanations
 
-**Trạng thái:** 8 files (4 unique notebook types + variations)
+**Trạng thái:** 4 main notebooks + variations
 
 ---
 
-## 📋 Danh Sách Notebooks (April 23, 2026 - Updated FINAL)
+## 📋 Danh Sách Notebooks (May 21, 2026 - Final Version)
 
 ### 1️⃣ **01_phobert_multitask_training.ipynb**
 

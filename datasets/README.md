@@ -1,19 +1,27 @@
-# 📊 Thư Mục Dữ Liệu (datasets/)
+# 📊 Thư Mục Dữ Liệu (datasets/) - v1.2
 
-## Mục Đích
-Quản lý dữ liệu theo **Medallion Architecture**: Bronze (Raw) → Silver (Cleaned) → Gold (Validated)
+**Cập nhật:** May 21, 2026 | Trạng thái: ✅ Complete
 
-Đảm bảo tracking rõ ràng chất lượng và giai đoạn xử lý của mỗi dataset.
+## 🎯 Mục Đích
+
+Quản lý dữ liệu theo **Medallion Architecture**: Bronze → Silver → Gold.
 
 ---
 
 ## 🏗️ Kiến Trúc Medallion
 
 ```
-📊 DATASETS
-├── 🔴 BRONZE (01_raw/)          - Dữ liệu thô từ nguồn
-├── 🟡 SILVER (02_interim/, 02_processed/, 04_silver_labels/) - Đã xử lý cơ bản
-└── 🟢 GOLD (03_processed/)      - Xác nhận chất lượng cao
+🔴 BRONZE (01_raw/)              - Dữ liệu thô từ nguồn
+        ↓
+🟡 SILVER (02_interim/)          - Đang xử lý
+        ↓
+🟡 SILVER (02_processed/)        - Đã làm sạch & unlabeled
+        ↓
+🟡 SILVER (04_silver_labels/)    - Auto-labeled data
+        ↓
+🟢 GOLD (03_processed/)          - Expert-reviewed (Ground Truth)
+        ↓
+🔵 MODEL-READY (05_model_ready/) - Tokenized for training
 ```
 
 ---
@@ -25,29 +33,108 @@ Lưu trữ dữ liệu thô từ các nguồn (Apify, APIs) mà chưa xử lý
 
 ### Đặc Điểm
 - ❌ Chưa làm sạch (uncleaned)
-- ❌ Chưa validate (unvalidated)
-- ❌ Có thể có duplicates, errors, encoding issues
-- ✅ Lưu giữ gốc để audit trail
+- ❌ Chưa validate (unvalidated) 
+- ❌ Có duplicates, errors, encoding issues
+- ✅ Immutable - Lưu giữ gốc để audit trail
 
 ### Files
 - `target_urls_fb.txt` - Danh sách URLs Facebook cần crawl
-
-### Format Data
-```
-Text format: Một URL mỗi dòng
-https://www.facebook.com/page1
-https://www.facebook.com/page2
-```
+- `apify_raw.json` - Dữ liệu thô từ Apify
 
 ### Sử Dụng
 ```python
-# Đọc target URLs
 with open('datasets/01_raw/target_urls_fb.txt') as f:
     urls = [line.strip() for line in f]
+```
 
-# Crawl từ URLs này
-for url in urls:
-    data = collect_from(url)
+---
+
+## 🟡 **02_processed/** - SILVER PROCESSED LAYER
+
+### Mục Đích
+Dữ liệu đã làm sạch, chuẩn hóa, sẵn sàng cho annotation
+
+### Files Chính
+- `corpus_1856_unlabeled.json` - Corpus chính (1856 samples)
+
+### Đặc Điểm
+- ✅ Làm sạch (HTML removed, normalized)
+- ✅ Duplicates removed
+- ✅ Language filtered (Vietnamese only)
+- ❌ Chưa labeled
+
+---
+
+## 🟡 **04_silver_labels/** - AUTO-LABELED DATA
+
+### Mục Đích
+Dữ liệu auto-labeled bởi LLM với confidence scores
+
+### Files
+- `annotated_v6.jsonl` - Latest auto-labels (JSONL format)
+- `label_confidence_scores.json` - Confidence per label
+
+---
+
+## 🟢 **03_processed/** - GOLD LAYER
+
+### Mục Đích
+Dữ liệu xác nhận chất lượng cao (Expert-reviewed Ground Truth)
+
+### Files Chính
+- `reclaimed_master_pool_vn_clean.json` - Master dataset (500 samples)
+- `gold_test_set_240.json` - Benchmark test set (240 samples)
+
+### Đặc Điểm
+- ✅ Human-reviewed by experts
+- ✅ High-confidence labels
+- ✅ Balanced datasets
+- 🏅 Ready for final evaluation
+
+---
+
+## 🔵 **05_model_ready/** - TRAINING-READY DATA
+
+### Mục Đích
+Dữ liệu đã convert sang format tối ưu cho training
+
+### Files
+- `train_split.pt` - Training set (PyTorch format)
+- `val_split.pt` - Validation set
+- `test_split.pt` - Test set
+
+### Sử Dụng
+```python
+import torch
+from torch.utils.data import DataLoader
+
+train_dataset = torch.load('datasets/05_model_ready/train_split.pt')
+train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
+```
+
+---
+
+## 📈 Data Statistics
+
+| Layer | Samples | Status | Quality |
+|---|---|---|---|
+| 01_raw/ | ~3000 | Raw | ⭐ |
+| 02_processed/ | 1856 | Cleaned | ⭐⭐⭐ |
+| 04_silver_labels/ | 1500 | Auto-labeled | ⭐⭐⭐ |
+| 03_processed/ | 500 | Gold | ⭐⭐⭐⭐⭐ |
+| 05_model_ready/ | 500 | Model-ready | ⭐⭐⭐⭐⭐ |
+
+---
+
+## 🔗 Related Documentation
+
+- [Dataset Card](../docs/02_DATASET_CARD.md)
+- [Methodology](../docs/03_METHODOLOGY.md)
+- [Pipeline Architecture](../docs/01_PIPELINE_ARCHITECTURE.md)
+
+---
+
+*Cập nhật: 21/05/2026 | Phiên bản 1.2*
     save_to('datasets/01_raw/apify_raw.json')
 ```
 
