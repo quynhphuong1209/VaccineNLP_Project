@@ -1,0 +1,44 @@
+{
+  "model": "phobert-v2",
+  "timestamp": "2026-05-16T13:40:30",
+  "total_samples": 186,
+  "val_loss_best": 0.5266,
+  "training_seconds": 648,
+  "misinfo": {
+    "macro_f1": 0.7097,
+    "per_class": [
+      0.5161,
+      0.9032
+    ],
+    "support": [
+      28,
+      158
+    ]
+  },
+  "stance": {
+    "macro_f1": 0.6293,
+    "per_class": [
+      0.5846,
+      0.5941,
+      0.7092
+    ],
+    "support": [
+      54,
+      48,
+      84
+    ]
+  },
+  "sentiment": {
+    "macro_f1": 0.6987,
+    "per_class": [
+      0.7445,
+      0.7536,
+      0.5979
+    ],
+    "support": [
+      71,
+      75,
+      40
+    ]
+  }
+}
