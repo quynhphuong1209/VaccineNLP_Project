@@ -1,6 +1,6 @@
 # 📚 Ứng dụng Xử lý Ngôn ngữ Tự nhiên trong phát hiện thông tin sai lệch về vaccine và phân tích thái độ cộng đồng trên môi trường số tại Việt Nam - Tài Liệu Hệ Thống Hoàn Chỉnh
 
-**Cập nhật:** 20/05/2026 (Phase 6 — Final)
+**Cập nhật:** 21/05/2026 (Phase 6 — Final)
 **Phiên bản:** v2.0
 **Ngôn ngữ:** Tiếng Việt + Code
 **Notebooks:** 5 files (numbered 01–04)
@@ -53,13 +53,15 @@ Tài liệu này cung cấp **cây thư mục chi tiết, mô tả từng file, 
 
 | Tệp | Mô Tả | Phiên Bản |
 |------|--------|----------|
-| **FINAL_TECHNICAL_REPORT.md** | Báo cáo kỹ thuật tổng thể + TO-DO luận văn | ✅ Final |
-| **01_PIPELINE_ARCHITECTURE.md** | Kiến trúc Medallion + HuggingFace Hub | v3.1 ✅ |
+| **FINAL_TECHNICAL_REPORT.md** | Báo cáo kỹ thuật tổng thể + TO-DO luận văn + post-hoc calibration và XAI | ✅ Final |
+| **01_PIPELINE_ARCHITECTURE.md** | Kiến trúc Medallion + HuggingFace Hub + Multi-source fetcher | v3.1 ✅ |
 | **02_DATASET_CARD.md** | Dataset Card: taxonomy, schema, thống kê | v2.0 ✅ |
-| **03_METHODOLOGY.md** | 5 phases nghiên cứu + benchmark results | v2.0 ✅ |
+| **03_METHODOLOGY.md** | 5 phases nghiên cứu + benchmark results sau khi hiệu chuẩn (Temperature Scaling) và Captum XAI | v2.0 ✅ |
 | **04_FUTURE_WORKS_XAI.md** | Real-time XAI với LM Studio (frozen) | v1.0 ✅ |
 | **DEPLOYMENT_GUIDE.md** | Hướng dẫn deploy ứng dụng lên Streamlit Community Cloud | v1.0 ✅ |
 | **TAXONOMY_CHANGE_LOG.md** | Lịch sử thay đổi hệ thống nhãn | ✅ |
+
+*Ghi chú: Phase 6, 7, và 8 (Hiệu chuẩn độ tin cậy, Giải thích AI chuẩn khoa học Captum, và Thu thập đa nguồn) đã được tích hợp đầy đủ và đồng bộ xuyên suốt tài liệu.*
 
 ### 📔 Notebooks (Kaggle — 5 files)
 

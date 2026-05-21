@@ -84,5 +84,5 @@ Mỗi hàng dữ liệu trong tập Silver/Gold được thiết kế để ph�
 
 ---
 
-*Cập nhật: 20/05/2026 | Phiên bản 2.0*
+*Cập nhật: 21/05/2026 | Phiên bản 2.0*
 

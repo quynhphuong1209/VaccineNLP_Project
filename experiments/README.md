@@ -135,41 +135,41 @@ Chứa kết quả đánh giá chi tiết trên tập Gold Benchmark (xác nhậ
 {
   "metadata": {
     "model_name": "phobert_v2",
-    "test_date": "2026-05-20",
-    "dataset_size": 240,
-    "test_set_version": "gold_benchmark_v1"
+    "test_date": "2026-05-21",
+    "dataset_size": 186,
+    "test_set_version": "gold_benchmark_v3"
   },
   "overall_metrics": {
-    "accuracy": 0.7079,
-    "precision_macro": 0.7089,
-    "recall_macro": 0.7079,
-    "f1_macro": 0.7079
+    "accuracy": 0.7312,
+    "precision_macro": 0.7105,
+    "recall_macro": 0.6922,
+    "f1_macro": 0.6967
   },
   "per_task": {
     "misinfo_detection": {
-      "accuracy": 0.8042,
-      "f1": 0.7079,
+      "accuracy": 0.8226,
+      "f1": 0.6996,
       "class_breakdown": {
-        "misinfo": {"f1": 0.5085, "support": 28},
-        "correct": {"f1": 0.9073, "support": 158}
+        "misinfo": {"f1": 0.5091, "support": 28},
+        "correct": {"f1": 0.8901, "support": 158}
       }
     },
     "stance_analysis": {
-      "accuracy": 0.6958,
-      "f1": 0.7107,
+      "accuracy": 0.6989,
+      "f1": 0.6640,
       "class_breakdown": {
-        "support": {"f1": 0.6476, "support": 54},
-        "against": {"f1": 0.6869, "support": 48},
-        "neutral": {"f1": 0.7976, "support": 84}
+        "support": {"f1": 0.6122, "support": 54},
+        "against": {"f1": 0.6596, "support": 48},
+        "neutral": {"f1": 0.7202, "support": 84}
       }
     },
     "sentiment_classification": {
-      "accuracy": 0.7125,
-      "f1": 0.7260,
+      "accuracy": 0.7581,
+      "f1": 0.7266,
       "class_breakdown": {
-        "positive": {"f1": 0.7468, "support": 80},
-        "negative": {"f1": 0.6944, "support": 60},
-        "neutral": {"f1": 0.7273, "support": 100}
+        "positive": {"f1": 0.7467, "support": 80},
+        "negative": {"f1": 0.6947, "support": 60},
+        "neutral": {"f1": 0.7385, "support": 46}
       }
     }
   }
@@ -282,9 +282,9 @@ experiments/results/training_logs/
 
 | Mô hình | Misinfo F1 | Stance F1 | Sentiment F1 | Status |
 |---|:---:|:---:|:---:|:---|
-| **PhoBERT-v2** | **0.7079** | **0.7107** | **0.7260** | ✅ SOTA |
-| **Gemma-4-4B** | 0.6925 | 0.5818 | 0.7196 | ✅ XAI |
-| **XLM-R-v1** | 0.5823 | 0.4217 | 0.1842 | 📊 Baseline |
+| **PhoBERT-v2** | 0.6996 | **0.6640** | 0.7266 | ✅ SOTA (Classification Engine) |
+| **Gemma-4-4B** | 0.6377 | 0.6264 | **0.7700** | ✅ SOTA (Sentiment / XAI) |
+| **XLM-R-v1** | **0.7038** | 0.6224 | 0.6866 | 📊 Baseline |
 
 ---
 

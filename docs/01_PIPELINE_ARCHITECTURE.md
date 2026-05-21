@@ -74,6 +74,31 @@ Các mô hình của dự án được lưu trữ công khai tại Hugging Face 
 
 > Chi tiết per-class breakdown xem tại `experiments/results/benchmark_report.md` và `README.md`.
 
+## 7. Demo App: Kiến trúc Thu thập Dữ liệu Đa nguồn (Multi-Source Data Fetching Architecture)
+
+Để ứng dụng trong môi trường thực tiễn (Wild data), Streamlit app tích hợp module thu thập dữ liệu đa nguồn thời gian thực với cấu trúc thiết kế module hóa:
+
+```mermaid
+graph TD
+    UI[Streamlit UI Input] --> Router{Source Router}
+    Router -->|URL Báo chí| Fetcher1[Trafilatura Extractor]
+    Router -->|URL YouTube| Fetcher2[yt-dlp Scraper]
+    Router -->|URL FB/TikTok/Threads| Fetcher3[Apify Actor Client]
+    
+    Fetcher1 --> Clean[Text Normalization & Domain Filtering]
+    Fetcher2 --> Clean
+    Fetcher3 --> Clean
+    
+    Clean --> Infer[Dual-Student Hybrid Engine]
+```
+
+### Module Đặc tả:
+1.  **Trafilatura Extractor (`app/data_fetchers/news_fetcher.py`)**: Lấy text sạch từ 15+ báo lớn (VnExpress, Tuổi Trẻ, Thanh Niên) trong 1-3 giây, tự động bỏ HTML boilerplate.
+2.  **yt-dlp Scraper (`app/data_fetchers/youtube_fetcher.py`)**: Sử dụng thư viện `yt-dlp` trích xuất thông tin tiêu đề, mô tả và bình luận hàng đầu của video trong 5-15 giây.
+3.  **Apify Actor Client (`app/data_fetchers/apify_fetcher.py`)**:
+    -   Tích hợp các Actors tối ưu: Facebook Pages Scraper, TikTok Scraper, Threads Scraper.
+    -   **Cơ chế Token Rotation**: Tự động luân chuyển giữa danh sách 5 `APIFY_TOKENS` lưu tại `st.secrets` nhằm tránh rate limit và tối đa hóa băng thông cào.
+
 ---
-*Cập nhật: 20/05/2026 | Phiên bản 3.1*
+*Cập nhật: 21/05/2026 | Phiên bản 3.1*
 

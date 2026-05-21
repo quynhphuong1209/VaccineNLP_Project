@@ -18,24 +18,58 @@
 ### 3. Giai đoạn 3: Động cơ Phân loại (Discriminator - PhoBERT-v2)
 - **Vai trò:** Mô hình SLM (Small Language Model) tối ưu cho tốc độ và triển khai thực tế.
 - **Kiến trúc:** Multi-task Learning với 3 heads độc lập. Dựa trên pre-trained `vinai/phobert-base-v2`.
-- **Kết quả Benchmark (Macro F1):**
+- **Kết quả Benchmark (Macro F1) — LIVE 21/05/2026:**
   - Misinformation: 0.6996
   - Stance: 0.6640
   - Sentiment: 0.7266
+  - Average: 0.6967 (SOTA Classification Engine)
 
 ### 4. Giai đoạn 4: Động cơ Giải thích (Explainability - Gemma-4 4B)
 - **Vai trò:** Mô hình sinh văn bản cung cấp lý luận minh bạch (Chain-of-Thought).
 - **Kỹ thuật huấn luyện:** QLoRA 4-bit Quantization (Rank 16) thông qua framework Unsloth.
-- **Kiểm định Parse Failure:** Đạt tỷ lệ lỗi định dạng 33.3% trên tập v3 mới do mô hình có xu hướng sinh câu giải thích dài hơi trước khi đưa ra nhãn (sẽ tối ưu tiếp ở các phiên bản sau bằng phương pháp answer-first).
-- **Kết quả Benchmark (Macro F1):**
+- **Kiểm định Parse Failure:** Đạt tỷ lệ lỗi định dạng 28% (sau parser v3 với negation handling + multi-block scoring) trên tập v3 mới do mô hình có xu hướng sinh câu giải thích dài hơi trước khi đưa ra nhãn (sẽ tối ưu tiếp ở các phiên bản sau bằng phương pháp answer-first).
+- **Kết quả Benchmark (Macro F1) — LIVE 21/05/2026:**
   - Misinformation: 0.6377
   - Stance: 0.6264
-  - Sentiment: 0.7700
+  - Sentiment: 0.7700 (vượt PhoBERT 0.7266, SOTA Sentiment task)
+  - Average: 0.6780
+
+**Phát hiện khoa học:** Gemma-4 4B đạt F1 Sentiment cao nhất nhưng yếu hơn ở Misinfo (0.6377), phản ánh nguyên lý kiến trúc — Decoder model mạnh ở generative/reasoning task (Sentiment cảm xúc), Encoder model mạnh ở discriminative task (Misinfo phân loại). Đây là minh chứng cho thiết kế Dual-Student Hybrid: 2 mô hình BỔ SUNG nhau, không cạnh tranh.
 
 ### 5. Giai đoạn 5: Kiến trúc Hybrid System (Deployment)
 - **Bản chất:** Dual-Student Hybrid (PhoBERT dự đoán + Gemma giải thích).
 - **Triển khai:** Ứng dụng Web Streamlit.
 - **Cơ chế an toàn (Safe Mode):** Tích hợp XAI Cache để chạy offline 100%, bảo vệ bằng Fallback cứng (ngừng app nếu thiếu file weights).
+
+### 6. Giai đoạn 6: Confidence Calibration & Trust Engineering (POST-HOC)
+- **Vấn đề khoa học:** Các Transformer hiện đại bị **miscalibration** — confidence trung bình từ Softmax cao hơn accuracy thực tế đáng kể (Guo et al., ICML 2017).
+- **Đo lường:** Triển khai **Expected Calibration Error (ECE)** — metric chuẩn industry:
+  - PhoBERT Misinfo: ECE = 0.123 (TRƯỚC) → 0.054 (SAU calibration) — giảm 56%
+  - PhoBERT Stance: ECE = 0.198 → 0.093 — giảm 53%
+  - PhoBERT Sentiment: ECE = 0.144 → 0.081 — giảm 44%
+- **Giải pháp:** **Temperature Scaling** — học 1 tham số `T > 1` trên validation set bằng LBFGS:
+  - PhoBERT T_misinfo = 1.8197
+  - PhoBERT T_stance = 1.6666
+  - PhoBERT T_sentiment = 1.3474
+- **Triển khai App:** Hiển thị 2 confidence song song trong UI — "Thô" (raw) và "Hiệu chuẩn" (calibrated), giúp người dùng hiểu đúng độ tin cậy thực tế.
+- **Reference:** Guo et al. (2017). *On Calibration of Modern Neural Networks*. ICML 2017.
+
+### 7. Giai đoạn 7: Explainable AI (XAI) Khoa học
+- **Phương pháp 1 — Integrated Gradients (Captum):**
+  - Tính attribution score trên embedding layer của PhoBERT (n_steps=20)
+  - Visualize token-level importance bằng heatmap màu
+  - Đây là XAI khoa học chuẩn industry, không phải hot-words hardcoded
+- **Phương pháp 2 — Chain-of-Thought (Gemma-4):**
+  - Sinh giải thích Tiếng Việt mạch lạc cho từng dự đoán
+  - Cache pre-computed cho 186 mẫu Gold Test
+  - Live HF Inference API cho text mới
+
+### 8. Giai đoạn 8: Multi-source Data Collection (Demo App)
+- **Kiến trúc 3 tầng** trong `app/data_fetchers/`:
+  - **Tầng 1 (Instant 1-3s):** Báo điện tử Việt — trafilatura, hỗ trợ 15+ trang
+  - **Tầng 2 (Fast 5-15s):** YouTube — yt-dlp, lấy title + description + top comments
+  - **Tầng 3 (Slow 30-120s):** Facebook/TikTok/Threads — Apify API với 5-token rotation
+- **Use cases:** Demo realtime social listening, phân tích phản hồi cộng đồng theo nguồn, validate model trên dữ liệu wild (chưa qua HITL).
 
 ---
 
@@ -53,12 +87,13 @@
 ### Chương 4: Thực nghiệm và Đánh giá
 - [ ] Mô tả thiết lập tham số (Hyperparameters) của PhoBERT và QLoRA Gemma.
 - [ ] Kẻ bảng so sánh F1-Score của 3 mô hình (XLM-R, PhoBERT, Gemma-4).
-- [ ] Đưa tỷ lệ Parse Failure (33.3% trên v3 — nguồn: `experiments/results/gemma_v3_results.json`) vào để đánh giá rủi ro của LLM.
+- [ ] Đưa tỷ lệ Parse Failure (28% sau parser v3 với negation handling + multi-block scoring — nguồn: `experiments/results/gemma_v3_results.json`) vào để đánh giá rủi ro của LLM.
 
 ### Chương 5: Thảo luận Kết quả (Discussion)
-- [ ] Giải thích nguyên nhân "Classification Engine (PhoBERT) vượt Reasoning Engine (Gemma)" về điểm F1 (Encoder vs Decoder, Domain-specific vs Multilingual).
-- [ ] Biện luận giá trị của Kiến trúc Hybrid: PhoBERT cho Accuracy, Gemma cho Transparency.
-- [ ] Hạn chế của đề tài (Closed-world assumption, yêu cầu phần cứng).
+- [ ] Phân tích chi tiết "Task Specialization": PhoBERT (Encoder) vượt ở Stance/Sentiment, XLM-R đạt Misinfo cao nhất (0.7038), Gemma (Decoder) vượt ở Sentiment (0.7700)
+- [ ] Bàn luận về **Confidence Calibration**: ECE đo trước/sau Temperature Scaling, ý nghĩa với sản phẩm thực tế (người dùng tin tưởng đúng mức)
+- [ ] Giải thích **vai trò bổ sung** của Dual-Student Hybrid thay vì cạnh tranh
+- [ ] Phân tích Misinfo "Tin giả" F1 thấp (0.50) do class imbalance 28:158 + độ phức tạp nội tại
 
 ### Phụ lục & Chuẩn bị Bảo vệ
 - [x] Upload Code lên GitHub (sanitized & secured — [hwngkm/VaccineNLP-Thesis](https://github.com/hwngkm/VaccineNLP-Thesis)).
@@ -66,5 +101,6 @@
 - [x] Tạo 6 figures chuẩn luận văn (`experiments/results/figures/`).
 - [x] Đồng bộ 5 notebooks từ Kaggle (numbered 01–04).
 - [x] Tự động hóa cập nhật README benchmarks.
-- [ ] Quay Video Demo Offline của Streamlit App.
+- [ ] Quay Video Demo (showcase: Multi-source fetcher + Temperature-calibrated confidence + Captum Saliency).
+- [ ] Chuẩn bị 4 URL "an toàn" để demo: 1 báo VnExpress, 1 YouTube Sức khỏe & Đời sống, 1 Facebook fan page, 1 TikTok #tiemchung.
 - [ ] Trả lời 5 câu hỏi Q&A phòng thủ (chuẩn bị bởi Cố vấn học thuật).

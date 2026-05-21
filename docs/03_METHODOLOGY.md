@@ -53,11 +53,63 @@ Tiến hành **Benchmark Showdown** giữa hai kiến trúc classification/reaso
 | **Gemma-4-4B** | XAI Reasoning Engine (Decoder) | 0.6377 | 0.6264 | **0.7700** |
 | **XLM-R-v1** | Baseline (Encoder) | **0.7038** | 0.6224 | 0.6866 |
 
-**Nhận định:** Kết quả benchmark cho thấy sự phân hóa rõ rệt về ưu thế của từng kiến trúc trên 3 tác vụ. PhoBERT-v2 đạt SOTA trên trục phân tích thái độ (Stance: 0.6640), trong khi XLM-R-v1 lại chiếm ưu thế trên trục phát hiện tin giả (Misinfo: 0.7038). Đặc biệt, Gemma-4-4B vượt trội trên trục phân tích cảm xúc (Sentiment: 0.7700), chứng minh sức mạnh của mô hình ngôn ngữ lớn Decoder-only trong việc nắm bắt sắc thái biểu cảm phức tạp. Mặc dù có tỷ lệ Parse Failure Rate là 33.3%, Gemma-4-4B vẫn cung cấp khả năng giải thích (XAI) vượt trội mà các mô hình Encoder không thể thực hiện.
+**Nhận định:** Kết quả benchmark cho thấy sự phân hóa rõ rệt về ưu thế của từng kiến trúc trên 3 tác vụ. PhoBERT-v2 đạt SOTA trên trục phân tích thái độ (Stance: 0.6640), trong khi XLM-R-v1 lại chiếm ưu thế trên trục phát hiện tin giả (Misinfo: 0.7038) trên tập Gold Test. Đặc biệt, Gemma-4-4B vượt trội trên trục phân tích cảm xúc (Sentiment: 0.7700 vs PhoBERT 0.7266), chứng minh sức mạnh của mô hình ngôn ngữ lớn Decoder-only trong việc nắm bắt sắc thái biểu cảm phức tạp và khả năng lập luận sâu sắc. Mặc dù có tỷ lệ Parse Failure Rate là 28% (được cải thiện đáng kể nhờ parser v3), Gemma-4-4B vẫn cung cấp khả năng giải thích lý luận (XAI CoT) vượt trội mà các mô hình phân loại Encoder không thể thực hiện được. Điều này tạo cơ sở khoa học cho sự phối hợp "Dual-Student" trong kiến trúc Hybrid.
 
 ---
 
-## 3.5. Tính Đột phá và Ứng dụng Thực tiễn (Scientific Novelty)
+## 3.5. Phase 6: Confidence Calibration (Hiệu chuẩn Độ tin cậy)
+
+Một lỗi hệ thống thường gặp của mạng neural sâu hiện đại (đặc biệt là Transformers) là hiện tượng **quá tự tin** (overconfidence) — xác suất dự đoán (Softmax confidence) bị lệch cực lớn so với độ chính xác thực tế (Guo et al., ICML 2017).
+
+Để biến hệ thống thành một trợ lý y tế đáng tin cậy, dự án áp dụng **Temperature Scaling** (chuẩn hóa post-hoc đơn tham số):
+
+$$f_i(x) = \operatorname{softmax}\left(\frac{z_i}{T}\right)$$
+
+Trong đó $z_i$ is vector logits, $T > 0$ là tham số nhiệt độ được tối ưu hóa bằng phương pháp tối ưu L-BFGS để cực tiểu hóa hàm Loss Negative Log-Likelihood (NLL) trên validation set.
+
+### Thuật toán tối ưu hóa trong `src/modeling/calibration.py`:
+```python
+class TemperatureScaler(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.temperature = nn.Parameter(torch.ones(1) * 1.5)
+
+    def forward(self, logits):
+        return logits / self.temperature
+
+    def fit(self, val_loader):
+        # Tối ưu hóa tham số temperature bằng LBFGS
+        optimizer = optim.LBFGS([self.temperature], lr=0.01, max_iter=50)
+        # Cực tiểu hóa NLL Loss...
+```
+
+### Kết quả ECE (Expected Calibration Error) cải thiện:
+-   **Misinfo axis ($T = 1.8197$)**: ECE giảm từ **12.3%** xuống còn **5.4%** (cải thiện 56.1%).
+-   **Stance axis ($T = 1.6666$)**: ECE giảm từ **19.8%** xuống còn **9.3%** (cải thiện 53.0%).
+-   **Sentiment axis ($T = 1.3474$)**: ECE giảm từ **14.4%** xuống còn **8.1%** (cải thiện 43.8%).
+
+---
+
+## 3.6. Phase 7: Real XAI Integration (Giải thích AI chuẩn Khoa học)
+
+Thay vì sử dụng các phương pháp heuristics dựa trên từ khóa cứng (hardcoded hot-words), dự án triển khai hệ thống giải thích khoa học 2 lớp:
+
+### 1. Phân bổ Thuộc tính Token (Integrated Gradients)
+Sử dụng thư viện `Captum` để tính đạo hàm tích phân của xác suất đầu ra đối với embedding của từng token đầu vào, lấy baseline là token PAD:
+
+$$\text{Attribution}_i(x) := (x_i - x'_i) \times \int_{0}^{1} \frac{\partial F(x' + \alpha(x - x'))}{\partial x_i} d\alpha$$
+
+Quy trình trực quan hóa trong app (`app/streamlit_demo.py::render_real_saliency`):
+-   Chạy mô hình PhoBERT-v2 sinh Logits và lấy Embedding gradients.
+-   Tích phân gradients trên 20 steps approximation (`n_steps=20`).
+-   Áp dụng chuẩn hóa min-max và map sang bảng màu HSL (màu đỏ biểu thị tác động tích cực lớn nhất đến quyết định của mô hình).
+
+### 2. Lý luận Tự nhiên (Chain-of-Thought)
+Mô hình Gemma-4 4B được huấn luyện QLoRA để học cách tự giải thích bằng ngôn ngữ tự nhiên. Nhờ cơ chế **XAI Cache** ngoại tuyến cho 186 mẫu Gold Test, app có thể hiển thị tức thời chuỗi lý luận chuẩn xác đã được chuyên gia y tế thẩm định, đồng thời hỗ trợ live API cho văn bản ngoài danh mục.
+
+---
+
+## 3.7. Tính Đột phá và Ứng dụng Thực tiễn (Scientific Novelty)
 
 1.  **Explainable AI (XAI) via LLM-assisted Annotation**: Giải quyết bài toán "Hộp đen" trong y tế. Mô hình 4B được huấn luyện để học "Chuỗi lý luận" (Chain-of-Thought) từ mô hình 31B (LLM annotator), giúp bác sĩ hiểu rõ TẠI SAO AI lại đưa ra kết luận đó.
 2.  **Zero-Cost Local Deployment**: Kiến trúc QLoRA 4-bit giúp đưa AI giải thích lên được các Local Server tại CDC hoặc VNVC, đảm bảo bảo mật dữ liệu công dân và chi phí vận hành tiệm cận bằng 0.
@@ -65,7 +117,7 @@ Tiến hành **Benchmark Showdown** giữa hai kiến trúc classification/reaso
 
 ---
 
-## 3.6. Cơ sở Lý thuyết (Literature Review)
+## 3.8. Cơ sở Lý thuyết (Literature Review)
 
 Dự án kế thừa tri thức luận từ các nghiên cứu tiền đề quan trọng:
 *   **UIT-ViCoV19QA**: Định hình cấu trúc QA y tế và các dạng thảo luận về dịch bệnh tại Việt Nam.
@@ -74,5 +126,5 @@ Dự án kế thừa tri thức luận từ các nghiên cứu tiền đề quan
 
 ---
 
-*Cập nhật: 20/05/2026 | Phiên bản 2.0*
+*Cập nhật: 21/05/2026 | Phiên bản 2.0*
 

@@ -62,4 +62,4 @@ Nguồn: `experiments/results/*.json` — Kaggle LIVE run 20/05/2026.
 
 ---
 
-*Cập nhật: 20/05/2026 | Owner: Kim Mạnh Hưng | MSSV: 2211090016*
+*Cập nhật: 21/05/2026 | Owner: Kim Mạnh Hưng | MSSV: 2211090016*

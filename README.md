@@ -69,7 +69,7 @@ Dưới đây là các biểu đồ phân tích trực quan thu được từ qu
 
 ### 1. So sánh Hiệu năng Tổng thể (Overall Performance Comparison)
 ![So sánh hiệu năng Macro F1](experiments/results/figures/macro_f1_comparison.png)
-* **Mô tả:** Biểu đồ so sánh trực tiếp Macro F1-score của **PhoBERT-v2**, **Gemma-4-4B (XAI)**, và **XLM-R-v1 (Baseline)** trên 3 trục tác vụ. PhoBERT-v2 vượt trội ở tác vụ phân tích thái độ (Stance: 0.7107) và cảm xúc (Sentiment: 0.7260) nhờ việc tinh chỉnh tốt trên ngôn ngữ tiếng Việt. Gemma-4-4B bám đuổi sát nút trên trục Tin giả (Misinfo: 0.6925) nhờ khả năng lập luận ngôn ngữ sâu sắc.
+* **Mô tả:** Biểu đồ so sánh trực tiếp Macro F1-score của **PhoBERT-v2**, **Gemma-4-4B (XAI)**, và **XLM-R-v1 (Baseline)** trên 3 trục tác vụ. PhoBERT-v2 vượt trội ở tác vụ phân tích thái độ (Stance: 0.6640) và cảm xúc (Sentiment: 0.7266) nhờ việc tinh chỉnh tốt trên ngôn ngữ tiếng Việt. Gemma-4 4B dù không vượt PhoBERT về Misinfo (0.6377) nhưng đạt F1 cao nhất ở trục Sentiment (0.7700 vs PhoBERT 0.7266). XLM-R đạt Misinfo cao nhất (0.7038), phản ánh đặc thù bài toán Misinfo có khả năng được hưởng lợi từ ngữ cảnh đa ngôn ngữ.
 
 ### 2. Hiệu năng theo Từng Lớp Phân loại (Per-class F1-score Analysis)
 ![Hiệu năng F1 theo từng lớp cụ thể](experiments/results/figures/per_class_f1.png)
@@ -88,6 +88,44 @@ Dưới đây là các biểu đồ phân tích trực quan thu được từ qu
 * **Mô tả:** Đường cong biểu diễn sự sụt giảm của hàm Loss đa nhiệm (Multitask Weighted Loss) và sự cải thiện của Macro F1 qua từng epoch huấn luyện. Điểm checkpoint tối ưu (Best Epoch) được tự động lưu lại nhờ cơ chế Early Stopping, tránh hiện tượng overfitting trên tập dữ liệu nhỏ.
 
 
+### 🌡️ 3. Hiệu chuẩn Độ tin cậy (Confidence Calibration)
+
+Các mô hình Transformer hiện đại có xu hướng *quá tự tin* (overconfidence) — confidence trung bình cao hơn accuracy thực tế đáng kể. Đây là hiện tượng đã được khẳng định trong nghiên cứu seminal của **Guo et al. (ICML 2017)** "On Calibration of Modern Neural Networks".
+
+Để giải quyết, dự án triển khai **Temperature Scaling** — kỹ thuật post-hoc chuẩn industry:
+
+| Task | T tối ưu | Mean Conf (Thô) | Mean Conf (Hiệu chuẩn) | Accuracy thực | Cải thiện ECE |
+|---|---|---|---|---|---|
+| Misinfo | 1.82 | 94.5% | **87.4%** | 82.3% | -56% |
+| Stance | 1.67 | 86.7% | **76.3%** | 67.7% | -53% |
+| Sentiment | 1.35 | 88.9% | **83.0%** | 75.8% | -44% |
+
+**Ý nghĩa:** Người dùng app thấy 2 con số confidence song song — "Thô" (raw softmax) và "Hiệu chuẩn" (sau Temperature Scaling). Con số hiệu chuẩn phản ánh xác suất đúng thực tế, không phải confidence overconfident.
+
+**Reference:** Guo et al. (2017). *On Calibration of Modern Neural Networks*. ICML 2017.
+
+### 🔬 4. Giải thích AI (XAI) Khoa học
+
+Hệ thống tích hợp **2 phương pháp XAI chuẩn industry**, không phải heuristic hot-words:
+
+1. **Integrated Gradients (Captum)** — `app/streamlit_demo.py::render_real_saliency()`
+   Tính attribution score trên embedding layer của PhoBERT cho từng token (n_steps=20). Token có màu đậm hơn = đóng góp lớn hơn vào quyết định model. Đây là XAI khoa học, không phải pattern match hardcoded.
+
+2. **Chain-of-Thought Reasoning (Gemma-4 4B)** — Cache + Live API
+   Sinh giải thích Tiếng Việt mạch lạc cho từng dự đoán. Cache 186 mẫu Gold + live HF API cho text mới.
+
+### 🌐 5. Thu thập Dữ liệu Đa nguồn (App-side)
+
+App tích hợp **3 tầng fetcher** trong `app/data_fetchers/`:
+
+| Tầng | Nguồn | Thư viện | Tốc độ | Comments |
+|---|---|---|---|---|
+| **1 — Instant** | 15+ báo VN | trafilatura | 1-3s | ❌ |
+| **2 — Fast** | YouTube | yt-dlp | 5-15s | ✅ |
+| **3 — Slow** | Facebook, TikTok, Threads | apify-client | 30-120s | ✅ |
+
+**Token rotation:** Sử dụng 5 Apify API token với fallback tự động.
+
 ## 📂 Cấu Trúc Thư Mục
 * `datasets/`: Quản lý dữ liệu phân lớp nghiêm ngặt.
 * `notebooks/`: Các kịch bản huấn luyện tối ưu (PhoBERT & Gemma-4).
@@ -95,4 +133,4 @@ Dưới đây là các biểu đồ phân tích trực quan thu được từ qu
 * `experiments/`: Lưu trữ kết quả F1, phân tích lỗi (Error Analysis) và XAI Cache.
 
 ---
-*© 2026 VaccineNLP Project Team. Khóa luận tốt nghiệp. Last Updated: May 20, 2026*
+*© 2026 VaccineNLP Project Team. Khóa luận tốt nghiệp. Last Updated: May 21, 2026*
