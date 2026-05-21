@@ -326,8 +326,15 @@ def load_model(model_key="PhoBERT-v2"):
         hf_token = None
     
     try:
-        # Tải file checkpoint (.pt)
-        model_path = hf_hub_download(repo_id=cfg["repo_id"], filename="best_model.pt", token=hf_token)
+        # Check local model checkpoint first (Resilient Offline Mode)
+        local_dir_name = "phobert_v2" if model_key == "PhoBERT-v2" else "xlmr_v1"
+        local_model_path = PROJECT_ROOT / "experiments" / "models" / local_dir_name / "best_model.pt"
+        if local_model_path.exists():
+            model_path = str(local_model_path)
+        else:
+            # Tải file checkpoint (.pt)
+            model_path = hf_hub_download(repo_id=cfg["repo_id"], filename="best_model.pt", token=hf_token)
+            
         tokenizer = AutoTokenizer.from_pretrained(cfg["base_repo"], token=hf_token, trust_remote_code=True)
         model = VaccineMultitaskModel(model_name=cfg["base_repo"], token=hf_token)
         
@@ -2388,6 +2395,19 @@ def main():
     """, unsafe_allow_html=True)
 
     model, tokenizer, checkpoint_loaded = load_model(model_selection)
+
+    # Premium non-intrusive notification without caching side-effects
+    if "last_notified_model" not in st.session_state:
+        st.session_state.last_notified_model = None
+
+    if checkpoint_loaded and st.session_state.last_notified_model != model_selection:
+        st.session_state.last_notified_model = model_selection
+        local_dir_name = "phobert_v2" if model_selection == "PhoBERT-v2" else "xlmr_v1"
+        local_model_path = PROJECT_ROOT / "experiments" / "models" / local_dir_name / "best_model.pt"
+        if local_model_path.exists():
+            st.toast(f"💾 Đang sử dụng mô hình cục bộ: {model_selection}", icon="🚀")
+        else:
+            st.toast(f"🌐 Đang sử dụng mô hình trực tuyến: {model_selection}", icon="📥")
     
     # Ở phiên bản mới, reasoning được lấy trực tiếp từ hàm predict_cached
 
