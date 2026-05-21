@@ -253,7 +253,7 @@ class VaccineMultitaskModel(nn.Module):
     """Multitask model with shared PhoBERT encoder and task-specific heads."""
 
     def __init__(self, model_name="vinai/phobert-base-v2",
-                 num_misinfo=2, num_stance=3, num_sentiment=3, token=None):
+                 num_misinfo=3, num_stance=4, num_sentiment=3, token=None):
         from transformers import AutoConfig, AutoModel
         super(VaccineMultitaskModel, self).__init__()
         import transformers
@@ -572,20 +572,37 @@ def predict_cached(text: str, model_key: str) -> dict:
     else:
         Ts = {'misinfo': 1.0, 'stance': 1.0, 'sentiment': 1.0}
 
-    # Raw softmax (original)
+    # Raw softmax (original, from model outputs)
     p_mis_raw = F.softmax(logits_m, dim=1).cpu().numpy()[0]
     p_st_raw  = F.softmax(logits_st, dim=1).cpu().numpy()[0]
     p_sen_raw = F.softmax(logits_se, dim=1).cpu().numpy()[0]
 
-    # Calibrated softmax (Temperature Scaling)
+    # Calibrated softmax (Temperature Scaling, from model outputs)
     p_mis_cal = F.softmax(logits_m / Ts['misinfo'], dim=1).cpu().numpy()[0]
     p_st_cal  = F.softmax(logits_st / Ts['stance'], dim=1).cpu().numpy()[0]
     p_sen_cal = F.softmax(logits_se / Ts['sentiment'], dim=1).cpu().numpy()[0]
 
+    # Remap model's class space to UI space:
+    # Model misinfo: 0: Không liên quan, 1: Tin giả, 2: Chính xác
+    # UI misinfo: 0: Tin giả, 1: Chính xác
+    import numpy as np
+    p_mis_raw_ui = np.array([p_mis_raw[1], p_mis_raw[2] + p_mis_raw[0]])
+    p_mis_cal_ui = np.array([p_mis_cal[1], p_mis_cal[2] + p_mis_cal[0]])
+
+    # Model stance: 0: Trung lập, 1: Ủng hộ, 2: Phản đối, 3: Không rõ
+    # UI stance: 0: Ủng hộ, 1: Phản đối, 2: Trung lập
+    p_st_raw_ui = np.array([p_st_raw[1], p_st_raw[2], p_st_raw[0] + p_st_raw[3]])
+    p_st_cal_ui = np.array([p_st_cal[1], p_st_cal[2], p_st_cal[0] + p_st_cal[3]])
+
+    # Model sentiment: 0: Trung tính, 1: Tích cực, 2: Tiêu cực
+    # UI sentiment: 0: Tiêu cực, 1: Trung tính, 2: Tích cực
+    p_sen_raw_ui = np.array([p_sen_raw[2], p_sen_raw[0], p_sen_raw[1]])
+    p_sen_cal_ui = np.array([p_sen_cal[2], p_sen_cal[0], p_sen_cal[1]])
+
     # Dự đoán của mô hình (khớp 1-to-1 hoàn hảo với LABEL_MAPS chuẩn hung2903)
-    pred_m = int(torch.argmax(logits_m, dim=1))
-    pred_st = int(torch.argmax(logits_st, dim=1))
-    pred_se = int(torch.argmax(logits_se, dim=1))
+    pred_m = int(np.argmax(p_mis_raw_ui))
+    pred_st = int(np.argmax(p_st_raw_ui))
+    pred_se = int(np.argmax(p_sen_raw_ui))
 
     # Tra cứu giải thích (Ưu tiên số 1: Tra cứu cache trước để luôn hiển thị Tiếng Việt chất lượng cao cho các mẫu)
     xai_cache = load_xai_cache()
@@ -610,23 +627,23 @@ def predict_cached(text: str, model_key: str) -> dict:
     res_dict = {
         "misinfo": {
             "pred": pred_m,
-            "conf": list(p_mis_raw),            # giữ tương thích ngược (raw)
-            "conf_raw": list(p_mis_raw),
-            "conf_calibrated": list(p_mis_cal),
+            "conf": list(map(float, p_mis_raw_ui)),            # giữ tương thích ngược (raw)
+            "conf_raw": list(map(float, p_mis_raw_ui)),
+            "conf_calibrated": list(map(float, p_mis_cal_ui)),
             "temperature": Ts['misinfo'],
         },
         "stance": {
             "pred": pred_st,
-            "conf": list(p_st_raw),             # giữ tương thích ngược (raw)
-            "conf_raw": list(p_st_raw),
-            "conf_calibrated": list(p_st_cal),
+            "conf": list(map(float, p_st_raw_ui)),             # giữ tương thích ngược (raw)
+            "conf_raw": list(map(float, p_st_raw_ui)),
+            "conf_calibrated": list(map(float, p_st_cal_ui)),
             "temperature": Ts['stance'],
         },
         "sentiment": {
             "pred": pred_se,
-            "conf": list(p_sen_raw),            # giữ tương thích ngược (raw)
-            "conf_raw": list(p_sen_raw),
-            "conf_calibrated": list(p_sen_cal),
+            "conf": list(map(float, p_sen_raw_ui)),            # giữ tương thích ngược (raw)
+            "conf_raw": list(map(float, p_sen_raw_ui)),
+            "conf_calibrated": list(map(float, p_sen_cal_ui)),
             "temperature": Ts['sentiment'],
         }
     }
@@ -960,6 +977,9 @@ def render_real_saliency(text: str, model_key: str):
                 render_word_importance(text, is_fake=(result["misinfo"]["pred"] == 0))
             return
 
+        # Map model pred_class (0: Không liên quan, 1: Tin giả, 2: Chính xác) to UI space (0: Tin giả, 1: Chính xác)
+        pred_class_ui = 0 if pred_class == 1 else 1
+
         # Render HTML
         html = ('<div style="line-height:1.9; padding:20px; border-radius:15px; '
                 'background:rgba(100,255,218,0.05); '
@@ -973,7 +993,7 @@ def render_real_saliency(text: str, model_key: str):
                 html += f'<span style="color:{text_color}; opacity:0.55;">{tok_clean}</span> '
             else:
                 intensity = min(abs_score, 0.7)
-                if pred_class == 0:  # Tin giả
+                if pred_class_ui == 0:  # Tin giả
                     bg = f"rgba(255,75,75,{intensity})"
                 else:  # Chính xác
                     bg = f"rgba(100,255,218,{intensity})"
@@ -987,7 +1007,7 @@ def render_real_saliency(text: str, model_key: str):
         st.caption(
             f"💡 **XAI khoa học:** Attribution score tính bằng Integrated Gradients "
             f"trên embedding layer PhoBERT (n_steps=20). "
-            f"Class dự đoán: **{LABEL_MAPS['misinfo'].get(pred_class, '?')}**. "
+            f"Class dự đoán: **{LABEL_MAPS['misinfo'].get(pred_class_ui, '?')}**. "
             f"Token có màu đậm hơn = đóng góp lớn hơn vào quyết định model."
         )
     except Exception as e:
@@ -3064,3 +3084,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+                    
