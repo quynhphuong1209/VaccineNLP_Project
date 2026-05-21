@@ -1248,20 +1248,20 @@ def render_result_card(task_name: str, task_key: str, result: dict):
     shadow = "0 10px 20px rgba(0,0,0,0.3)" if is_dark else "0 10px 20px rgba(0,0,0,0.1)"
 
     if has_calibration:
-        conf_html = f"""
-        <div style="font-size: 0.9rem; color: {secondary_text}; margin-top: 5px;">
-            Thô: <span style="text-decoration: line-through;">{confidence_raw:.1f}%</span>
-        </div>
-        <div style="font-size: 1.1rem; color: {color}; font-weight: bold; margin-top: 2px;">
-            Đã hiệu chuẩn (T={T_val:.2f}): {confidence_cal:.1f}%
-        </div>
-        """
+        conf_html = (
+            f'<div style="font-size: 0.9rem; color: {secondary_text}; margin-top: 5px;">'
+            f'Thô: <span style="text-decoration: line-through;">{confidence_raw:.1f}%</span>'
+            f'</div>'
+            f'<div style="font-size: 1.1rem; color: {color}; font-weight: bold; margin-top: 2px;">'
+            f'Đã hiệu chuẩn (T={T_val:.2f}): {confidence_cal:.1f}%'
+            f'</div>'
+        )
     else:
-        conf_html = f"""
-        <div style="font-size: 1.0rem; color: {secondary_text}; margin-top: 5px;">
-            Độ tin cậy: <strong style="color: {color};">{confidence_raw:.1f}%</strong>
-        </div>
-        """
+        conf_html = (
+            f'<div style="font-size: 1.0rem; color: {secondary_text}; margin-top: 5px;">'
+            f'Độ tin cậy: <strong style="color: {color};">{confidence_raw:.1f}%</strong>'
+            f'</div>'
+        )
 
     st.markdown(f"""
     <div style="
