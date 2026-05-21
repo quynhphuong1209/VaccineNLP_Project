@@ -68,9 +68,9 @@ Các mô hình của dự án được lưu trữ công khai tại Hugging Face 
 
 | Mô hình | Loại | Misinfo (F1) | Stance (F1) | Sentiment (F1) |
 |---|---|:---:|:---:|:---:|
-| **PhoBERT-v2** | Classification Engine (Encoder) | **0.7079** | **0.7107** | **0.7260** |
-| **Gemma-4-4B** | XAI Reasoning Engine (Decoder) | 0.6925 | 0.5818 | 0.7196 |
-| **XLM-R-v1** | Baseline (Encoder) | 0.5823 | 0.4217 | 0.1842 |
+| **PhoBERT-v2** | Classification Engine (Encoder) | 0.6996 | **0.6640** | 0.7266 |
+| **Gemma-4-4B** | XAI Reasoning Engine (Decoder) | 0.6377 | 0.6264 | **0.7700** |
+| **XLM-R-v1** | Baseline (Encoder) | **0.7038** | 0.6224 | 0.6866 |
 
 > Chi tiết per-class breakdown xem tại `experiments/results/benchmark_report.md` và `README.md`.
 

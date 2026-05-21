@@ -19,18 +19,18 @@
 - **Vai trò:** Mô hình SLM (Small Language Model) tối ưu cho tốc độ và triển khai thực tế.
 - **Kiến trúc:** Multi-task Learning với 3 heads độc lập. Dựa trên pre-trained `vinai/phobert-base-v2`.
 - **Kết quả Benchmark (Macro F1):**
-  - Misinformation: 0.7079
-  - Stance: 0.7107
-  - Sentiment: 0.7260
+  - Misinformation: 0.6996
+  - Stance: 0.6640
+  - Sentiment: 0.7266
 
 ### 4. Giai đoạn 4: Động cơ Giải thích (Explainability - Gemma-4 4B)
 - **Vai trò:** Mô hình sinh văn bản cung cấp lý luận minh bạch (Chain-of-Thought).
 - **Kỹ thuật huấn luyện:** QLoRA 4-bit Quantization (Rank 16) thông qua framework Unsloth.
 - **Kiểm định Parse Failure:** Đạt tỷ lệ lỗi định dạng 33.3% trên tập v3 mới do mô hình có xu hướng sinh câu giải thích dài hơi trước khi đưa ra nhãn (sẽ tối ưu tiếp ở các phiên bản sau bằng phương pháp answer-first).
 - **Kết quả Benchmark (Macro F1):**
-  - Misinformation: 0.6925
-  - Stance: 0.5818
-  - Sentiment: 0.7196
+  - Misinformation: 0.6377
+  - Stance: 0.6264
+  - Sentiment: 0.7700
 
 ### 5. Giai đoạn 5: Kiến trúc Hybrid System (Deployment)
 - **Bản chất:** Dual-Student Hybrid (PhoBERT dự đoán + Gemma giải thích).

@@ -49,11 +49,11 @@ Tiến hành **Benchmark Showdown** giữa hai kiến trúc classification/reaso
 
 | Mô hình | Loại | Misinfo (F1) | Stance (F1) | Sentiment (F1) |
 |---|---|:---:|:---:|:---:|
-| **PhoBERT-v2** | Classification Engine (Encoder) | **0.7079** | **0.7107** | **0.7260** |
-| **Gemma-4-4B** | XAI Reasoning Engine (Decoder) | 0.6925 | 0.5818 | 0.7196 |
-| **XLM-R-v1** | Baseline (Encoder) | 0.5823 | 0.4217 | 0.1842 |
+| **PhoBERT-v2** | Classification Engine (Encoder) | 0.6996 | **0.6640** | 0.7266 |
+| **Gemma-4-4B** | XAI Reasoning Engine (Decoder) | 0.6377 | 0.6264 | **0.7700** |
+| **XLM-R-v1** | Baseline (Encoder) | **0.7038** | 0.6224 | 0.6866 |
 
-**Nhận định:** PhoBERT-v2 (Classification Engine) đạt SOTA trên cả 3 trục, minh chứng cho hiệu quả của việc kết hợp Encoder hai chiều chuyên biệt tiếng Việt với kỹ thuật Multi-task Learning. Gemma-4-4B có Parse Failure Rate 33.3% nhưng cung cấp khả năng giải thích (XAI) vượt trội mà các mô hình Encoder không thể thực hiện.
+**Nhận định:** Kết quả benchmark cho thấy sự phân hóa rõ rệt về ưu thế của từng kiến trúc trên 3 tác vụ. PhoBERT-v2 đạt SOTA trên trục phân tích thái độ (Stance: 0.6640), trong khi XLM-R-v1 lại chiếm ưu thế trên trục phát hiện tin giả (Misinfo: 0.7038). Đặc biệt, Gemma-4-4B vượt trội trên trục phân tích cảm xúc (Sentiment: 0.7700), chứng minh sức mạnh của mô hình ngôn ngữ lớn Decoder-only trong việc nắm bắt sắc thái biểu cảm phức tạp. Mặc dù có tỷ lệ Parse Failure Rate là 33.3%, Gemma-4-4B vẫn cung cấp khả năng giải thích (XAI) vượt trội mà các mô hình Encoder không thể thực hiện.
 
 ---
 
