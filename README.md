@@ -120,9 +120,9 @@ App tích hợp **3 tầng fetcher** trong `app/data_fetchers/`:
 
 | Tầng | Nguồn | Thư viện | Tốc độ | Comments |
 |---|---|---|---|---|
-| **1 — Instant** | 15+ báo VN | trafilatura | 1-3s | ❌ |
-| **2 — Fast** | YouTube | yt-dlp | 5-15s | ✅ |
-| **3 — Slow** | Facebook, TikTok, Threads | apify-client | 30-120s | ✅ |
+| **1 — Instant** | 15+ báo VN | trafilatura | 1-3s | ❌ Không cần API Key, trích xuất text sạch tức thì |
+| **2 — Fast** | YouTube | yt-dlp | 5-15s | ✅ Lấy thông tin video, mô tả và bình luận hàng đầu |
+| **3 — Slow** | Facebook, TikTok, Threads | apify-client | 30-120s | ✅ Yêu cầu API Key (sử dụng cơ chế Token rotation) |
 
 **Token rotation:** Sử dụng 5 Apify API token với fallback tự động.
 
@@ -133,4 +133,4 @@ App tích hợp **3 tầng fetcher** trong `app/data_fetchers/`:
 * `experiments/`: Lưu trữ kết quả F1, phân tích lỗi (Error Analysis) và XAI Cache.
 
 ---
-*© 2026 VaccineNLP Project Team. Khóa luận tốt nghiệp. Last Updated: May 21, 2026*
+*© 2026 VaccineNLP Project Team. Đồ án tốt nghiệp. Last Updated: May 21, 2026*
