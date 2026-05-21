@@ -326,14 +326,8 @@ def load_model(model_key="PhoBERT-v2"):
         hf_token = None
     
     try:
-        # Check local model checkpoint first (Resilient Offline Mode)
-        local_dir_name = "phobert_v2" if model_key == "PhoBERT-v2" else "xlmr_v1"
-        local_model_path = PROJECT_ROOT / "experiments" / "models" / local_dir_name / "best_model.pt"
-        if local_model_path.exists():
-            model_path = str(local_model_path)
-        else:
-            # Tải file checkpoint (.pt)
-            model_path = hf_hub_download(repo_id=cfg["repo_id"], filename="best_model.pt", token=hf_token)
+        # Tải file checkpoint (.pt) trực tiếp từ Hugging Face (luôn online)
+        model_path = hf_hub_download(repo_id=cfg["repo_id"], filename="best_model.pt", token=hf_token)
             
         tokenizer = AutoTokenizer.from_pretrained(cfg["base_repo"], token=hf_token, trust_remote_code=True)
         model = VaccineMultitaskModel(model_name=cfg["base_repo"], token=hf_token)
@@ -351,7 +345,8 @@ def load_model(model_key="PhoBERT-v2"):
         return model, tokenizer, True
         
     except Exception as e:
-        st.error(f"❌ Lỗi nạp mô hình: {str(e)}")
+        import streamlit as st
+        st.error(f"❌ Lỗi nạp mô hình từ Hugging Face: {str(e)}")
         gc.collect()
         return None, None, False
 
@@ -3084,4 +3079,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-                    
+                                                                                                                                                                                                                                                                                                  
