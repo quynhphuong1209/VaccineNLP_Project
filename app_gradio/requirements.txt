@@ -1,15 +1,15 @@
-# VaccineNLP — HuggingFace Spaces requirements (v2.0)
+# VaccineNLP — HuggingFace Spaces requirements
 # Tier: CPU Basic 16GB (free)
-# Fixed: thêm 6 core packages bị thiếu
+# Compatible with Python 3.10+
 
-# ============ Core Gradio ============
+# ============ Core Framework ============
 gradio==4.44.1
 
 # ============ ML / Deep Learning ============
 torch==2.1.2
 transformers==4.40.0
 tokenizers>=0.15.0
-huggingface-hub==0.22.2
+huggingface-hub>=0.20.0
 accelerate>=0.27.0
 
 # ============ Vietnamese NLP ============

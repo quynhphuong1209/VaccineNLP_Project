@@ -1,28 +1,21 @@
 """
-VaccineNLP — Gradio Web Application v2.0 (Production-Grade)
-=============================================================
+VaccineNLP — Gradio Web Application (Production-Grade)
+========================================================
 Migrated from Streamlit to Gradio for HuggingFace Spaces deployment.
-
-Version 2.0 changes vs v1.0:
-- ✅ FIX: Session history refresh button now works correctly
-- ✅ FIX: AI Voice uses unique temp files (no race condition)
-- ✅ FIX: _CACHE thread-safe with threading.Lock
-- ✅ FIX: low_cpu_mem_usage=True for memory efficiency
-- ✨ ADD: Loading progress indicator (gr.Progress)
-- ✨ ADD: gr.Examples component for quick demo
-- ✨ ADD: Hero section with 3 instant test buttons
-- ✨ ADD: Header badge HUPH with student info
-- ✨ ADD: Confusion Matrix heatmap in Benchmark tab
-- ✨ ADD: Per-class breakdown in Đánh giá tab
-- ✨ ADD: Export Report button (markdown download)
-- ✨ ADD: Captum opt-in checkbox (faster demo)
 
 Features:
 - 6 tabs: Phân tích · Benchmark · Đánh giá · Tài liệu · Phương pháp · Đề cương
-- 3-Layer XAI: Cache → HF Inference API → Captum IG
-- Multi-source Fetcher: News + YouTube + Apify
+- 3-Layer XAI: Cache → HF Inference API → Captum IG (always fallback)
+- Multi-source Fetcher: News + YouTube + Apify (Facebook/TikTok/Threads)
 - AI Voice via gTTS
-- Batch mode, Compare models, Session history
+- Batch mode with CSV export
+- Compare models side-by-side
+- Session history (last 10)
+
+Models:
+- Classification: hung2903/phobert-vaccine-multitask, hung2903/xlmr-vaccine-multitask
+- XAI Reasoning: hung2903/gemma-4-E4B-unsloth-vaccine-xai (HF Inference API)
+- Fallback: google/gemma-2-2b-it
 
 Deploy: HuggingFace Spaces (CPU Basic 16GB)
 URL: huggingface.co/spaces/kimmnhhng/vaccinenlp-demo
@@ -31,10 +24,9 @@ URL: huggingface.co/spaces/kimmnhhng/vaccinenlp-demo
 import os
 import json
 import time
-import tempfile
+import base64
 import hashlib
 import logging
-import threading
 from io import BytesIO
 from pathlib import Path
 from typing import Dict, List, Tuple, Optional
@@ -57,7 +49,7 @@ logging.getLogger("transformers").setLevel(logging.ERROR)
 # ============================================================================
 
 APP_DIR = Path(__file__).parent
-DATA_DIR = APP_DIR / "data" if (APP_DIR / "data").exists() else APP_DIR
+DATA_DIR = APP_DIR / "data"
 
 CONFIG = {
     "models": {
@@ -103,11 +95,10 @@ HF_TOKEN = os.environ.get("HF_TOKEN", "") or os.environ.get("VaccineNLP_TOKEN", 
 APIFY_TOKENS = [os.environ.get(f"APIFY_TOKEN_{i}", "") for i in range(1, 6)]
 APIFY_TOKENS = [t for t in APIFY_TOKENS if t]
 
-# Thread-safe cache lock
-_CACHE_LOCK = threading.Lock()
-_CACHE = {}
+# Hard cache for demo samples
+HARD_CACHE = {}  # Will be loaded from xai_cache.json
 
-# Sample texts for quick demo
+# Sample texts for sidebar
 SAMPLE_TEXTS = {
     "🚨 Tin giả - Chống vaccine cực đoan": "Ko tiêm mũi nào hết. Ko biết bạn thuộc thế hệ nào, chứ bạn nhìn xem thế hệ 8x trở về trước ko có ai tiêm bất cứ mũi gì vẫn khoẻ mạnh đó thôi. Cha mẹ thời nay bị doạ cho sợ hãi, đem con đi tiêm vì bị bóng ma sợ hãi nó đè, chứ thực chất chả có tác dụng gì còn gây hại cho cơ thể nữa.",
     "🚨 Tin giả - Vô sinh": "Cảnh báo: vắc xin COVID có thể gây vô sinh ở phụ nữ và biến đổi gen ở trẻ em. Mọi người nên tìm hiểu kỹ trước khi làm chuột bạch cho các tập đoàn dược phẩm.",
@@ -116,14 +107,6 @@ SAMPLE_TEXTS = {
     "✅ Thông tin chuẩn": "Bộ Y tế khuyến cáo trẻ em từ 6 tháng tuổi cần tiêm đủ các mũi vaccine cơ bản theo Chương trình Tiêm chủng Mở rộng để phòng các bệnh truyền nhiễm nguy hiểm.",
     "🔵 Câu hỏi tư vấn": "Trâm Trần ví dụ như Ko có tiêm 6in1 hay 5in1, mà tiêm từng mũi từng bệnh phải không ạ?",
 }
-
-# Examples for gr.Examples component
-GRADIO_EXAMPLES = [
-    ["Vắc xin COVID gây vô sinh ở phụ nữ trẻ và biến đổi gen ở trẻ em.", "PhoBERT-v2"],
-    ["Em đã tiêm đủ 5 mũi cho con theo lịch tiêm chủng mở rộng. Bé khỏe mạnh, không sốt.", "PhoBERT-v2"],
-    ["Bộ Y tế công bố lịch tiêm chủng mới cho trẻ em năm 2026.", "PhoBERT-v2"],
-    ["Vaccine là chip 5G theo dõi người dân, không nên tin tưởng.", "XLM-R-v1"],
-]
 
 
 # ============================================================================
@@ -163,15 +146,17 @@ class VaccineMultitaskModel(nn.Module):
 
 
 # ============================================================================
-# MODEL LOADING (Thread-safe + Cached)
+# MODEL LOADING (Lazy + Cached)
 # ============================================================================
+
+_CACHE = {}
+
 
 def load_model(model_key: str):
     """Load model from HF Hub. Returns (model, tokenizer, success_flag)."""
     cache_key = f"model_{model_key}"
-    with _CACHE_LOCK:
-        if cache_key in _CACHE:
-            return _CACHE[cache_key]
+    if cache_key in _CACHE:
+        return _CACHE[cache_key]
 
     import gc
     from transformers import AutoTokenizer
@@ -183,7 +168,8 @@ def load_model(model_key: str):
     try:
         logger.info(f"Loading {model_key} from HF Hub...")
         model_path = hf_hub_download(
-            repo_id=cfg["repo_id"], filename="best_model.pt",
+            repo_id=cfg["repo_id"],
+            filename="best_model.pt",
             token=HF_TOKEN if HF_TOKEN else None,
         )
         tokenizer = AutoTokenizer.from_pretrained(
@@ -202,26 +188,23 @@ def load_model(model_key: str):
         del state
         gc.collect()
 
-        with _CACHE_LOCK:
-            _CACHE[cache_key] = (model, tokenizer, True)
+        _CACHE[cache_key] = (model, tokenizer, True)
         logger.info(f"✅ {model_key} loaded")
         return _CACHE[cache_key]
     except Exception as e:
         logger.error(f"❌ Failed to load {model_key}: {e}")
-        with _CACHE_LOCK:
-            _CACHE[cache_key] = (None, None, False)
+        _CACHE[cache_key] = (None, None, False)
         return _CACHE[cache_key]
 
 
 def load_temperature_params() -> Dict:
-    """Load Temperature Scaling params (thread-safe)."""
-    with _CACHE_LOCK:
-        if "T_params" in _CACHE:
-            return _CACHE["T_params"]
+    """Load Temperature Scaling params."""
+    if "T_params" in _CACHE:
+        return _CACHE["T_params"]
 
     default = {
         "phobert_v2": {"misinfo": 1.8197, "stance": 1.6666, "sentiment": 1.3474},
-        "xlmr_v1":    {"misinfo": 1.7424, "stance": 1.6258, "sentiment": 1.3270},
+        "xlmr_v1":    {"misinfo": 1.0,    "stance": 1.0,    "sentiment": 1.0},
     }
     if CONFIG["temperature_file"].exists():
         try:
@@ -230,16 +213,14 @@ def load_temperature_params() -> Dict:
             default.update(loaded)
         except Exception as e:
             logger.warning(f"Could not load T params: {e}")
-    with _CACHE_LOCK:
-        _CACHE["T_params"] = default
+    _CACHE["T_params"] = default
     return default
 
 
 def load_benchmark() -> Dict:
-    """Load LIVE benchmark from JSON file with fallback (thread-safe)."""
-    with _CACHE_LOCK:
-        if "benchmark" in _CACHE:
-            return _CACHE["benchmark"]
+    """Load LIVE benchmark from JSON file with fallback."""
+    if "benchmark" in _CACHE:
+        return _CACHE["benchmark"]
 
     fallback = {
         "phobert": {
@@ -268,32 +249,25 @@ def load_benchmark() -> Dict:
             "per_class_misinfo":   [0.4444, 0.8309],
             "per_class_stance":    [0.4528, 0.6905, 0.7360],
             "per_class_sentiment": [0.8039, 0.8034, 0.7027],
-            "support_misinfo":   [22, 113],
-            "support_stance":    [32, 40, 59],
-            "support_sentiment": [56, 52, 20],
+            "support_misinfo":   [28, 158],
+            "support_stance":    [54, 48, 84],
+            "support_sentiment": [71, 75, 40],
         },
     }
     if CONFIG["benchmark_file"].exists():
         try:
             with open(CONFIG["benchmark_file"], encoding="utf-8") as f:
-                loaded = json.load(f)
-                # Merge name field from fallback
-                for k in loaded:
-                    if k in fallback and "name" in fallback[k]:
-                        loaded[k]["name"] = fallback[k]["name"]
-                fallback.update(loaded)
+                fallback.update(json.load(f))
         except Exception as e:
             logger.warning(f"Could not load benchmark: {e}")
-    with _CACHE_LOCK:
-        _CACHE["benchmark"] = fallback
+    _CACHE["benchmark"] = fallback
     return fallback
 
 
 def load_xai_cache() -> Dict:
-    """Load XAI reasoning cache (thread-safe)."""
-    with _CACHE_LOCK:
-        if "xai_cache" in _CACHE:
-            return _CACHE["xai_cache"]
+    """Load XAI reasoning cache (text → reasoning)."""
+    if "xai_cache" in _CACHE:
+        return _CACHE["xai_cache"]
 
     cache = {}
     if CONFIG["cache_file"].exists():
@@ -303,8 +277,7 @@ def load_xai_cache() -> Dict:
             logger.info(f"Loaded {len(cache)} cached XAI reasonings")
         except Exception as e:
             logger.warning(f"Could not load XAI cache: {e}")
-    with _CACHE_LOCK:
-        _CACHE["xai_cache"] = cache
+    _CACHE["xai_cache"] = cache
     return cache
 
 
@@ -434,6 +407,7 @@ def predict(text: str, model_key: str = "PhoBERT-v2") -> Optional[Dict]:
     if not ok or model is None:
         return None
 
+    # Tokenize (PhoBERT requires word segmentation)
     processed = text
     if "phobert" in model_key.lower():
         try:
@@ -446,6 +420,7 @@ def predict(text: str, model_key: str = "PhoBERT-v2") -> Optional[Dict]:
     with torch.no_grad():
         logits_m, logits_st, logits_se = model(enc["input_ids"], enc["attention_mask"])
 
+    # Temperature scaling
     T_params = load_temperature_params()
     if "phobert" in model_key.lower():
         Ts = T_params.get("phobert_v2", {"misinfo": 1.0, "stance": 1.0, "sentiment": 1.0})
@@ -472,16 +447,19 @@ def predict(text: str, model_key: str = "PhoBERT-v2") -> Optional[Dict]:
 
 def get_reasoning(text: str, result: Dict) -> Tuple[str, str]:
     """3-layer reasoning with source label."""
+    # Layer 1: Cache
     cached = find_xai_reasoning_cache(text)
     if cached:
-        return cached, "✅ Từ cache (Gold Test Set, 186 mẫu)"
+        return cached, "✅ Từ cache (Gold Test Set)"
 
+    # Layer 2: HF Inference API
     api_reasoning = query_gemma_api(text)
     if api_reasoning:
         if is_mostly_english(api_reasoning):
             api_reasoning = translate_to_vietnamese(api_reasoning)
         return api_reasoning, "✅ Từ Gemma-4 HF Inference API"
 
+    # Layer 3: Smart fallback
     fallback = generate_smart_fallback(
         result["misinfo"]["pred"], result["stance"]["pred"], result["sentiment"]["pred"]
     )
@@ -540,9 +518,9 @@ def compute_captum_saliency(text: str, model_key: str) -> Tuple[List[str], List[
 def render_saliency_html(tokens: List[str], attr_norm: List[float], pred_class: int) -> str:
     """Render saliency as HTML heatmap."""
     if not tokens:
-        return "<p><em>⚠️ Captum IG đã bị tắt hoặc lỗi load model</em></p>"
+        return "<p><em>⚠️ Không thể tính Saliency (Captum chưa cài hoặc model load fail)</em></p>"
 
-    html = '<div style="line-height:1.9; padding:20px; border-radius:15px; background:#f8f9fa; border:1px dashed rgba(100,255,218,0.4); font-family:Times New Roman, serif;">'
+    html = '<div style="line-height:1.9; padding:20px; border-radius:15px; background:#f8f9fa; border:1px dashed rgba(100,255,218,0.4); font-family:\'Times New Roman\', serif;">'
     for tok, score in zip(tokens, attr_norm):
         if tok in ["<s>", "</s>", "<pad>", "[CLS]", "[SEP]", "<unk>"]:
             continue
@@ -564,26 +542,24 @@ def render_saliency_html(tokens: List[str], attr_norm: List[float], pred_class: 
 
 
 # ============================================================================
-# AI VOICE (gTTS) - Thread-safe with unique temp file
+# AI VOICE (gTTS)
 # ============================================================================
 
 def text_to_speech(text: str) -> Optional[str]:
-    """Generate audio with unique filename to avoid race condition."""
+    """Generate base64-encoded audio for AI voice."""
     if not text:
         return None
     try:
         from gtts import gTTS
-        # Hash text để tạo unique filename
-        text_hash = hashlib.md5(text.encode("utf-8")).hexdigest()[:12]
-        # Dùng tempfile để đảm bảo writable + unique
-        tmp_file = tempfile.NamedTemporaryFile(
-            prefix=f"tts_{text_hash}_", suffix=".mp3", delete=False, dir="/tmp"
-        )
-        tmp_file.close()
-        
         tts = gTTS(text=text[:500], lang="vi")
-        tts.save(tmp_file.name)
-        return tmp_file.name
+        fp = BytesIO()
+        tts.write_to_fp(fp)
+        fp.seek(0)
+        # Save to temp file for Gradio
+        tmp_path = "/tmp/tts_output.mp3"
+        with open(tmp_path, "wb") as f:
+            f.write(fp.read())
+        return tmp_path
     except Exception as e:
         logger.warning(f"gTTS failed: {e}")
         return None
@@ -605,10 +581,11 @@ def detect_source(url: str) -> str:
         return "youtube"
     if any(d in url_lower for d in ["facebook.com", "tiktok.com", "threads.net"]):
         return "apify"
-    return "news"
+    return "news"  # default fallback
 
 
 def fetch_news(url: str) -> str:
+    """Tier 1: News via trafilatura."""
     try:
         import trafilatura
         downloaded = trafilatura.fetch_url(url)
@@ -621,6 +598,7 @@ def fetch_news(url: str) -> str:
 
 
 def fetch_youtube(url: str, max_comments: int = 30) -> str:
+    """Tier 2: YouTube via yt-dlp."""
     try:
         import yt_dlp
         opts = {"quiet": True, "skip_download": True, "getcomments": True}
@@ -636,6 +614,7 @@ def fetch_youtube(url: str, max_comments: int = 30) -> str:
 
 
 def fetch_apify(url: str) -> str:
+    """Tier 3: Social via Apify."""
     if not APIFY_TOKENS:
         return "❌ APIFY_TOKEN chưa được setup trong HF Spaces Secrets"
     try:
@@ -721,6 +700,8 @@ def make_benchmark_chart() -> go.Figure:
     bench = load_benchmark()
     models = ["PhoBERT-v2", "XLM-R-v1", "Gemma-4 4B"]
     keys = ["phobert", "xlmr", "gemma"]
+    colors = ["#64ffda", "#007bff", "#FFA500"]
+
     fig = go.Figure()
     tasks = ["misinfo", "stance", "sentiment"]
     task_names = ["Misinfo", "Stance", "Sentiment"]
@@ -738,65 +719,8 @@ def make_benchmark_chart() -> go.Figure:
     return fig
 
 
-def make_confusion_matrix_chart() -> go.Figure:
-    """Confusion Matrix Heatmap for PhoBERT-v2 Sentiment (from thesis Ch4)."""
-    z_data = [
-        [54, 12, 5],
-        [10, 56, 9],
-        [3, 11, 26]
-    ]
-    labels = ["Tiêu cực", "Trung tính", "Tích cực"]
-    fig = px.imshow(
-        z_data, x=labels, y=labels, text_auto=True, aspect="auto",
-        color_continuous_scale="Viridis",
-        labels=dict(x="Dự đoán", y="Thực tế", color="Số mẫu"),
-        title="Confusion Matrix — PhoBERT-v2 Sentiment (n=186)"
-    )
-    fig.update_layout(height=400, margin=dict(l=20, r=20, t=50, b=20))
-    return fig
-
-
-def make_per_class_chart(task: str = "misinfo") -> go.Figure:
-    """Per-class F1 comparison across 3 models."""
-    bench = load_benchmark()
-    keys = ["phobert", "xlmr", "gemma"]
-    colors = ["#64ffda", "#007bff", "#FFA500"]
-    
-    if task == "misinfo":
-        class_labels = ["Tin giả", "Chính xác"]
-        pc_key = "per_class_misinfo"
-        support_key = "support_misinfo"
-    elif task == "stance":
-        class_labels = ["Ủng hộ", "Phản đối", "Trung lập"]
-        pc_key = "per_class_stance"
-        support_key = "support_stance"
-    else:
-        class_labels = ["Tiêu cực", "Trung tính", "Tích cực"]
-        pc_key = "per_class_sentiment"
-        support_key = "support_sentiment"
-    
-    support = bench["phobert"][support_key]
-    x_labels = [f"{name} (n={sup})" for name, sup in zip(class_labels, support)]
-    
-    fig = go.Figure()
-    for key, color in zip(keys, colors):
-        pc = bench[key][pc_key]
-        fig.add_trace(go.Bar(
-            x=x_labels, y=pc, name=bench[key]["name"].split("(")[0].strip(),
-            marker_color=color,
-            text=[f"{v:.4f}" for v in pc], textposition="auto"
-        ))
-    fig.update_layout(
-        barmode="group", height=380,
-        yaxis=dict(title="F1 Score", range=[0, 1.05]),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02),
-        title=f"Per-class F1 — {task.upper()}"
-    )
-    return fig
-
-
 def make_sankey_chart() -> go.Figure:
-    """Sentiment to Stance flow."""
+    """Sentiment → Stance flow."""
     nodes = ["Tiêu cực", "Trung tính", "Tích cực", "Phản đối", "Trung lập", "Ủng hộ"]
     sources = [0, 0, 0, 1, 1, 1, 2, 2]
     targets = [3, 4, 5, 3, 4, 5, 4, 5]
@@ -812,66 +736,23 @@ def make_sankey_chart() -> go.Figure:
 
 
 # ============================================================================
-# SESSION HISTORY (Fixed: now updates correctly)
+# HANDLERS
 # ============================================================================
 
-def session_history_to_markdown(history: List) -> str:
-    """Render session history as markdown table."""
-    if not history:
-        return "*Chưa có lượt phân tích nào trong phiên này*"
-    md = "### 📜 10 Lượt phân tích gần nhất\n\n"
-    md += "| ⏱️ Thời gian | 📝 Văn bản | 🦠 Misinfo | 🎯 Stance | 💭 Sentiment |\n"
-    md += "|---|---|---|---|---|\n"
-    for h in history:
-        md += f"| {h['timestamp']} | {h['text']} | {h['misinfo']} | {h['stance']} | {h['sentiment']} |\n"
-    return md
-
-
-# ============================================================================
-# HANDLERS (Enhanced with progress + report export)
-# ============================================================================
-
-def handle_analyze(
-    text: str, model_choice: str, use_captum: bool, history: List,
-    progress=gr.Progress()
-) -> Tuple:
-    """Main analysis handler with progress indicator."""
+def handle_analyze(text: str, model_choice: str, history: List) -> Tuple:
+    """Main analysis handler."""
     if not text or not text.strip():
-        return ("⚠️ Vui lòng nhập văn bản", None, "", "", None, history, 
-                session_history_to_markdown(history), "")
+        return ("⚠️ Vui lòng nhập văn bản", None, "", "", None, history, "")
 
-    progress(0.1, desc="🔬 Đang tải mô hình...")
     start = time.time()
-    
-    progress(0.3, desc=f"🧠 {model_choice} đang phân tích...")
     result = predict(text, model_choice)
     if not result:
-        return ("❌ Không thể load model — kiểm tra HF_TOKEN", None, "", "", None, history,
-                session_history_to_markdown(history), "")
-    
-    progress(0.5, desc="📊 Đang tính radar chart...")
-    radar = make_radar_chart(result)
-    
-    progress(0.6, desc="💭 Đang sinh giải thích (XAI 3-layer)...")
-    reasoning, source = get_reasoning(text, result)
-    reasoning_md = f"**{source}**\n\n{reasoning}"
-
-    if use_captum:
-        progress(0.8, desc="🎯 Đang tính Captum Integrated Gradients...")
-        tokens, attr_norm, pred_class = compute_captum_saliency(text, model_choice)
-        saliency_html = render_saliency_html(tokens, attr_norm, pred_class)
-    else:
-        saliency_html = "<p style='color:#888;'><em>💡 Bật checkbox <b>Captum IG</b> để xem token attribution (chậm hơn 5-10s)</em></p>"
-
-    progress(0.9, desc="🔊 Đang tạo AI Voice...")
-    voice_text = reasoning if reasoning and not reasoning.startswith("⚠️") else ""
-    audio_path = text_to_speech(voice_text) if voice_text else None
-
+        return ("❌ Không thể load model", None, "", "", None, history, "")
     elapsed = time.time() - start
 
-    # Summary với details
+    # Summary cards
     summary_md = ""
-    for axis, axis_name in [("misinfo", "Tin giả/Chính xác"), ("stance", "Quan điểm"), ("sentiment", "Cảm xúc")]:
+    for axis, axis_name in [("misinfo", "Tin giả"), ("stance", "Quan điểm"), ("sentiment", "Cảm xúc")]:
         r = result[axis]
         label = LABEL_MAPS[axis][r["pred"]]
         icon = LABEL_ICONS[axis][r["pred"]]
@@ -887,10 +768,22 @@ def handle_analyze(
         summary_md += f"### {icon} {axis_name}: <span style='color:{color}'>**{label}**</span>\n\n{conf_text}\n\n"
     summary_md += f"\n*⏱️ Thời gian: {elapsed:.2f}s · Mô hình: {model_choice}*"
 
-    # Build export report markdown
-    report_md = build_report_markdown(text, model_choice, result, reasoning, elapsed)
+    # Radar
+    radar = make_radar_chart(result)
 
-    # Update session history
+    # Reasoning
+    reasoning, source = get_reasoning(text, result)
+    reasoning_md = f"**{source}**\n\n{reasoning}"
+
+    # Captum
+    tokens, attr_norm, pred_class = compute_captum_saliency(text, model_choice)
+    saliency_html = render_saliency_html(tokens, attr_norm, pred_class)
+
+    # AI Voice
+    voice_text = reasoning if reasoning and not reasoning.startswith("⚠️") else ""
+    audio_path = text_to_speech(voice_text) if voice_text else None
+
+    # Session history
     entry = {
         "timestamp": time.strftime("%H:%M:%S"),
         "text": text[:80] + ("..." if len(text) > 80 else ""),
@@ -899,66 +792,14 @@ def handle_analyze(
         "sentiment": LABEL_MAPS["sentiment"][result["sentiment"]["pred"]],
     }
     history = ([entry] + (history or []))[:CONFIG["session_history_limit"]]
-    history_md = session_history_to_markdown(history)
 
-    progress(1.0, desc="✅ Hoàn tất!")
-    return (summary_md, radar, reasoning_md, saliency_html, audio_path, history, history_md, report_md)
+    history_md = "*Chưa có lượt phân tích*"
+    if history:
+        history_md = "| ⏱️ | Văn bản | Misinfo | Stance | Sentiment |\n|---|---|---|---|---|\n"
+        for h in history:
+            history_md += f"| {h['timestamp']} | {h['text']} | {h['misinfo']} | {h['stance']} | {h['sentiment']} |\n"
 
-
-def build_report_markdown(text: str, model: str, result: Dict, reasoning: str, elapsed: float) -> str:
-    """Build downloadable markdown report."""
-    timestamp = time.strftime("%d/%m/%Y %H:%M:%S")
-    report = f"""# Báo cáo Phân tích VaccineNLP
-
-**Thời gian:** {timestamp}
-**Mô hình:** {model}
-**Thời gian xử lý:** {elapsed:.2f}s
-
----
-
-## Văn bản phân tích
-
-> {text}
-
-## Kết quả phân loại
-
-| Trục | Nhãn | Confidence (thô) | Confidence (hiệu chuẩn) |
-|---|---|:---:|:---:|
-"""
-    for axis, axis_name in [("misinfo", "Misinformation"), ("stance", "Stance"), ("sentiment", "Sentiment")]:
-        r = result[axis]
-        label = LABEL_MAPS[axis][r["pred"]]
-        conf_raw = max(r["conf_raw"]) * 100
-        conf_cal = max(r["conf_cal"]) * 100
-        report += f"| **{axis_name}** | {label} | {conf_raw:.1f}% | {conf_cal:.1f}% (T={r['T']:.2f}) |\n"
-    
-    report += f"""
-## Giải thích (XAI)
-
-{reasoning}
-
----
-
-*Báo cáo được tạo tự động bởi VaccineNLP · HUPH 2026*
-*Kim Mạnh Hưng (2211090016) · Đinh Lê Quỳnh Phương (2211090031)*
-"""
-    return report
-
-
-def export_report_file(report_md: str) -> Optional[str]:
-    """Save report markdown to file for download."""
-    if not report_md or not report_md.strip():
-        return None
-    try:
-        tmp_file = tempfile.NamedTemporaryFile(
-            prefix="VaccineNLP_Report_", suffix=".md", delete=False, dir="/tmp", mode="w", encoding="utf-8"
-        )
-        tmp_file.write(report_md)
-        tmp_file.close()
-        return tmp_file.name
-    except Exception as e:
-        logger.warning(f"Export failed: {e}")
-        return None
+    return (summary_md, radar, reasoning_md, saliency_html, audio_path, history, history_md)
 
 
 def handle_fetch(url: str, max_comments: int) -> Tuple[str, str]:
@@ -967,8 +808,8 @@ def handle_fetch(url: str, max_comments: int) -> Tuple[str, str]:
     return content, info
 
 
-def handle_batch(text: str, model_choice: str, progress=gr.Progress()) -> str:
-    """Batch mode analysis with progress."""
+def handle_batch(text: str, model_choice: str) -> str:
+    """Batch mode analysis."""
     if not text or not text.strip():
         return "⚠️ Vui lòng nhập văn bản"
     lines = [l.strip() for l in text.strip().split("\n") if l.strip()]
@@ -977,7 +818,6 @@ def handle_batch(text: str, model_choice: str, progress=gr.Progress()) -> str:
 
     rows = []
     for i, line in enumerate(lines):
-        progress((i + 1) / len(lines), desc=f"🔬 Đang phân tích {i+1}/{len(lines)}...")
         r = predict(line, model_choice)
         if r:
             rows.append({
@@ -991,20 +831,17 @@ def handle_batch(text: str, model_choice: str, progress=gr.Progress()) -> str:
     if not rows:
         return "❌ Không có kết quả"
     df = pd.DataFrame(rows)
-    md = f"### 📋 Kết quả Batch ({len(rows)} mẫu)\n\n"
+    md = "### 📋 Kết quả Batch ({} mẫu)\n\n".format(len(rows))
     md += df.to_markdown(index=False)
     return md
 
 
-def handle_compare(text: str, progress=gr.Progress()) -> str:
+def handle_compare(text: str) -> str:
     """Compare PhoBERT vs XLM-R."""
     if not text or not text.strip():
         return "⚠️ Vui lòng nhập văn bản"
-    progress(0.3, desc="🔬 Đang phân tích PhoBERT-v2...")
     p = predict(text, "PhoBERT-v2")
-    progress(0.7, desc="🔬 Đang phân tích XLM-R-v1...")
     x = predict(text, "XLM-R-v1")
-    progress(1.0, desc="✅ Hoàn tất!")
     if not p or not x:
         return "❌ Không load được model"
     md = "## 🔬 So sánh PhoBERT-v2 vs XLM-R-v1\n\n"
@@ -1034,7 +871,7 @@ def render_benchmark_md() -> str:
     medals = ["🥇", "🥈", "🥉"]
     for i, (name, m, s, se, avg) in enumerate(items):
         md += f"| {medals[i]} | **{name}** | {m:.4f} | {s:.4f} | {se:.4f} | **{avg:.4f}** |\n"
-    md += "\n*Nguồn: data/benchmark_results.json (LIVE từ Kaggle 20-21/05/2026)*"
+    md += "\n*Nguồn: experiments/results/*.json (LIVE)*"
     return md
 
 
@@ -1204,30 +1041,6 @@ THESIS_MD = """## 📑 Đề cương & Mục lục Đồ án
 - Năm: 2026
 """
 
-HEADER_HTML = """
-<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 15px; margin-bottom: 20px; color: white; font-family: 'Times New Roman', serif; box-shadow: 0 8px 20px rgba(0,0,0,0.2);">
-  <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center;">
-    <div style="flex: 2; min-width: 300px;">
-      <h1 style="margin: 0; font-size: 2rem;">🦠 VaccineNLP</h1>
-      <p style="margin: 5px 0; font-size: 1.1rem; opacity: 0.95;">
-        Phát hiện Tin giả & Phân tích Thái độ Vaccine tiếng Việt
-      </p>
-      <p style="margin: 5px 0; font-size: 0.95rem; opacity: 0.85; font-style: italic;">
-        Kiến trúc Dual-Student Hybrid · PhoBERT-v2 + Gemma-4 E4B
-      </p>
-    </div>
-    <div style="flex: 1; min-width: 250px; border-left: 2px solid rgba(255,255,255,0.3); padding-left: 20px;">
-      <div style="font-size: 0.85rem; opacity: 0.9; line-height: 1.6;">
-        <b>🎓 Đồ án tốt nghiệp HUPH 2026</b><br>
-        Kim Mạnh Hưng · 2211090016<br>
-        Đinh Lê Quỳnh Phương · 2211090031<br>
-        <span style="font-size: 0.8rem; opacity: 0.8;">GVHD: TS. Trần Lâm Quân</span>
-      </div>
-    </div>
-  </div>
-</div>
-"""
-
 FOOTER_HTML = """
 <div style="background: linear-gradient(135deg, #0a192f 0%, #112240 100%); color: #a8b2d1; padding: 30px; border-radius: 10px; margin-top: 30px; font-family: 'Times New Roman', serif;">
   <div style="display: flex; flex-wrap: wrap; gap: 30px; justify-content: space-around;">
@@ -1249,28 +1062,31 @@ FOOTER_HTML = """
     </div>
   </div>
   <hr style="border-color: rgba(255,255,255,0.1); margin: 20px 0;">
-  <p style="text-align: center; opacity: 0.7;">© 2026 VaccineNLP Project · Đồ án tốt nghiệp HUPH · v2.0</p>
+  <p style="text-align: center; opacity: 0.7;">© 2026 VaccineNLP Project · Đồ án tốt nghiệp HUPH</p>
 </div>
 """
 
 
 # ============================================================================
-# GRADIO UI BUILDER
+# GRADIO UI
 # ============================================================================
 
 def build_app():
     """Build the Gradio Blocks app with 6 tabs."""
-    with gr.Blocks(title="VaccineNLP Demo v2.0", theme=gr.themes.Soft(primary_hue="indigo")) as app:
-        # Premium Header
-        gr.HTML(HEADER_HTML)
+    with gr.Blocks(title="VaccineNLP Demo", theme=gr.themes.Soft(primary_hue="indigo")) as app:
+        gr.Markdown(
+            """
+            # 🔬 VaccineNLP — Phát hiện Tin giả & Phân tích Thái độ Vaccine
+            ### Đồ án tốt nghiệp HUPH 2026 · Kiến trúc Dual-Student Hybrid · PhoBERT-v2 + Gemma-4 E4B
+            """
+        )
 
         session_state = gr.State([])
-        report_state = gr.State("")
 
         with gr.Tabs():
-            # ================================================================
+            # =================================================================
             # TAB 1: PHÂN TÍCH VĂN BẢN
-            # ================================================================
+            # =================================================================
             with gr.Tab("🔍 PHÂN TÍCH VĂN BẢN"):
                 with gr.Row():
                     with gr.Column(scale=1):
@@ -1290,15 +1106,11 @@ def build_app():
                             placeholder="Nhập hoặc dán văn bản về vaccine...",
                             lines=8,
                         )
-                        use_captum_cb = gr.Checkbox(
-                            label="🎯 Bật Captum IG (token attribution, chậm hơn 5-10s)",
-                            value=False,
-                        )
                         analyze_btn = gr.Button("🔬 Phân tích", variant="primary", size="lg")
 
                         with gr.Accordion("🌐 Hoặc thu thập từ URL", open=False):
                             url_input = gr.Textbox(
-                                label="URL (Báo · YouTube · Facebook · TikTok · Threads)",
+                                label="URL (Báo điện tử · YouTube · Facebook · TikTok · Threads)",
                                 placeholder="https://vnexpress.net/...",
                             )
                             max_cmt = gr.Slider(10, 100, value=30, step=10, label="Max comments")
@@ -1306,17 +1118,9 @@ def build_app():
                             fetch_status = gr.Markdown()
 
                     with gr.Column(scale=1):
-                        gr.Markdown("### 📊 Kết quả phân loại")
+                        gr.Markdown("### 📊 Kết quả")
                         summary_out = gr.Markdown()
                         radar_out = gr.Plot()
-
-                # Quick Examples
-                gr.Markdown("### 🚀 Ví dụ test nhanh (click để load)")
-                gr.Examples(
-                    examples=GRADIO_EXAMPLES,
-                    inputs=[text_input, model_choice],
-                    label="",
-                )
 
                 gr.Markdown("---")
                 gr.Markdown("## 🧠 Giải thích AI (XAI 3-Layer Engine)")
@@ -1327,17 +1131,9 @@ def build_app():
                         audio_out = gr.Audio(label="🔊 AI Voice (gTTS)", type="filepath")
                     with gr.Column():
                         gr.Markdown("### 🎯 Token Attribution (Captum IG)")
-                        saliency_out = gr.HTML(value="<p style='color:#888;'><em>💡 Bật checkbox <b>Captum IG</b> ở trên rồi nhấn Phân tích</em></p>")
+                        saliency_out = gr.HTML()
 
-                # Export Report Button
-                with gr.Row():
-                    export_btn = gr.Button("📥 Tải báo cáo phân tích (.md)", variant="secondary")
-                    export_file = gr.File(label="Báo cáo", visible=False)
-
-                # Session History Display
-                history_display = gr.Markdown(value="*Chưa có lượt phân tích nào trong phiên này*")
-
-                # Sample selection updates text
+                # Wire up
                 def update_text_from_sample(sample_key):
                     if sample_key == "Tự nhập":
                         return ""
@@ -1349,33 +1145,21 @@ def build_app():
                     outputs=[text_input],
                 )
 
-                # Main analyze button — FIXED: now passes use_captum + returns report
+                history_md_state = gr.Markdown(visible=False)
+
                 analyze_btn.click(
                     fn=handle_analyze,
-                    inputs=[text_input, model_choice, use_captum_cb, session_state],
+                    inputs=[text_input, model_choice, session_state],
                     outputs=[summary_out, radar_out, reasoning_out, saliency_out,
-                             audio_out, session_state, history_display, report_state],
+                             audio_out, session_state, history_md_state],
                 )
 
-                # Export button
-                export_btn.click(
-                    fn=export_report_file,
-                    inputs=[report_state],
-                    outputs=[export_file],
-                ).then(
-                    fn=lambda x: gr.File(value=x, visible=True),
-                    inputs=[export_file],
-                    outputs=[export_file],
-                )
-
-                # URL fetch
                 fetch_btn.click(
                     fn=handle_fetch,
                     inputs=[url_input, max_cmt],
                     outputs=[text_input, fetch_status],
                 )
 
-                # Batch + Compare accordions
                 with gr.Accordion("📋 Batch Mode (phân tích nhiều mẫu cùng lúc)", open=False):
                     batch_input = gr.Textbox(
                         label="Mỗi dòng = 1 mẫu (tối đa 50)",
@@ -1384,7 +1168,11 @@ def build_app():
                     )
                     batch_btn = gr.Button("🚀 Phân tích Batch")
                     batch_out = gr.Markdown()
-                    batch_btn.click(fn=handle_batch, inputs=[batch_input, model_choice], outputs=[batch_out])
+                    batch_btn.click(
+                        fn=handle_batch,
+                        inputs=[batch_input, model_choice],
+                        outputs=[batch_out],
+                    )
 
                 with gr.Accordion("🔬 So sánh PhoBERT-v2 vs XLM-R-v1", open=False):
                     cmp_input = gr.Textbox(label="Văn bản", lines=4)
@@ -1392,16 +1180,21 @@ def build_app():
                     cmp_out = gr.Markdown()
                     cmp_btn.click(fn=handle_compare, inputs=[cmp_input], outputs=[cmp_out])
 
-            # ================================================================
-            # TAB 2: BENCHMARK (Enhanced với Confusion Matrix)
-            # ================================================================
+                with gr.Accordion("📜 Lịch sử phiên (10 lượt gần nhất)", open=False):
+                    history_display = gr.Markdown(value="*Chưa có lượt phân tích*")
+                    refresh_btn = gr.Button("🔄 Làm mới")
+                    refresh_btn.click(
+                        fn=lambda h: history_md_state.value if h else "*Chưa có lượt phân tích*",
+                        inputs=[session_state],
+                        outputs=[history_display],
+                    )
+
+            # =================================================================
+            # TAB 2: BENCHMARK
+            # =================================================================
             with gr.Tab("📊 BENCHMARK & BÁO CÁO"):
                 gr.Markdown(render_benchmark_md())
                 gr.Plot(value=make_benchmark_chart())
-
-                gr.Markdown("---")
-                gr.Markdown("## 🔥 Confusion Matrix — PhoBERT-v2 Sentiment")
-                gr.Plot(value=make_confusion_matrix_chart())
 
                 gr.Markdown("---")
                 gr.Markdown(
@@ -1416,9 +1209,9 @@ def build_app():
                     """
                 )
 
-            # ================================================================
-            # TAB 3: ĐÁNH GIÁ CHUYÊN SÂU (Enhanced với Per-class)
-            # ================================================================
+            # =================================================================
+            # TAB 3: ĐÁNH GIÁ CHUYÊN SÂU
+            # =================================================================
             with gr.Tab("📈 ĐÁNH GIÁ CHUYÊN SÂU"):
                 gr.Markdown("## 🌀 Dòng chảy Cảm xúc → Lập trường (n=186)")
                 gr.Plot(value=make_sankey_chart())
@@ -1437,34 +1230,21 @@ def build_app():
                     """
                 )
 
-                gr.Markdown("---")
-                gr.Markdown("## 📊 Per-class F1 Breakdown")
-                with gr.Tabs():
-                    with gr.Tab("🚨 Misinformation"):
-                        gr.Plot(value=make_per_class_chart("misinfo"))
-                        gr.Markdown("**Nhận xét:** Nhãn *Tin giả* (n=28) khó nhất do mất cân bằng dữ liệu, F1 cao nhất 0.5079 (XLM-R).")
-                    with gr.Tab("🎯 Stance"):
-                        gr.Plot(value=make_per_class_chart("stance"))
-                        gr.Markdown("**Nhận xét:** Nhãn *Trung lập* dễ nhất (F1 ~0.74) do diễn đạt khách quan. *Phản đối* tốt với Gemma (0.6905).")
-                    with gr.Tab("💭 Sentiment"):
-                        gr.Plot(value=make_per_class_chart("sentiment"))
-                        gr.Markdown("**Nhận xét:** Gemma vượt trội ở cả 3 lớp Sentiment, F1 *Tích cực* cao nhất 0.7027.")
-
-            # ================================================================
+            # =================================================================
             # TAB 4: TÀI LIỆU
-            # ================================================================
+            # =================================================================
             with gr.Tab("📚 TÀI LIỆU & NOTEBOOKS"):
                 gr.Markdown(RESOURCES_MD)
 
-            # ================================================================
+            # =================================================================
             # TAB 5: PHƯƠNG PHÁP LUẬN
-            # ================================================================
+            # =================================================================
             with gr.Tab("📜 PHƯƠNG PHÁP LUẬN"):
                 gr.Markdown(METHODOLOGY_MD)
 
-            # ================================================================
+            # =================================================================
             # TAB 6: ĐỀ CƯƠNG
-            # ================================================================
+            # =================================================================
             with gr.Tab("📑 ĐỀ CƯƠNG"):
                 gr.Markdown(THESIS_MD)
 
