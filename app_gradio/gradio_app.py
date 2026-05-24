@@ -961,6 +961,15 @@ def export_report_file(report_md: str) -> Optional[str]:
         return None
 
 
+def handle_export_report(report_md: str):
+    if not report_md or not report_md.strip():
+        return gr.update(visible=False)
+    path = export_report_file(report_md)
+    if path:
+        return gr.update(value=path, visible=True)
+    return gr.update(visible=False)
+
+
 def handle_fetch(url: str, max_comments: int) -> Tuple[str, str]:
     """Multi-source URL fetcher."""
     content, info = fetch_url(url, max_comments)
@@ -1359,12 +1368,8 @@ def build_app():
 
                 # Export button
                 export_btn.click(
-                    fn=export_report_file,
+                    fn=handle_export_report,
                     inputs=[report_state],
-                    outputs=[export_file],
-                ).then(
-                    fn=lambda x: gr.File(value=x, visible=True),
-                    inputs=[export_file],
                     outputs=[export_file],
                 )
 
@@ -1476,4 +1481,4 @@ def build_app():
 if __name__ == "__main__":
     app = build_app()
     app.queue(default_concurrency_limit=2, max_size=10)
-    app.launch(server_name="0.0.0.0", server_port=7860, show_error=True)
+    app.launch(show_error=True)
