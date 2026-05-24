@@ -78,3 +78,7 @@ task64_streamlit_spec_approved.html
 Phase6 directive.html
 s c r i p t s / 
 scripts/
+
+# Gradio deployment exclusions
+app_gradio/.venv_gradio/
+app_gradio/data/

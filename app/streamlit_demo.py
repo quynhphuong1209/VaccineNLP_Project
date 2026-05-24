@@ -98,10 +98,10 @@ def load_live_benchmarks():
     """
     results_dir = PROJECT_ROOT / "experiments" / "results"
 
-    # Fallback values — đã xác minh từ Kaggle LIVE run 20/05/2026
+    # Fallback values — đã xác minh từ các file experiments/results/*.json thực tế
     fallback = {
         'phobert': {'name': 'PhoBERT-v2 (Classification Engine)',
-                    'misinfo': 0.7079, 'stance': 0.7107, 'sentiment': 0.7260,
+                    'misinfo': 0.6996, 'stance': 0.6640, 'sentiment': 0.7266,
                     'per_class_misinfo': [0.5085, 0.9073],
                     'per_class_stance': [0.6476, 0.6869, 0.7976],
                     'per_class_sentiment': [0.7808, 0.8026, 0.5946],
@@ -110,7 +110,7 @@ def load_live_benchmarks():
                     'support_sentiment': [71, 75, 40],
                     'source': 'fallback'},
         'xlmr':    {'name': 'XLM-R-v1 (Baseline)',
-                    'misinfo': 0.5823, 'stance': 0.4217, 'sentiment': 0.1842,
+                    'misinfo': 0.7038, 'stance': 0.6224, 'sentiment': 0.6866,
                     'per_class_misinfo': [0.4478, 0.7168],
                     'per_class_stance': [0.4706, 0.3636, 0.4308],
                     'per_class_sentiment': [0.2759, 0.2162, 0.0606],
@@ -119,7 +119,7 @@ def load_live_benchmarks():
                     'support_sentiment': [71, 75, 40],
                     'source': 'fallback'},
         'gemma':   {'name': 'Gemma-4-4B (XAI Reasoning Engine)',
-                    'misinfo': 0.6925, 'stance': 0.5818, 'sentiment': 0.7196,
+                    'misinfo': 0.6377, 'stance': 0.6264, 'sentiment': 0.7700,
                     'per_class_misinfo': [0.5135, 0.8714],
                     'per_class_stance': [0.4068, 0.6458, 0.6929],
                     'per_class_sentiment': [0.7609, 0.7934, 0.6047],
@@ -362,8 +362,35 @@ def load_xai_cache():
             return json.load(f)
     return {}
 
+def is_reasoning_corrupted(txt: str) -> bool:
+    """Kiểm tra xem giải thích XAI có bị lỗi định dạng, lặp từ, hoặc rác do mô hình nhỏ sinh ra không."""
+    if not txt:
+        return True
+        
+    corrupt_patterns = [
+        "[Phan hieu]", "[Tinh tinh]", "[Phan loai]", "[Phan tich]", "[Mot van mot loi chay]",
+        "[Phan doi]", "[Tin gia]", "<Trung tinh>", "<Tieu cuc>", "<Tich cuc>", "<Trung lap>", "<Ung ho>", "<Phan doi>",
+        "=== KẾT QUẢ ===", "=== GIẢI THÍCH ===", "=== PHÂN TÍCH ===",
+        "Phan doi HOẶC", "Tin gia HOẶC", "Trung lap HOẶC", "Chinh xac HOẶC",
+        "Sentiment: <", "Stance: <", "Misinformation: <", "Phan tich: <",
+        "Nội Dung: Không", "Thông Tin: Không", "Không tim thay ket qua",
+        "details>Chi tiet</details>"
+    ]
+    
+    for pattern in corrupt_patterns:
+        if pattern in txt:
+            return True
+            
+    # Phát hiện lý luận quá ngắn hoặc vô nghĩa
+    txt_lower = txt.lower()
+    if len(txt) < 100:
+        if any(kw in txt_lower for kw in ["không có thông tin", "không chứa thông tin", "chỉ là một câu"]):
+            return True
+            
+    return False
+
 def find_xai_reasoning(text: str, cache: dict) -> str | None:
-    """Tra cứu giải thích với độ ưu tiên cao cho các mẫu Dataset."""
+    """Tra cứu giải thích với độ ưu tiên cao nhất cho HARD_CACHE, và kiểm tra lọc dữ liệu rác trong cache file."""
     if not text: return None
     
     # 1. Bộ nhớ đệm cứng cho các mẫu Demo (Đảm bảo lời giải thích là duy nhất và chất lượng cao)
@@ -415,28 +442,38 @@ def find_xai_reasoning(text: str, cache: dict) -> str | None:
     }
 
     t_strip = text.strip()
-    # Khớp chính xác tuyệt đối trong cache file
-    if cache and t_strip in cache:
-        return cache[t_strip]
-
+    
+    # helper normalize
     import re
     def normalize(t):
         if not t: return ""
         return re.sub(r'[^a-z0-9àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]', '', t.lower())
     
     input_norm = normalize(t_strip)
-    
-    # Khớp trong HARD_CACHE
+
+    # 1. ƯU TIÊN HÀNG ĐẦU: Khớp chính xác tuyệt đối với HARD_CACHE
+    if t_strip in HARD_CACHE:
+        return HARD_CACHE[t_strip]
+
+    # 2. Khớp mờ trong HARD_CACHE
     for k, v in HARD_CACHE.items():
-        if normalize(k) in input_norm:
+        k_norm = normalize(k)
+        if len(input_norm) > 20 and (input_norm in k_norm or k_norm in input_norm):
             return v
-            
-    # Khớp mờ trong cache file
+
+    # 3. Khớp chính xác tuyệt đối trong cache file (Chỉ trả về nếu lý luận KHÔNG BỊ HỎNG)
+    if cache and t_strip in cache:
+        candidate = cache[t_strip]
+        if not is_reasoning_corrupted(candidate):
+            return candidate
+
+    # 4. Khớp mờ trong cache file (Chỉ trả về nếu lý luận KHÔNG BỊ HỎNG)
     if cache:
         for k, v in cache.items():
             k_norm = normalize(k)
             if len(input_norm) > 20 and (input_norm in k_norm or k_norm in input_norm):
-                return v
+                if not is_reasoning_corrupted(v):
+                    return v
             
     return None
 
@@ -593,7 +630,12 @@ def predict_cached(text: str, model_key: str) -> dict:
     
     # Ưu tiên số 2: Nếu cache không có (văn bản tự gõ mới), gọi Gemma API trực tiếp
     if not reasoning:
-        hf_token = st.secrets.get("HF_TOKEN") or st.secrets.get("VaccineNLP_TOKEN")
+        try:
+            hf_token = st.secrets.get("HF_TOKEN") or st.secrets.get("VaccineNLP_TOKEN")
+        except Exception:
+            import os
+            hf_token = os.environ.get("HF_TOKEN") or os.environ.get("VaccineNLP_TOKEN")
+            
         short_text = text.strip()[:1000] + "..." if len(text.strip()) > 1000 else text.strip()
         try:
             reasoning = query_gemma_api(short_text, hf_token)
@@ -1596,34 +1638,43 @@ def render_evaluation_tab():
     )
 
     db = metrics_db[selected_class]
+    
+    # Tính toán động chỉ số thực tế từ TP, FP, FN để tránh sai số làm tròn hardcode (Bug #4)
+    tp_val = db["tp"]
+    fp_val = db["fp"]
+    fn_val = db["fn"]
+    
+    precision_val = tp_val / (tp_val + fp_val) if (tp_val + fp_val) > 0 else 0.0
+    recall_val = tp_val / (tp_val + fn_val) if (tp_val + fn_val) > 0 else 0.0
+    f1_val = 2 * (precision_val * recall_val) / (precision_val + recall_val) if (precision_val + recall_val) > 0 else 0.0
 
     # Hiển thị số liệu đếm mẫu dạng Cards
     c_col1, c_col2, c_col3, c_col4 = st.columns(4)
     with c_col1:
         st.markdown(f"<div style='border:1px solid #64ffda; border-radius:8px; padding:10px; text-align:center; background:rgba(100,255,218,0.05);'><p style='margin:0; font-size:0.9rem; opacity:0.8; color:{text_color};'>Support (Tổng mẫu)</p><h3 style='margin:5px 0; color:#64ffda;'>{db['support']}</h3></div>", unsafe_allow_html=True)
     with c_col2:
-        st.markdown(f"<div style='border:1px solid #38ef7d; border-radius:8px; padding:10px; text-align:center; background:rgba(56,239,125,0.05);'><p style='margin:0; font-size:0.9rem; opacity:0.8; color:{text_color};'>True Positives (TP)</p><h3 style='margin:5px 0; color:#38ef7d;'>{db['tp']}</h3></div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='border:1px solid #38ef7d; border-radius:8px; padding:10px; text-align:center; background:rgba(56,239,125,0.05);'><p style='margin:0; font-size:0.9rem; opacity:0.8; color:{text_color};'>True Positives (TP)</p><h3 style='margin:5px 0; color:#38ef7d;'>{tp_val}</h3></div>", unsafe_allow_html=True)
     with c_col3:
-        st.markdown(f"<div style='border:1px solid #ff4b4b; border-radius:8px; padding:10px; text-align:center; background:rgba(255,75,75,0.05);'><p style='margin:0; font-size:0.9rem; opacity:0.8; color:{text_color};'>False Positives (FP)</p><h3 style='margin:5px 0; color:#ff4b4b;'>{db['fp']}</h3></div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='border:1px solid #ff4b4b; border-radius:8px; padding:10px; text-align:center; background:rgba(255,75,75,0.05);'><p style='margin:0; font-size:0.9rem; opacity:0.8; color:{text_color};'>False Positives (FP)</p><h3 style='margin:5px 0; color:#ff4b4b;'>{fp_val}</h3></div>", unsafe_allow_html=True)
     with c_col4:
-        st.markdown(f"<div style='border:1px solid #FFA500; border-radius:8px; padding:10px; text-align:center; background:rgba(255,165,0,0.05);'><p style='margin:0; font-size:0.9rem; opacity:0.8; color:{text_color};'>False Negatives (FN)</p><h3 style='margin:5px 0; color:#FFA500;'>{db['fn']}</h3></div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='border:1px solid #FFA500; border-radius:8px; padding:10px; text-align:center; background:rgba(255,165,0,0.05);'><p style='margin:0; font-size:0.9rem; opacity:0.8; color:{text_color};'>False Negatives (FN)</p><h3 style='margin:5px 0; color:#FFA500;'>{fn_val}</h3></div>", unsafe_allow_html=True)
 
     st.markdown(f"<p style='font-style:italic; font-family:\"Times New Roman\", serif; font-size:0.95rem; margin-top:10px; color:{text_color};'>📌 <b>Định nghĩa nhãn</b>: {db['desc']}</p>", unsafe_allow_html=True)
 
-    # Hiển thị công thức toán học và quá trình thế số qua LaTeX
+    # Hiển thị công thức toán học và quá trình thế số qua LaTeX chuẩn KaTeX an toàn (Bug #5)
     math_col1, math_col2, math_col3 = st.columns(3)
     with math_col1:
         st.markdown("##### **1. Chỉ số Precision**")
         st.latex(r"\text{Precision} = \frac{\text{TP}}{\text{TP} + \text{FP}}")
-        st.latex(rf"\text{{Precision}} = \frac{{{db['tp']}}}{{{db['tp']} + {db['fp']}}} = {db['precision']:.4f}")
+        st.latex(rf"\text{{Precision}} = \frac{{{tp_val}}}{{{tp_val} + {fp_val}}} = {precision_val:.4f}")
     with math_col2:
         st.markdown("##### **2. Chỉ số Recall**")
         st.latex(r"\text{Recall} = \frac{\text{TP}}{\text{TP} + \text{FN}}")
-        st.latex(rf"\text{{Recall}} = \frac{{{db['tp']}}}{{{db['tp']} + {db['fn']}}} = {db['recall']:.4f}")
+        st.latex(rf"\text{{Recall}} = \frac{{{tp_val}}}{{{tp_val} + {fn_val}}} = {recall_val:.4f}")
     with math_col3:
         st.markdown("##### **3. Chỉ số F1-Score**")
         st.latex(r"F_1 = 2 \times \frac{\text{Precision} \times \text{Recall}}{\text{Precision} + \text{Recall}}")
-        st.latex(rf"F_1 = 2 \times \frac{{{db['precision']:.4f} \times {db['recall']:.4f}}}{{{db['precision']:.4f} + {db['recall']:.4f}}} = {db['f1']:.4f}")
+        st.latex(rf"F_1 = 2 \times \frac{{{precision_val:.4f} \times {recall_val:.4f}}}{{{precision_val:.4f} + {recall_val:.4f}}} = {f1_val:.4f}")
 
     st.markdown("---")
 
@@ -2044,7 +2095,7 @@ def main():
         <div style="margin-top: 15px; padding: 12px; background: {input_bg}; border: 1px solid {border_color}; border-radius: 10px;">
             <div style="font-size: 13px; font-weight: bold; margin-bottom: 8px; color: {text_color};">Về hệ thống</div>
             <div style="font-size: 10.5px; line-height: 1.5; color: {text_color}; opacity: 0.85;">
-                • <b>Classifier:</b> PhoBERT-v2<br>
+                • <b>Classifier:</b> {model_selection}<br>
                 • <b>XAI Engine:</b> Gemma-4 4B (cached)<br>
                 • <b>Tasks:</b> Misinfo · Stance · Sentiment<br>
                 • <b>Benchmark:</b> 186 samples

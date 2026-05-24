@@ -3,8 +3,8 @@
 ## PHẦN A: TỔNG HỢP TIẾN TRÌNH KỸ THUẬT (TECHNICAL PIPELINE)
 
 ### 1. Giai đoạn 1: Thu thập và Tiền xử lý Dữ liệu (Data Pipeline)
-- **Quy mô dữ liệu:** Từ tập thô (Bronze) -> Tập tinh chế (Silver) -> Tập kiểm thử (Gold Test Set gồm 186 mẫu).
-- **Công cụ sử dụng:** pandas (xử lý dataframe), underthesea (word segmentation cho tiếng Việt), Regular Expressions (chuẩn hóa từ lóng).
+- **Quy mô dữ liệu:** Từ tập thô ban đầu (Bronze) -> Tập nhãn bạc thô (Silver Raw gồm 1.856 mẫu) -> Tập mô hình hóa (Silver Train/Val gồm 1.663 mẫu; chia 1.496 train / 167 val) -> Tập kiểm thử độc lập (Gold Test Set gồm 186 mẫu).
+- **Công cụ sử dụng:** pandas (xử lý dataframe), underthesea (word segmentation cho tiếng Việt), pyvi (tách từ cho PhoBERT), Regular Expressions (chuẩn hóa từ lóng).
 
 ### 2. Giai đoạn 2: Gán nhãn hỗ trợ bởi LLM & Human-in-the-Loop (Annotation)
 - **Mô hình Oracle:** Sử dụng Gemma 31B để tạo nhãn yếu (Weak labels) và lý luận (Rationales).
@@ -27,7 +27,7 @@
 ### 4. Giai đoạn 4: Động cơ Giải thích (Explainability - Gemma-4 4B)
 - **Vai trò:** Mô hình sinh văn bản cung cấp lý luận minh bạch (Chain-of-Thought).
 - **Kỹ thuật huấn luyện:** QLoRA 4-bit Quantization (Rank 16) thông qua framework Unsloth.
-- **Kiểm định Parse Failure:** Đạt tỷ lệ lỗi định dạng 28% (sau parser v3 với negation handling + multi-block scoring) trên tập v3 mới do mô hình có xu hướng sinh câu giải thích dài hơi trước khi đưa ra nhãn (sẽ tối ưu tiếp ở các phiên bản sau bằng phương pháp answer-first).
+- **Kiểm định Parse Failure:** Đạt tỷ lệ lỗi định dạng **33.3%** trên tập Gold Test (do các mẫu có câu mào đầu hoặc kết luận ngoài lề làm hỏng cấu trúc chuỗi trả ra của mô hình 4B Decoder, được lọc và ghi nhận chi tiết bằng cơ chế **Raw Response Logging**; sẽ tối ưu tiếp bằng phương pháp *answer-first* trong các hướng nghiên cứu tương lai).
 - **Kết quả Benchmark (Macro F1) — LIVE 21/05/2026:**
   - Misinformation: 0.6377
   - Stance: 0.6264
@@ -71,6 +71,15 @@
   - **Tầng 3 (Slow 30-120s):** Facebook/TikTok/Threads — Apify API với 5-token rotation
 - **Use cases:** Demo realtime social listening, phân tích phản hồi cộng đồng theo nguồn, validate model trên dữ liệu wild (chưa qua HITL).
 
+### 9. Giai đoạn 9: Kiểm định Giả thuyết Thống kê (H1 - H4)
+- **Công cụ:** Python `scipy.stats` thực hiện kiểm định Chi-Square ($\chi^2$) và G-test (log-likelihood fallback) để kiểm tra mối quan hệ phụ thuộc.
+- **Kết quả trên Gold Test Set (186 mẫu):**
+  - **H1 (Cảm xúc ↔ Lập trường):** Bác bỏ $H_0$ với $p = 6.8508 \times 10^{-40}$ (Chi-Square, ý nghĩa cực kỳ cao). Lập trường phản đối vắc-xin đi kèm cảm xúc tiêu cực cực đoan (93.8%).
+  - **H2 (Tin giả ↔ Tương tác):** Không thể kiểm định do giới hạn dữ liệu (các trường metrics bị strip out trong quá trình chuẩn hóa Gold Set). Đây là hạn chế nghiên cứu chính thức được ghi nhận.
+  - **H3 (Kênh nguồn ↔ Tin giả):** Bác bỏ $H_0$ với $p = 0.0021$ (G-test, ý nghĩa thống kê cao). Tin giả tập trung ở Facebook (24.7%) và YouTube (12.2%), báo chí chính thống, học thuật và diễn đàn an toàn (0.0%).
+  - **H4 (Lập trường ↔ Tin giả - Bổ sung):** Bác bỏ $H_0$ với $p = 3.6893 \times 10^{-14}$ (Chi-Square, ý nghĩa cực kỳ cao). 50.0% nội dung phản đối chứa tin giả vắc-xin (24/48 mẫu), trong khi ủng hộ là 1.9% (1/54 mẫu) và trung lập là 3.6% (3/84 mẫu).
+- **Ý nghĩa:** Cung cấp định lượng truyền thông dịch tễ học thực nghiệm vững chắc để phục vụ lập luận Chương 4 & 5.
+
 ---
 
 ## PHẦN B: DANH MỤC CÔNG VIỆC LUẬN VĂN (THESIS TO-DO LIST)
@@ -87,13 +96,15 @@
 ### Chương 4: Thực nghiệm và Đánh giá
 - [ ] Mô tả thiết lập tham số (Hyperparameters) của PhoBERT và QLoRA Gemma.
 - [ ] Kẻ bảng so sánh F1-Score của 3 mô hình (XLM-R, PhoBERT, Gemma-4).
-- [ ] Đưa tỷ lệ Parse Failure (28% sau parser v3 với negation handling + multi-block scoring — nguồn: `experiments/results/gemma_v3_results.json`) vào để đánh giá rủi ro của LLM.
+- [ ] Đưa tỷ lệ Parse Failure (**33.3%** trên Gold Test set — nguồn: `experiments/results/gemma_v3_results.json` và `GEMINI.md`) vào để phân tích và đánh giá rủi ro của Decoder-only LLM.
+- [x] Kiểm định 4 giả thuyết thống kê (H1-H4) và tạo 3 hình biểu đồ phân phối khoa học 300 DPI (`experiments/results/figures/hypothesis_*`).
 
 ### Chương 5: Thảo luận Kết quả (Discussion)
 - [ ] Phân tích chi tiết "Task Specialization": PhoBERT (Encoder) vượt ở Stance/Sentiment, XLM-R đạt Misinfo cao nhất (0.7038), Gemma (Decoder) vượt ở Sentiment (0.7700)
 - [ ] Bàn luận về **Confidence Calibration**: ECE đo trước/sau Temperature Scaling, ý nghĩa với sản phẩm thực tế (người dùng tin tưởng đúng mức)
 - [ ] Giải thích **vai trò bổ sung** của Dual-Student Hybrid thay vì cạnh tranh
 - [ ] Phân tích Misinfo "Tin giả" F1 thấp (0.50) do class imbalance 28:158 + độ phức tạp nội tại
+- [x] Soạn thảo báo cáo kiểm định chi tiết (`docs/HYPOTHESIS_TESTING_REPORT.md`) lập luận sâu về Platform-specific risk và Emotion packaging.
 
 ### Phụ lục & Chuẩn bị Bảo vệ
 - [x] Upload Code lên GitHub (sanitized & secured — [hwngkm/VaccineNLP-Thesis](https://github.com/hwngkm/VaccineNLP-Thesis)).

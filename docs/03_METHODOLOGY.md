@@ -28,10 +28,13 @@ Hệ thống VaccineNLP tuân thủ **Medallion Architecture**, đảm bảo tí
 
 ## 3.3. Phase 3 & 4: Gán nhãn LLM và Human-in-the-Loop
 
-Dự án sử dụng **Gemma-4 31B** làm LLM annotator để gán nhãn cho toàn bộ 1,856 câu.
+Dự án sử dụng **Gemma-4 31B** làm LLM annotator để gán nhãn cho toàn bộ **1.856 câu** dữ liệu thô (tập **Silver Raw**).
 
-*   **Silver Data (90% Train)**: Giữ nguyên nhãn của LLM để tận dụng quy mô lớn, chấp nhận tỷ lệ nhiễu cực nhỏ như một dạng Regularization tự nhiên.
-*   **Gold Data (10% Benchmark)**: Áp dụng quy trình **Human-in-the-Loop (HITL)**. Chuyên gia y tế tiến hành kiểm duyệt mù (Blind review), tinh chỉnh các sai lệch về văn hóa và ngữ cảnh địa phương để tạo ra bộ "Đề thi quốc gia" (Ground Truth) khách quan tuyệt đối.
+Quy trình xử lý và phân chia dữ liệu thực tế được thiết lập chặt chẽ như sau để đảm bảo tính khách quan khoa học:
+*   **Tập Silver Train & Val (`train_v2_seg_v3.jsonl`)**: Gồm **1.663 mẫu** (sau khi lọc bỏ các mẫu không liên quan OOD và làm sạch). Trong quá trình huấn luyện, tập này được chia theo tỷ lệ 90/10:
+    *   *Silver Data (90% Train - 1.496 mẫu)*: Dùng để huấn luyện trọng số cho các mô hình (`PhoBERT-v2`, `XLM-R-v1`, `Gemma-4`). Việc sử dụng nhãn bạc giúp mô hình học được ở quy mô lớn, chấp nhận tỷ lệ nhiễu cực nhỏ từ LLM như một cơ chế Regularization tự nhiên.
+    *   *Validation Data (10% Split - 167 mẫu)*: Dùng để theo dõi hàm lỗi (`val_loss`) xác định điểm dừng sớm (Early stopping), tìm `best_epoch`, và đặc biệt là dùng làm tập hiệu chuẩn để tối ưu hóa tham số nhiệt độ nhiệt động ($T$) trong **Temperature Scaling**.
+*   **Gold Test Set (`benchmark_test_set_v3.jsonl`)**: Gồm **186 mẫu** hoàn toàn độc lập, tách biệt hoàn toàn khỏi quá trình huấn luyện và validation. Tập này áp dụng quy trình **Human-in-the-Loop (HITL)**, nơi chuyên gia y tế tiến hành kiểm duyệt mù (Blind review), tinh chỉnh và xác thực các sai lệch về văn hóa/ngữ cảnh để tạo ra bộ đề thi chuẩn (Ground Truth) khách quan tuyệt đối nhằm benchmark hiệu năng cuối cùng.
 
 ---
 
@@ -53,7 +56,7 @@ Tiến hành **Benchmark Showdown** giữa hai kiến trúc classification/reaso
 | **Gemma-4-4B** | XAI Reasoning Engine (Decoder) | 0.6377 | 0.6264 | **0.7700** |
 | **XLM-R-v1** | Baseline (Encoder) | **0.7038** | 0.6224 | 0.6866 |
 
-**Nhận định:** Kết quả benchmark cho thấy sự phân hóa rõ rệt về ưu thế của từng kiến trúc trên 3 tác vụ. PhoBERT-v2 đạt SOTA trên trục phân tích thái độ (Stance: 0.6640), trong khi XLM-R-v1 lại chiếm ưu thế trên trục phát hiện tin giả (Misinfo: 0.7038) trên tập Gold Test. Đặc biệt, Gemma-4-4B vượt trội trên trục phân tích cảm xúc (Sentiment: 0.7700 vs PhoBERT 0.7266), chứng minh sức mạnh của mô hình ngôn ngữ lớn Decoder-only trong việc nắm bắt sắc thái biểu cảm phức tạp và khả năng lập luận sâu sắc. Mặc dù có tỷ lệ Parse Failure Rate là 28% (được cải thiện đáng kể nhờ parser v3), Gemma-4-4B vẫn cung cấp khả năng giải thích lý luận (XAI CoT) vượt trội mà các mô hình phân loại Encoder không thể thực hiện được. Điều này tạo cơ sở khoa học cho sự phối hợp "Dual-Student" trong kiến trúc Hybrid.
+**Nhận định:** Kết quả benchmark cho thấy sự phân hóa rõ rệt về ưu thế của từng kiến trúc trên 3 tác vụ. PhoBERT-v2 đạt SOTA trên trục phân tích thái độ (Stance: 0.6640), trong khi XLM-R-v1 lại chiếm ưu thế trên trục phát hiện tin giả (Misinfo: 0.7038) trên tập Gold Test. Đặc biệt, Gemma-4-4B vượt trội trên trục phân tích cảm xúc (Sentiment: 0.7700 vs PhoBERT 0.7266), chứng minh sức mạnh của mô hình ngôn ngữ lớn Decoder-only trong việc nắm bắt sắc thái biểu cảm phức tạp và khả năng lập luận sâu sắc. Mặc dù có tỷ lệ **Parse Failure Rate là 33.3%** trên tập Gold Test (do các mẫu có câu mào đầu hoặc kết luận ngoài lề làm hỏng cấu trúc chuỗi đầu ra của mô hình 4B), Gemma-4-4B vẫn cung cấp khả năng giải thích lý luận (XAI CoT) vượt trội mà các mô hình phân loại Encoder không thể thực hiện được. Điều này tạo cơ sở khoa học cho sự phối hợp "Dual-Student" trong kiến trúc Hybrid.
 
 ---
 

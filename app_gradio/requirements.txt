@@ -1,0 +1,37 @@
+# VaccineNLP — HuggingFace Spaces requirements (v2.0)
+# Tier: CPU Basic 16GB (free)
+# Fixed: thêm 6 core packages bị thiếu
+
+# ============ Core Gradio ============
+gradio==4.44.1
+
+# ============ ML / Deep Learning ============
+torch==2.1.2
+transformers==4.40.0
+tokenizers>=0.15.0
+huggingface-hub==0.22.2
+accelerate>=0.27.0
+
+# ============ Vietnamese NLP ============
+underthesea>=6.7.0
+pyvi>=0.1.1
+sentencepiece>=0.1.99
+
+# ============ XAI (Captum) ============
+captum>=0.7.0
+
+# ============ Visualization ============
+plotly>=5.18.0
+
+# ============ Multi-source Fetcher ============
+trafilatura>=1.6.4
+yt-dlp>=2024.3.10
+apify-client>=1.6.0
+requests>=2.31.0
+
+# ============ AI Voice ============
+gTTS>=2.5.0
+
+# ============ Data Processing ============
+numpy>=1.24,<2.0
+pandas>=2.0

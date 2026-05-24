@@ -212,15 +212,17 @@ README.md (Auto-updated benchmarks)
 
 ## 📊 Thống Kê Dự Án
 
-| Thống Kê | Số Liệu |
-|----------|---------|
-| **Tổng documentation files** | 20+ files |
-| **Tài liệu khoa học (docs/)** | 7 documents |
-| **Notebooks** | 5 notebooks (Kaggle) |
-| **Models** | 3 (PhoBERT, XLM-R, Gemma-4) |
-| **Gold Test Set** | 186 mẫu Human-validated |
-| **Figures** | 6 publication-ready charts |
-| **HuggingFace Models** | 3 public repositories |
+| Thống Kê | Số Liệu Thực Tế | Vai Trò trong Pipeline |
+|---|---|---|
+| **Tổng tệp tài liệu** | 20+ files | Quản lý vòng đời dự án |
+| **Tài liệu khoa học (docs/)** | 8 documents | Đặc tả phương pháp luận & kiến trúc |
+| **Notebooks** | 5 notebooks (Kaggle) | Thực thi huấn luyện và benchmark |
+| **Models** | 3 (PhoBERT, XLM-R, Gemma-4) | Các kiến trúc classification/generation |
+| **Silver Raw Dataset** | 1.856 mẫu | Tập nhãn yếu thô (Gemma-4 31B teacher) |
+| **Silver Train/Val** | 1.663 mẫu (1.496 train / 167 val) | Tập mô hình hóa (đã lọc OOD & segment) |
+| **Gold Test Set** | 186 mẫu Human-validated | Tập kiểm thử độc lập (HITL Ground Truth) |
+| **Figures** | 6 publication-ready charts | Biểu đồ trực quan hóa chuẩn học thuật |
+| **HuggingFace Models** | 3 public repositories | Triển khai phân phối weights mô hình |
 
 ---
 

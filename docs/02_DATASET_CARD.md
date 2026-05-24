@@ -50,12 +50,15 @@ Mỗi hàng dữ liệu trong tập Silver/Gold được thiết kế để ph�
 
 ## 4. Thống kê Bộ dữ liệu (Dataset Statistics)
 
-### A. Phân chia Tập dữ liệu
-| Tập | File | Số mẫu | Vai trò |
-|-----|------|:------:|---------|
-| **Train** | `datasets/05_model_ready/train_v2_seg_v3.jsonl` | ~1,572 | Huấn luyện (Silver Labels) |
-| **Gold Test** | `datasets/03_processed/benchmark_test_set.jsonl` | 186 | Đánh giá chuẩn mực (Human-validated) |
-| **HITL Review** | `datasets/03_processed/benchmark_review_HITL.xlsx` | 186 | Bản duyệt gốc của chuyên gia |
+### A. Phân chia Tập dữ liệu Thực tế
+| Tập phân chia | Đường dẫn tệp tin | Số mẫu | Vai trò thực tế trong Pipeline |
+|---|---|:---:|---|
+| **Silver Raw** | `datasets/04_silver_labels/annotated_v6.jsonl` | 1.856 | Tập nhãn bạc thô ban đầu (Silver Labels từ Gemma-4 31B teacher). |
+| **Silver Train/Val** | `datasets/05_model_ready/train_v2_seg_v3.jsonl` | 1.663 | Tập dữ liệu mô hình hóa (sau khi lọc OOD, làm sạch và tách từ bằng `pyvi`). |
+| ├─ *Train Split (90%)* | *Trích từ tệp tin trên trong notebook* | 1.496 | Huấn luyện trực tiếp trọng số mô hình phân loại. |
+| └─ *Validation Split (10%)* | *Trích từ tệp tin trên trong notebook* | 167 | Theo dõi lỗi (`val_loss`), lưu `best_epoch` và tối ưu hóa **Temperature Scaling**. |
+| **Gold Test Set** | `datasets/03_processed/benchmark_test_set.jsonl` | 186 | Tập kiểm thử chuẩn độc lập, đã qua thẩm định HITL thủ công của chuyên gia. |
+| **HITL Review Sheet** | `datasets/03_processed/benchmark_review_HITL.xlsx` | 186 | Bảng tính chi tiết phục vụ quá trình Human-in-the-Loop review. |
 
 ### B. Phân bố Nhãn trên Gold Test Set (186 mẫu)
 
