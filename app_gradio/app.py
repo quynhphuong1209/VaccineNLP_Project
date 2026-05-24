@@ -1356,6 +1356,7 @@ def build_app():
                     fn=update_text_from_sample,
                     inputs=[sample_choice],
                     outputs=[text_input],
+                    api_name=False
                 )
 
                 # Main analyze button — FIXED: now passes use_captum + returns report
@@ -1364,6 +1365,7 @@ def build_app():
                     inputs=[text_input, model_choice, use_captum_cb, session_state],
                     outputs=[summary_out, radar_out, reasoning_out, saliency_out,
                              audio_out, session_state, history_display, report_state],
+                    api_name=False
                 )
 
                 # Export button
@@ -1371,6 +1373,7 @@ def build_app():
                     fn=handle_export_report,
                     inputs=[report_state],
                     outputs=[export_file],
+                    api_name=False
                 )
 
                 # URL fetch
@@ -1378,6 +1381,7 @@ def build_app():
                     fn=handle_fetch,
                     inputs=[url_input, max_cmt],
                     outputs=[text_input, fetch_status],
+                    api_name=False
                 )
 
                 # Batch + Compare accordions
@@ -1389,13 +1393,13 @@ def build_app():
                     )
                     batch_btn = gr.Button("🚀 Phân tích Batch")
                     batch_out = gr.Markdown()
-                    batch_btn.click(fn=handle_batch, inputs=[batch_input, model_choice], outputs=[batch_out])
+                    batch_btn.click(fn=handle_batch, inputs=[batch_input, model_choice], outputs=[batch_out], api_name=False)
 
                 with gr.Accordion("🔬 So sánh PhoBERT-v2 vs XLM-R-v1", open=False):
                     cmp_input = gr.Textbox(label="Văn bản", lines=4)
                     cmp_btn = gr.Button("So sánh")
                     cmp_out = gr.Markdown()
-                    cmp_btn.click(fn=handle_compare, inputs=[cmp_input], outputs=[cmp_out])
+                    cmp_btn.click(fn=handle_compare, inputs=[cmp_input], outputs=[cmp_out], api_name=False)
 
             # ================================================================
             # TAB 2: BENCHMARK (Enhanced với Confusion Matrix)
