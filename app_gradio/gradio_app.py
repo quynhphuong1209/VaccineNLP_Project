@@ -35,6 +35,39 @@ import tempfile
 import hashlib
 import logging
 import threading
+
+# ============================================================================
+# STARLETTE / GRADIO TEMPLATE RESPONSE MONKEY PATCH (CRITICAL FIX FOR STARLETTE >=0.28.0)
+# ============================================================================
+try:
+    import starlette.templating
+    _orig_template_response = starlette.templating.Jinja2Templates.TemplateResponse
+
+    def patched_template_response(self, name, context=None, status_code=200, headers=None, media_type=None, background=None):
+        # Trường hợp Starlette mới (def TemplateResponse(self, request, name, context=None, ...))
+        # nhưng Gradio 4 gọi kiểu cũ: TemplateResponse("index.html", {"request": request, "api_info": ...})
+        # Khi đó: name = {"request": request, ...} (dict), context = None, và request_obj = "index.html" (Starlette map sai)
+        if isinstance(name, dict) and context is None:
+            request_obj = name.get("request")
+            context_dict = name
+            name_str = "index.html"
+            return _orig_template_response(self, request_obj, name_str, context_dict, status_code, headers, media_type, background)
+        
+        # Nếu được gọi theo đúng chuẩn mới hoặc cũ, ta cứ thử chạy
+        try:
+            return _orig_template_response(self, name, context, status_code, headers, media_type, background)
+        except TypeError:
+            # Nếu bị lỗi Type do thiếu request làm đối số đầu tiên
+            if isinstance(name, str) and isinstance(context, dict):
+                req = context.get("request")
+                return _orig_template_response(self, req, name, context, status_code, headers, media_type, background)
+            raise
+
+    starlette.templating.Jinja2Templates.TemplateResponse = patched_template_response
+    print("✅ Starlette TemplateResponse monkey patch successfully applied!")
+except Exception as e:
+    print(f"⚠️ Failed to apply TemplateResponse patch: {e}")
+
 from io import BytesIO
 from pathlib import Path
 from typing import Dict, List, Tuple, Optional
