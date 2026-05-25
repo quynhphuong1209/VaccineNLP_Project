@@ -156,7 +156,10 @@ for k in possible_apify_keys:
         APIFY_TOKENS.append(val)
 
 # Path B: External Gemma endpoint (Kaggle+ngrok)
-GEMMA_ENDPOINT_URL = os.environ.get("GEMMA_ENDPOINT_URL", "").strip() or "https://pearle-staglike-nonsyntonically.ngrok-free.dev/predict"
+_env_gemma_url = os.environ.get("GEMMA_ENDPOINT_URL", "").strip()
+GEMMA_ENDPOINT_URL = "https://pearle-staglike-nonsyntonically.ngrok-free.dev/predict"
+if _env_gemma_url and "ngrok-free.dev" in _env_gemma_url and "pearle-staglike-nonsyntonically" not in _env_gemma_url:
+    GEMMA_ENDPOINT_URL = _env_gemma_url
 
 # Path C: OpenRouter fallback (public LLM inference)
 OPENROUTER_KEY = os.environ.get("OPENROUTER_KEY", "") or os.environ.get("OPENROUTER_API_KEY", "")
@@ -593,18 +596,18 @@ def _try_gemini_api(text: str) -> Optional[Tuple[str, str]]:
 
 
 def query_gemma_api(text: str) -> Tuple[Optional[str], Optional[str]]:
-    """XAI Layer 2: Gemini API → ngrok → OpenRouter → HF Inference (ordered by reliability)."""
-    # Layer 2a: Google Gemini API (primary - with key rotation & gemma-4-E4B-it)
-    gemini_result = _try_gemini_api(text)
-    if gemini_result:
-        content, source = gemini_result
-        return content, source
-
-    # Layer 2b: Dedicated self-hosted endpoint (Kaggle+ngrok)
+    """XAI Layer 2: ngrok self-host (Primary) → Gemini API → OpenRouter → HF Inference (ordered by thesis priority)."""
+    # Layer 2a: Dedicated self-hosted endpoint (Kaggle+ngrok with fine-tuned model)
     external = query_gemma_external_endpoint(text)
     if external:
         logger.info("✅ XAI via ngrok self-host endpoint")
         return external, "✅ Từ Gemma-4 self-host (ngrok)"
+
+    # Layer 2b: Google Gemini API (with key rotation & gemma-4-E4B-it)
+    gemini_result = _try_gemini_api(text)
+    if gemini_result:
+        content, source = gemini_result
+        return content, source
 
     # Layer 2c: OpenRouter (free/paid Gemma inference — most reliable for demo)
     or_result = _try_openrouter(text)
