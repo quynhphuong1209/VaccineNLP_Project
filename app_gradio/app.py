@@ -502,22 +502,92 @@ def _try_hf_inference(text: str) -> Optional[Tuple[str, str]]:
     return None
 
 
+def _try_gemini_api(text: str) -> Optional[Tuple[str, str]]:
+    """Layer 2a: Google Gemini Developer API (gemma-4-E4B-it with rotating keys)."""
+    # Load .env file if available (local development helper)
+    try:
+        from dotenv import load_dotenv
+        load_dotenv()
+    except ImportError:
+        pass
+
+    # Gather all GEMINI_API_KEYs (1 to 5) from environment
+    keys = []
+    for i in range(1, 6):
+        key_name = "GEMINI_API_KEY" if i == 1 else f"GEMINI_API_KEY_{i}"
+        val = os.environ.get(key_name, "").strip()
+        if val:
+            keys.append(val)
+
+    if not keys:
+        return None
+
+    import urllib.request
+    prompt = _build_xai_prompt(text)
+    
+    # Try different model name variants for the Gemini API
+    model_variants = ["google/gemma-4-E4B-it", "gemma-4-E4B-it"]
+    
+    payload = json.dumps({
+        "contents": [{
+            "parts": [{"text": prompt}]
+        }],
+        "generationConfig": {
+            "temperature": 0.7,
+            "maxOutputTokens": 400
+        }
+    }).encode("utf-8")
+
+    # Rotate keys and model variants to call Gemini API
+    for key in keys:
+        for model in model_variants:
+            try:
+                # Standard REST endpoint for Gemini API
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}"
+                req = urllib.request.Request(
+                    url,
+                    data=payload,
+                    headers={"Content-Type": "application/json"},
+                    method="POST"
+                )
+                with urllib.request.urlopen(req, timeout=20) as resp:
+                    res_data = json.loads(resp.read().decode("utf-8"))
+                
+                if "candidates" in res_data and len(res_data["candidates"]) > 0:
+                    parts = res_data["candidates"][0].get("content", {}).get("parts", [])
+                    if parts and "text" in parts[0]:
+                        content = parts[0]["text"].strip()
+                        if content and len(content) > 30:
+                            logger.info(f"✅ Gemini API ({model}) reasoning OK")
+                            return content, f"🤖 Từ {model} (Google Gemini API)"
+            except Exception as e:
+                logger.debug(f"Gemini API key rotation item failed for {model}: {e}")
+                continue
+    return None
+
+
 def query_gemma_api(text: str) -> Tuple[Optional[str], Optional[str]]:
-    """XAI Layer 2: ngrok → OpenRouter → HF Inference (ordered by reliability)."""
-    # Layer 2a: Dedicated self-hosted endpoint (Kaggle+ngrok)
+    """XAI Layer 2: Gemini API → ngrok → OpenRouter → HF Inference (ordered by reliability)."""
+    # Layer 2a: Google Gemini API (primary - with key rotation & gemma-4-E4B-it)
+    gemini_result = _try_gemini_api(text)
+    if gemini_result:
+        content, source = gemini_result
+        return content, source
+
+    # Layer 2b: Dedicated self-hosted endpoint (Kaggle+ngrok)
     external = query_gemma_external_endpoint(text)
     if external:
         logger.info("✅ XAI via ngrok self-host endpoint")
         return external, "✅ Từ Gemma-4 self-host (ngrok)"
 
-    # Layer 2b: OpenRouter (free/paid Gemma inference — most reliable for demo)
+    # Layer 2c: OpenRouter (free/paid Gemma inference — most reliable for demo)
     or_result = _try_openrouter(text)
     if or_result:
         content, model = or_result
         model_display = "Gemma-3n E4B" if "gemma-3n-e4b" in model else "Gemma-3"
         return content, f"🤖 Từ {model_display} (OpenRouter API)"
 
-    # Layer 2c: HF Inference API (merged Gemma model)
+    # Layer 2d: HF Inference API (merged Gemma model)
     hf_result = _try_hf_inference(text)
     if hf_result:
         content, model_id = hf_result
