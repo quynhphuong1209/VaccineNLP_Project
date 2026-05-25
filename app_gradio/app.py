@@ -430,22 +430,17 @@ def _build_xai_prompt(text: str) -> str:
     )
 
 
-def _try_openrouter(text: str) -> Optional[str]:
-    """Layer 2b: OpenRouter public inference API (google/gemma-3-4b-it or llama fallback)."""
+def _try_openrouter(text: str) -> Optional[Tuple[str, str]]:
+    """Layer 2b: OpenRouter public inference API (Gemma models)."""
     if not OPENROUTER_KEY:
         return None
     import urllib.request
     prompt = _build_xai_prompt(text)
-    payload = json.dumps({
-        "model": "google/gemma-3-4b-it:free",
-        "messages": [{"role": "user", "content": prompt}],
-        "max_tokens": 400,
-        "temperature": 0.7,
-    }).encode()
-    # Fallback chain: gemma-3-4b → llama-3.2-3b
+    
+    # Fallback chain: gemma-3n-e4b (E4B Architecture) → gemma-3-4b-it (free fallback)
     or_models = [
+        "google/gemma-3n-e4b-it",
         "google/gemma-3-4b-it:free",
-        "meta-llama/llama-3.2-3b-instruct:free",
     ]
     for or_model in or_models:
         try:
@@ -471,14 +466,14 @@ def _try_openrouter(text: str) -> Optional[str]:
             content = data["choices"][0]["message"]["content"].strip()
             if content and len(content) > 30:
                 logger.info(f"✅ OpenRouter ({or_model}) reasoning OK")
-                return content
+                return content, or_model
         except Exception as e:
             logger.debug(f"OpenRouter {or_model} failed: {e}")
             continue
     return None
 
 
-def _try_hf_inference(text: str) -> Optional[str]:
+def _try_hf_inference(text: str) -> Optional[Tuple[str, str]]:
     """Layer 2c: HF Inference API via chat_completion (avoids StopIteration bug)."""
     if not HF_TOKEN:
         return None
@@ -500,32 +495,35 @@ def _try_hf_inference(text: str) -> Optional[str]:
             content = result.choices[0].message.content or ""
             if content.strip() and len(content.strip()) > 30:
                 logger.info(f"✅ HF Inference ({model_id}) reasoning OK")
-                return content.strip()
+                return content.strip(), model_id
         except Exception as e:
             logger.debug(f"HF Inference {model_id} failed: {e}")
             continue
     return None
 
 
-def query_gemma_api(text: str) -> Optional[str]:
+def query_gemma_api(text: str) -> Tuple[Optional[str], Optional[str]]:
     """XAI Layer 2: ngrok → OpenRouter → HF Inference (ordered by reliability)."""
     # Layer 2a: Dedicated self-hosted endpoint (Kaggle+ngrok)
     external = query_gemma_external_endpoint(text)
     if external:
         logger.info("✅ XAI via ngrok self-host endpoint")
-        return external
+        return external, "✅ Từ Gemma-4 self-host (ngrok)"
 
-    # Layer 2b: OpenRouter (free public inference — most reliable for demo)
+    # Layer 2b: OpenRouter (free/paid Gemma inference — most reliable for demo)
     or_result = _try_openrouter(text)
     if or_result:
-        return or_result
+        content, model = or_result
+        model_display = "Gemma-3n E4B" if "gemma-3n-e4b" in model else "Gemma-3"
+        return content, f"🤖 Từ {model_display} (OpenRouter API)"
 
     # Layer 2c: HF Inference API (merged Gemma model)
     hf_result = _try_hf_inference(text)
     if hf_result:
-        return hf_result
+        content, model_id = hf_result
+        return content, f"🤖 Từ Gemma-4 HF Inference ({model_id.split('/')[-1]})"
 
-    return None
+    return None, None
 
 
 def generate_smart_fallback(misinfo_pred: int, stance_pred: int, sentiment_pred: int) -> str:
@@ -624,18 +622,11 @@ def get_reasoning(text: str, result: Dict) -> Tuple[str, str]:
         return cached, "✅ Từ XAI Cache (Gold Test Set)"
 
     # Layers 2a-2c: Live inference
-    api_reasoning = query_gemma_api(text)
+    api_reasoning, source_label = query_gemma_api(text)
     if api_reasoning:
         # Translate if response came back in English
         if is_mostly_english(api_reasoning):
             api_reasoning = translate_to_vietnamese(api_reasoning)
-        # Determine source label
-        if GEMMA_ENDPOINT_URL and api_reasoning:
-            source_label = "✅ Từ Gemma-4 self-host (ngrok)"
-        elif OPENROUTER_KEY:
-            source_label = "🤖 Từ Gemma-3 (OpenRouter API)"
-        else:
-            source_label = "🤖 Từ Gemma-4 HF Inference API"
         return api_reasoning, source_label
 
     # Layer 4: Template fallback
