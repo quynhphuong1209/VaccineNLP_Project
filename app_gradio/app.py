@@ -905,30 +905,67 @@ def fetch_url_as_list(url: str, max_comments: int = 30) -> Tuple[List[str], str]
                         texts.append(c_text)
                 info = "🎬 YouTube (Tier 2, ~10s)"
         except Exception as e:
-            return [], f"❌ YouTube fetch error: {e}"
+            logger.warning(f"yt_dlp failed, trying Apify fallback: {e}")
+            kind = "youtube_apify"
 
-    else: # Apify (Facebook, TikTok, Threads)
+    if kind in ("apify", "youtube_apify"):
         if not APIFY_TOKENS:
             return [], "❌ APIFY_TOKEN chưa được setup trong HF Spaces Secrets"
         last_err = ""
+        actor_id = ""
         try:
             from apify_client import ApifyClient
             for token in APIFY_TOKENS:
                 try:
                     client = ApifyClient(token)
                     client.user().get()
-                    if "facebook.com" in url.lower():
-                        actor_id = "apify/facebook-posts-scraper"
-                        run_input = {"startUrls": [{"url": url}]}
+                    
+                    # Phân loại thông minh URL để đưa ra actor thu thập phù hợp
+                    if kind == "youtube_apify" or "youtube.com" in url.lower() or "youtu.be" in url.lower():
+                        actor_id = "streamers/youtube-comments-scraper"
+                        run_input = {"startUrls": [{"url": url}], "maxComments": max_comments}
+                        source_display = "🎬 YouTube (Apify Fallback Scraper - Tier 3)"
+                    elif "facebook.com" in url.lower():
+                        if "/groups/" in url.lower():
+                            actor_id = "apify/facebook-groups-scraper"
+                            run_input = {
+                                "startUrls": [{"url": url}],
+                                "maxPosts": 5,
+                                "maxCommentsPerPost": max_comments,
+                            }
+                            source_display = "👥 Facebook Group (Apify Scraper - Tier 3)"
+                        elif "/posts/" in url.lower() or "/permalink/" in url.lower() or "comment_id=" in url.lower() or "/pfbid" in url.lower():
+                            actor_id = "apify/facebook-comments-scraper"
+                            run_input = {
+                                "startUrls": [{"url": url}],
+                                "maxComments": max_comments,
+                            }
+                            source_display = "💬 Facebook Post/Comments (Apify Scraper - Tier 3)"
+                        else:
+                            actor_id = "apify/facebook-posts-scraper"
+                            run_input = {
+                                "startUrls": [{"url": url}],
+                                "maxPosts": 5,
+                            }
+                            source_display = "📱 Facebook Page/Profile (Apify Scraper - Tier 3)"
                     elif "tiktok.com" in url.lower():
-                        actor_id = "clockworks/tiktok-scraper"
-                        run_input = {"startUrls": [{"url": url}]}
+                        actor_id = "clockworks/tiktok-comments-scraper"
+                        run_input = {
+                            "postURLs": [url],
+                            "maxComments": max_comments,
+                        }
+                        source_display = "🎵 TikTok Comments (Apify Scraper - Tier 3)"
                     elif "threads.net" in url.lower():
-                        actor_id = "igview-owner/threads-search-scraper"
-                        run_input = {"startUrls": [{"url": url}]}
+                        actor_id = "thenetaji/threads-scraper"
+                        run_input = {
+                            "startUrls": [{"url": url}],
+                            "maxItems": max_comments,
+                        }
+                        source_display = "🧵 Threads (Apify Scraper - Tier 3)"
                     else:
                         return [], "❌ URL không được hỗ trợ"
                     
+                    logger.info(f"🚀 Running Apify Actor: {actor_id} for URL: {url}")
                     run = client.actor(actor_id).call(run_input=run_input)
                     items = list(client.dataset(run["defaultDatasetId"]).iterate_items())
                     
@@ -943,16 +980,18 @@ def fetch_url_as_list(url: str, max_comments: int = 30) -> Tuple[List[str], str]
                                 item.get("fullText", "") or 
                                 item.get("description", "") or 
                                 item.get("messageText", "") or
-                                item.get("title", "")
+                                item.get("title", "") or
+                                item.get("commentText", "") or
+                                item.get("body", "")
                             )
                             if txt and txt.strip():
                                 texts.append(txt.strip())
                         if texts:
-                            info = "📱 Mạng xã hội (Apify Scraper - Tier 3, ~60s)"
+                            info = source_display
                             break
                 except Exception as ex:
                     last_err = str(ex)
-                    logger.warning(f"Apify token failed: {ex}")
+                    logger.warning(f"Apify token failed for actor {actor_id}: {ex}")
                     continue
             if not texts:
                 err_detail = f" (Chi tiết lỗi: {last_err})" if last_err else ""
