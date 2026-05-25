@@ -1434,163 +1434,136 @@ Dự án xây dựng hệ thống **Ensemble** tận dụng ưu điểm của ha
 """
 
 CSS_STYLE = """
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap');
+/* VaccineNLP — Original Design (Times New Roman, High Contrast Dark) */
 
-/* Custom Global Styles for VaccineNLP */
 body, html, .gradio-container {
-    background-color: #030a16 !important;
-    background: radial-gradient(circle at top right, #0d1e36, #030a16 70%) !important;
-    color: #e2e8f0 !important;
+    background-color: #0a1628 !important;
+    color: #ccd6f6 !important;
+    font-family: 'Times New Roman', Times, Georgia, serif !important;
 }
 
-/* Typography Hierarchy */
-* {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+/* Global font — Times New Roman throughout */
+*, p, span, div, li, td, th, label, input, textarea, select, button {
+    font-family: 'Times New Roman', Times, Georgia, serif !important;
 }
 
-/* For headers, academic sections and XAI reasoning to keep it formal */
-h1, h2, h3, h4, .academic-text, .xai-reasoning, blockquote, .playfair-text {
-    font-family: 'Playfair Display', 'Times New Roman', Times, Georgia, serif !important;
-    color: #f8fafc !important;
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Times New Roman', Times, Georgia, serif !important;
+    color: #ffffff !important;
+    font-weight: bold !important;
 }
 
-/* Scrollbar styling */
-::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-}
-::-webkit-scrollbar-track {
-    background: rgba(10, 25, 47, 0.5) !important;
-}
-::-webkit-scrollbar-thumb {
-    background: rgba(100, 255, 218, 0.35) !important;
-    border-radius: 4px !important;
-}
-::-webkit-scrollbar-thumb:hover {
-    background: rgba(100, 255, 218, 0.75) !important;
-}
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: rgba(10, 22, 40, 0.8) !important; }
+::-webkit-scrollbar-thumb { background: rgba(0, 123, 255, 0.5) !important; border-radius: 4px !important; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0, 123, 255, 0.9) !important; }
 
-/* Tabs Styling */
-.tabs {
-    border-bottom: 1px solid rgba(100, 255, 218, 0.1) !important;
-    background: transparent !important;
-}
-
-.tab-nav {
-    display: flex;
-    gap: 4px;
-    background: transparent !important;
-    border-bottom: none !important;
-}
-
+/* Tabs */
 .tab-nav button {
     background-color: transparent !important;
-    color: #94a3b8 !important;
+    color: #8892b0 !important;
     border: none !important;
     border-bottom: 2px solid transparent !important;
-    border-radius: 8px 8px 0 0 !important;
-    padding: 12px 24px !important;
-    font-weight: 500 !important;
-    font-size: 0.9rem !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.05em !important;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    padding: 10px 20px !important;
+    font-weight: 600 !important;
+    font-size: 0.95rem !important;
+    font-family: 'Times New Roman', Times, serif !important;
+    transition: all 0.2s ease !important;
 }
-
 .tab-nav button:hover {
-    color: #64ffda !important;
-    background-color: rgba(100, 255, 218, 0.03) !important;
+    color: #ffffff !important;
+    background-color: rgba(0, 123, 255, 0.08) !important;
 }
-
 .tab-nav button.selected {
     color: #64ffda !important;
-    border-bottom: 2px solid #64ffda !important;
-    font-weight: 600 !important;
-    background-color: rgba(100, 255, 218, 0.06) !important;
-    text-shadow: 0 0 8px rgba(100, 255, 218, 0.3) !important;
+    border-bottom: 3px solid #64ffda !important;
+    font-weight: 700 !important;
+    background-color: rgba(100, 255, 218, 0.05) !important;
 }
 
-/* Button style */
+/* Primary button */
 button.primary, button.gr-button-primary {
-    background: linear-gradient(135deg, #3b82f6 0%, #10b981 100%) !important;
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%) !important;
     color: #ffffff !important;
     border: none !important;
-    font-weight: 600 !important;
-    border-radius: 10px !important;
+    font-weight: 700 !important;
+    font-size: 1rem !important;
+    border-radius: 8px !important;
     padding: 12px 28px !important;
-    box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35) !important;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4) !important;
+    transition: all 0.2s ease !important;
+    font-family: 'Times New Roman', Times, serif !important;
 }
-
 button.primary:hover, button.gr-button-primary:hover {
-    transform: translateY(-2px) !important;
-    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.6) !important;
-    filter: brightness(1.1) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 6px 18px rgba(0, 123, 255, 0.6) !important;
+    background: linear-gradient(135deg, #1a8aff 0%, #007bff 100%) !important;
 }
 
+/* Secondary button */
 button.secondary, button.gr-button-secondary {
-    background-color: rgba(30, 41, 59, 0.5) !important;
-    color: #e2e8f0 !important;
-    border: 1px solid rgba(100, 255, 218, 0.15) !important;
-    border-radius: 10px !important;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    background-color: rgba(17, 34, 64, 0.8) !important;
+    color: #ccd6f6 !important;
+    border: 1px solid rgba(100, 255, 218, 0.3) !important;
+    border-radius: 8px !important;
+    font-family: 'Times New Roman', Times, serif !important;
+    transition: all 0.2s ease !important;
 }
-
 button.secondary:hover, button.gr-button-secondary:hover {
     border-color: #64ffda !important;
     color: #64ffda !important;
-    background-color: rgba(100, 255, 218, 0.05) !important;
-    box-shadow: 0 4px 15px rgba(100, 255, 218, 0.15) !important;
+    background-color: rgba(100, 255, 218, 0.08) !important;
 }
 
-/* Input boxes, text area, dropdown style */
-input, textarea, select, .gr-input {
-    background-color: rgba(15, 23, 42, 0.6) !important;
-    color: #f1f5f9 !important;
-    border: 1px solid rgba(148, 163, 184, 0.2) !important;
-    border-radius: 10px !important;
-    padding: 12px 16px !important;
-    backdrop-filter: blur(8px) !important;
+/* Inputs */
+input, textarea, select {
+    background-color: rgba(10, 22, 40, 0.9) !important;
+    color: #e8f0fe !important;
+    border: 1px solid rgba(100, 255, 218, 0.25) !important;
+    border-radius: 8px !important;
+    font-family: 'Times New Roman', Times, serif !important;
+    font-size: 1rem !important;
     transition: all 0.2s ease !important;
 }
-
 input:focus, textarea:focus, select:focus {
-    border-color: #3b82f6 !important;
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25) !important;
-    background-color: rgba(15, 23, 42, 0.8) !important;
+    border-color: #64ffda !important;
+    box-shadow: 0 0 0 2px rgba(100, 255, 218, 0.2) !important;
+    background-color: rgba(10, 22, 40, 1) !important;
+    outline: none !important;
+}
+input::placeholder, textarea::placeholder {
+    color: #8892b0 !important;
+    opacity: 1 !important;
 }
 
-/* Accordion styling */
+/* Accordion */
 .gr-accordion {
-    background-color: rgba(15, 23, 42, 0.4) !important;
-    border: 1px solid rgba(59, 130, 246, 0.15) !important;
-    border-radius: 12px !important;
-    margin-bottom: 12px !important;
-    overflow: hidden !important;
-    backdrop-filter: blur(8px) !important;
+    background-color: rgba(10, 22, 40, 0.6) !important;
+    border: 1px solid rgba(100, 255, 218, 0.15) !important;
+    border-radius: 10px !important;
+    margin-bottom: 10px !important;
 }
 
-/* Custom resource hover card styles */
-.resource-card {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-    background: rgba(30, 41, 59, 0.3) !important;
-    border: 1px solid rgba(100, 255, 218, 0.1) !important;
+/* Markdown text */
+.prose, .markdown-body, .gr-markdown {
+    color: #ccd6f6 !important;
+    font-family: 'Times New Roman', Times, serif !important;
+    line-height: 1.7 !important;
+    font-size: 1rem !important;
 }
-.resource-card:hover {
-    border-color: rgba(100, 255, 218, 0.4) !important;
-    box-shadow: 0 12px 24px rgba(100, 255, 218, 0.08) !important;
-    transform: translateY(-4px) !important;
+.prose a, .markdown-body a, .gr-markdown a {
+    color: #64ffda !important;
 }
-
-/* Premium card shadow animations */
-@keyframes pulseGlow {
-    0% { box-shadow: 0 0 5px rgba(100, 255, 218, 0.2); }
-    50% { box-shadow: 0 0 15px rgba(100, 255, 218, 0.4); }
-    100% { box-shadow: 0 0 5px rgba(100, 255, 218, 0.2); }
+.prose strong, .markdown-body strong {
+    color: #ffffff !important;
 }
 
-.glow-card {
-    animation: pulseGlow 4s infinite ease-in-out !important;
+/* Labels */
+label, .gr-label {
+    color: #ccd6f6 !important;
+    font-weight: 600 !important;
+    font-family: 'Times New Roman', Times, serif !important;
 }
 """
 
