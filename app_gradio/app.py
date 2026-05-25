@@ -130,7 +130,7 @@ APIFY_TOKENS = [os.environ.get(f"APIFY_TOKEN_{i}", "") for i in range(1, 6)]
 APIFY_TOKENS = [t for t in APIFY_TOKENS if t]
 
 # Path B: External Gemma endpoint (Kaggle+ngrok)
-GEMMA_ENDPOINT_URL = os.environ.get("GEMMA_ENDPOINT_URL", "").strip()
+GEMMA_ENDPOINT_URL = os.environ.get("GEMMA_ENDPOINT_URL", "").strip() or "https://pearle-staglike-nonsyntonically.ngrok-free.dev/predict"
 
 # Path C: OpenRouter fallback (public LLM inference)
 OPENROUTER_KEY = os.environ.get("OPENROUTER_KEY", "") or os.environ.get("OPENROUTER_API_KEY", "")
