@@ -1011,46 +1011,55 @@ def fetch_url_as_list(url: str, max_comments: int = 30) -> Tuple[List[str], str]
                     client = ApifyClient(token)
                     client.user().get()
                     
+                    # Khống chế cứng max_comments cho Apify để tránh đốt API token và chạy vô hạn
+                    apify_max_cmt = min(max_comments, 15)
+
                     # Phân loại thông minh URL để đưa ra actor thu thập phù hợp
                     if kind == "youtube_apify" or "youtube.com" in url.lower() or "youtu.be" in url.lower():
                         actor_id = "streamers/youtube-comments-scraper"
-                        run_input = {"startUrls": [{"url": url}], "maxComments": max_comments}
+                        run_input = {"startUrls": [{"url": url}], "maxComments": apify_max_cmt}
                         source_display = "🎬 YouTube (Apify Fallback Scraper - Tier 3)"
                     elif "facebook.com" in url.lower():
                         if "/groups/" in url.lower():
                             actor_id = "apify/facebook-groups-scraper"
                             run_input = {
                                 "startUrls": [{"url": url}],
-                                "maxPosts": 5,
-                                "maxCommentsPerPost": max_comments,
+                                "maxPosts": 3,
+                                "maxComments": apify_max_cmt,
+                                "maxCommentsPerPost": 5,
+                                "maxPostsPerGroup": 3,
+                                "resultsLimit": 15
                             }
                             source_display = "👥 Facebook Group (Apify Scraper - Tier 3)"
                         elif "/posts/" in url.lower() or "/permalink/" in url.lower() or "comment_id=" in url.lower() or "/pfbid" in url.lower():
                             actor_id = "apify/facebook-comments-scraper"
                             run_input = {
                                 "startUrls": [{"url": url}],
-                                "maxComments": max_comments,
+                                "maxComments": apify_max_cmt,
+                                "resultsLimit": apify_max_cmt
                             }
                             source_display = "💬 Facebook Post/Comments (Apify Scraper - Tier 3)"
                         else:
                             actor_id = "apify/facebook-posts-scraper"
                             run_input = {
                                 "startUrls": [{"url": url}],
-                                "maxPosts": 5,
+                                "maxPosts": 3,
+                                "maxComments": apify_max_cmt,
+                                "maxCommentsPerPost": 5
                             }
                             source_display = "📱 Facebook Page/Profile (Apify Scraper - Tier 3)"
                     elif "tiktok.com" in url.lower():
                         actor_id = "clockworks/tiktok-comments-scraper"
                         run_input = {
                             "postURLs": [url],
-                            "maxComments": max_comments,
+                            "maxComments": apify_max_cmt
                         }
                         source_display = "🎵 TikTok Comments (Apify Scraper - Tier 3)"
                     elif "threads.net" in url.lower():
                         actor_id = "thenetaji/threads-scraper"
                         run_input = {
                             "startUrls": [{"url": url}],
-                            "maxItems": max_comments,
+                            "maxItems": apify_max_cmt
                         }
                         source_display = "🧵 Threads (Apify Scraper - Tier 3)"
                     else:
