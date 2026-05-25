@@ -917,13 +917,14 @@ def session_history_to_markdown(history: List) -> str:
 # ============================================================================
 
 def get_huph_logo_base64():
-    logo_path = Path(__file__).parent.parent / "huph_logo.png"
-    if logo_path.exists():
-        try:
-            with open(logo_path, "rb") as f:
-                return f"data:image/png;base64,{base64.b64encode(f.read()).decode()}"
-        except Exception:
-            pass
+    # Check both same-level and parent-level to support both local workspace and HF Space
+    for p in [Path(__file__).parent / "huph_logo.png", Path(__file__).parent.parent / "huph_logo.png"]:
+        if p.exists():
+            try:
+                with open(p, "rb") as f:
+                    return f"data:image/png;base64,{base64.b64encode(f.read()).decode()}"
+            except Exception:
+                pass
     return "https://huph.edu.vn/uploads/logo/logo-huph.png"
 
 
@@ -1433,133 +1434,163 @@ Dự án xây dựng hệ thống **Ensemble** tận dụng ưu điểm của ha
 """
 
 CSS_STYLE = """
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap');
+
 /* Custom Global Styles for VaccineNLP */
 body, html, .gradio-container {
-    background-color: #0a192f !important;
-    background: linear-gradient(-45deg, #0a192f, #112240, #0d1b3e, #0a192f) !important;
-    background-size: 400% 400% !important;
-    animation: gradient 15s ease infinite !important;
-    color: #ccd6f6 !important;
+    background-color: #030a16 !important;
+    background: radial-gradient(circle at top right, #0d1e36, #030a16 70%) !important;
+    color: #e2e8f0 !important;
 }
 
-@keyframes gradient {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
-}
-
+/* Typography Hierarchy */
 * {
-    font-family: 'Times New Roman', Times, serif !important;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+}
+
+/* For headers, academic sections and XAI reasoning to keep it formal */
+h1, h2, h3, h4, .academic-text, .xai-reasoning, blockquote, .playfair-text {
+    font-family: 'Playfair Display', 'Times New Roman', Times, Georgia, serif !important;
+    color: #f8fafc !important;
 }
 
 /* Scrollbar styling */
 ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
 }
 ::-webkit-scrollbar-track {
-    background: rgba(0,0,0,0.1);
+    background: rgba(10, 25, 47, 0.5) !important;
 }
 ::-webkit-scrollbar-thumb {
-    background: #64ffda;
-    border-radius: 10px;
+    background: rgba(100, 255, 218, 0.35) !important;
+    border-radius: 4px !important;
 }
 ::-webkit-scrollbar-thumb:hover {
-    background: #4cd9b9;
+    background: rgba(100, 255, 218, 0.75) !important;
 }
 
 /* Tabs Styling */
 .tabs {
-    border-bottom: 2px solid rgba(0, 123, 255, 0.2) !important;
+    border-bottom: 1px solid rgba(100, 255, 218, 0.1) !important;
     background: transparent !important;
 }
 
 .tab-nav {
     display: flex;
-    gap: 8px;
+    gap: 4px;
     background: transparent !important;
     border-bottom: none !important;
 }
 
 .tab-nav button {
     background-color: transparent !important;
-    color: #8892b0 !important;
+    color: #94a3b8 !important;
     border: none !important;
     border-bottom: 2px solid transparent !important;
-    border-radius: 0 !important;
-    padding: 10px 25px !important;
+    border-radius: 8px 8px 0 0 !important;
+    padding: 12px 24px !important;
     font-weight: 500 !important;
+    font-size: 0.9rem !important;
     text-transform: uppercase !important;
-    transition: all 0.3s ease !important;
+    letter-spacing: 0.05em !important;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 .tab-nav button:hover {
     color: #64ffda !important;
+    background-color: rgba(100, 255, 218, 0.03) !important;
 }
 
 .tab-nav button.selected {
     color: #64ffda !important;
     border-bottom: 2px solid #64ffda !important;
-    font-weight: bold !important;
-    background-color: rgba(100, 255, 218, 0.05) !important;
+    font-weight: 600 !important;
+    background-color: rgba(100, 255, 218, 0.06) !important;
+    text-shadow: 0 0 8px rgba(100, 255, 218, 0.3) !important;
 }
 
 /* Button style */
 button.primary, button.gr-button-primary {
-    background: linear-gradient(135deg, #007bff 0%, #00c853 100%) !important;
-    color: white !important;
+    background: linear-gradient(135deg, #3b82f6 0%, #10b981 100%) !important;
+    color: #ffffff !important;
     border: none !important;
-    box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3) !important;
+    font-weight: 600 !important;
+    border-radius: 10px !important;
+    padding: 12px 28px !important;
+    box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35) !important;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 button.primary:hover, button.gr-button-primary:hover {
     transform: translateY(-2px) !important;
-    box-shadow: 0 6px 20px rgba(0, 123, 255, 0.5) !important;
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.6) !important;
+    filter: brightness(1.1) !important;
 }
 
 button.secondary, button.gr-button-secondary {
-    background-color: #112240 !important;
-    color: #ccd6f6 !important;
-    border: 1px solid rgba(100, 255, 218, 0.2) !important;
+    background-color: rgba(30, 41, 59, 0.5) !important;
+    color: #e2e8f0 !important;
+    border: 1px solid rgba(100, 255, 218, 0.15) !important;
+    border-radius: 10px !important;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 button.secondary:hover, button.gr-button-secondary:hover {
     border-color: #64ffda !important;
     color: #64ffda !important;
-    background-color: #172a45 !important;
-    box-shadow: 0 4px 12px rgba(100, 255, 218, 0.2) !important;
+    background-color: rgba(100, 255, 218, 0.05) !important;
+    box-shadow: 0 4px 15px rgba(100, 255, 218, 0.15) !important;
 }
 
 /* Input boxes, text area, dropdown style */
-input, textarea, select {
-    background-color: #112240 !important;
-    color: #ccd6f6 !important;
-    border: 1px solid rgba(100, 255, 218, 0.2) !important;
+input, textarea, select, .gr-input {
+    background-color: rgba(15, 23, 42, 0.6) !important;
+    color: #f1f5f9 !important;
+    border: 1px solid rgba(148, 163, 184, 0.2) !important;
     border-radius: 10px !important;
-    padding: 10px 15px !important;
+    padding: 12px 16px !important;
+    backdrop-filter: blur(8px) !important;
+    transition: all 0.2s ease !important;
 }
 
 input:focus, textarea:focus, select:focus {
-    border-color: #64ffda !important;
-    box-shadow: 0 0 0 2px rgba(100, 255, 218, 0.2) !important;
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25) !important;
+    background-color: rgba(15, 23, 42, 0.8) !important;
 }
 
 /* Accordion styling */
 .gr-accordion {
-    background-color: rgba(17, 34, 64, 0.5) !important;
-    border: 1px solid rgba(0, 123, 255, 0.2) !important;
+    background-color: rgba(15, 23, 42, 0.4) !important;
+    border: 1px solid rgba(59, 130, 246, 0.15) !important;
     border-radius: 12px !important;
-    margin-bottom: 10px !important;
+    margin-bottom: 12px !important;
+    overflow: hidden !important;
+    backdrop-filter: blur(8px) !important;
 }
 
 /* Custom resource hover card styles */
 .resource-card {
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    background: rgba(30, 41, 59, 0.3) !important;
+    border: 1px solid rgba(100, 255, 218, 0.1) !important;
 }
 .resource-card:hover {
-    border-color: #64ffda !important;
-    box-shadow: 0 10px 30px rgba(100, 255, 218, 0.15) !important;
-    transform: translateY(-5px);
+    border-color: rgba(100, 255, 218, 0.4) !important;
+    box-shadow: 0 12px 24px rgba(100, 255, 218, 0.08) !important;
+    transform: translateY(-4px) !important;
+}
+
+/* Premium card shadow animations */
+@keyframes pulseGlow {
+    0% { box-shadow: 0 0 5px rgba(100, 255, 218, 0.2); }
+    50% { box-shadow: 0 0 15px rgba(100, 255, 218, 0.4); }
+    100% { box-shadow: 0 0 5px rgba(100, 255, 218, 0.2); }
+}
+
+.glow-card {
+    animation: pulseGlow 4s infinite ease-in-out !important;
 }
 """
 
