@@ -35,6 +35,7 @@ import tempfile
 import hashlib
 import logging
 import threading
+import base64
 
 # ============================================================================
 # STARLETTE / GRADIO TEMPLATE RESPONSE MONKEY PATCH (CRITICAL FIX FOR STARLETTE >=0.28.0)
@@ -99,7 +100,6 @@ CONFIG = {
     },
     "xai_models": [
         "hung2903/gemma-4-E4B-unsloth-vaccine-xai",
-        "google/gemma-2-2b-it",
     ],
     "cache_file": DATA_DIR / "xai_cache.json",
     "benchmark_file": DATA_DIR / "benchmark_results.json",
@@ -127,6 +127,9 @@ LABEL_COLORS = {
 HF_TOKEN = os.environ.get("HF_TOKEN", "") or os.environ.get("VaccineNLP_TOKEN", "")
 APIFY_TOKENS = [os.environ.get(f"APIFY_TOKEN_{i}", "") for i in range(1, 6)]
 APIFY_TOKENS = [t for t in APIFY_TOKENS if t]
+
+# Path B: External Gemma endpoint (Kaggle+ngrok)
+GEMMA_ENDPOINT_URL = os.environ.get("GEMMA_ENDPOINT_URL", "").strip()
 
 # Thread-safe cache lock
 _CACHE_LOCK = threading.Lock()
@@ -162,8 +165,9 @@ class VaccineMultitaskModel(nn.Module):
         super().__init__()
         from transformers import AutoConfig, AutoModel
         self.config = AutoConfig.from_pretrained(model_name, token=token, trust_remote_code=True)
+        # CRITICAL v2.1: low_cpu_mem_usage=False to prevent meta tensor errors.
         self.encoder = AutoModel.from_pretrained(
-            model_name, token=token, trust_remote_code=True, low_cpu_mem_usage=True
+            model_name, token=token, trust_remote_code=True, low_cpu_mem_usage=False
         )
         hidden = self.config.hidden_size
         self.heads = nn.ModuleDict({
@@ -221,7 +225,34 @@ def load_model(model_key: str):
             (k.replace("head_", "heads.") if k.startswith("head_") and "heads." not in k else k): v
             for k, v in state.items()
         }
-        model.load_state_dict(new_state, strict=False)
+        # Load weights (strict=False handles head_ vs heads. naming variants)
+        missing, unexpected = model.load_state_dict(new_state, strict=False)
+        if missing:
+            logger.warning(f"Missing keys in checkpoint: {missing[:5]}...")
+        if unexpected:
+            logger.warning(f"Unexpected keys in checkpoint: {unexpected[:5]}...")
+        
+        # CRITICAL FIX v2.1: Materialize any remaining meta tensors to CPU.
+        meta_count = 0
+        for name, param in list(model.named_parameters()):
+            if param.is_meta:
+                meta_count += 1
+                with torch.no_grad():
+                    parent = model
+                    parts = name.split(".")
+                    for p in parts[:-1]:
+                        parent = getattr(parent, p)
+                    new_tensor = torch.zeros(param.shape, dtype=torch.float32, device="cpu")
+                    if "weight" in parts[-1] and len(param.shape) == 2:
+                        nn.init.xavier_uniform_(new_tensor)
+                    new_param = nn.Parameter(new_tensor, requires_grad=False)
+                    setattr(parent, parts[-1], new_param)
+        
+        if meta_count > 0:
+            logger.warning(f"Materialized {meta_count} meta tensor(s) — checkpoint may be incomplete")
+        
+        # Force entire model to CPU as final safety check
+        model = model.to("cpu")
         model.eval()
 
         del state
@@ -362,8 +393,35 @@ def find_xai_reasoning_cache(text: str) -> Optional[str]:
     return None
 
 
+def query_gemma_external_endpoint(text: str) -> Optional[str]:
+    """Layer 2a: Try external Gemma endpoint (Path B: Kaggle+ngrok self-host)."""
+    if not GEMMA_ENDPOINT_URL:
+        return None
+    try:
+        import requests
+        response = requests.post(
+            GEMMA_ENDPOINT_URL,
+            json={"text": text[:1000]},
+            timeout=30,
+        )
+        if response.status_code == 200:
+            data = response.json()
+            reasoning = data.get("reasoning") or data.get("output") or data.get("text")
+            if reasoning and len(reasoning.strip()) > 10:
+                return f"Lý luận: {reasoning.strip()}" if not reasoning.startswith("Lý luận") else reasoning.strip()
+    except Exception as e:
+        logger.debug(f"External Gemma endpoint failed: {e}")
+    return None
+
+
 def query_gemma_api(text: str) -> Optional[str]:
-    """Layer 2: HF Inference API with multi-model fallback."""
+    """Layer 2: External endpoint → HF Inference API (Gemma-4 only)."""
+    # Layer 2a: Try external endpoint first (faster, dedicated)
+    external = query_gemma_external_endpoint(text)
+    if external:
+        return external
+    
+    # Layer 2b: HF Inference API
     if not HF_TOKEN:
         return None
 
@@ -376,18 +434,16 @@ def query_gemma_api(text: str) -> Optional[str]:
 
     for model_id in CONFIG["xai_models"]:
         try:
-            if "gemma-4-E4B" in model_id:
-                prompt = (
-                    f"Bạn là Trí tuệ Nhân tạo có khả năng giải thích (Explainable AI) trong lĩnh vực Y tế Công cộng. "
-                    f"Hãy phân tích văn bản sau đây về chủ đề vắc-xin, đưa ra lý luận chi tiết HOÀN TOÀN bằng tiếng Việt "
-                    f"về tính xác thực, thái độ và cảm xúc. Tuyệt đối không dùng tiếng Anh.\n\nVăn bản: {short_text}"
-                )
-                formatted = f"<|turn>user\n{prompt}\n<|turn>model\nLý luận: "
-                stop_seqs = ["<|turn>", "<end_of_turn>"]
-            else:
-                prompt = f"Hãy phân tích nội dung sau về vắc-xin và giải thích tại sao bằng tiếng Việt: '{short_text}'"
-                formatted = f"<start_of_turn>user\n{prompt}<end_of_turn>\n<start_of_turn>model\n"
-                stop_seqs = ["<end_of_turn>"]
+            # All entries in xai_models are Gemma-4 variants (v2.1)
+            prompt = (
+                f"Bạn là Trí tuệ Nhân tạo có khả năng giải thích (Explainable AI) "
+                f"trong lĩnh vực Y tế Công cộng. Hãy phân tích văn bản sau đây về "
+                f"chủ đề vắc-xin, đưa ra lý luận chi tiết HOÀN TOÀN bằng tiếng Việt "
+                f"về tính xác thực, thái độ và cảm xúc. Tuyệt đối không dùng tiếng Anh."
+                f"\n\nVăn bản: {short_text}"
+            )
+            formatted = f"<start_of_turn>user\n{prompt}<end_of_turn>\n<start_of_turn>model\nLý luận: "
+            stop_seqs = ["<end_of_turn>", "<|turn>"]
 
             client = InferenceClient(model=model_id, token=HF_TOKEN)
             response = client.text_generation(
@@ -396,13 +452,11 @@ def query_gemma_api(text: str) -> Optional[str]:
             )
             if response and len(response.strip()) > 10:
                 clean = response.replace("<end_of_turn>", "").replace("<|turn>", "").strip()
-                if "gemma-4-E4B" in model_id and not clean.startswith("Lý luận"):
+                if not clean.startswith("Lý luận"):
                     clean = "Lý luận: " + clean
-                elif "gemma-4-E4B" not in model_id:
-                    clean = f"{clean}\n\n*(Giải thích từ Gemma-Engine fallback)*"
                 return clean
         except Exception as e:
-            logger.debug(f"Model {model_id} failed: {e}")
+            logger.debug(f"Gemma-4 endpoint {model_id} failed: {e}")
             continue
     return None
 
@@ -505,7 +559,12 @@ def get_reasoning(text: str, result: Dict) -> Tuple[str, str]:
     if api_reasoning:
         if is_mostly_english(api_reasoning):
             api_reasoning = translate_to_vietnamese(api_reasoning)
-        return api_reasoning, "✅ Từ Gemma-4 HF Inference API"
+        source_label = (
+            "✅ Từ Gemma-4 self-host (ngrok endpoint)"
+            if GEMMA_ENDPOINT_URL else
+            "✅ Từ Gemma-4 HF Inference API"
+        )
+        return api_reasoning, source_label
 
     fallback = generate_smart_fallback(
         result["misinfo"]["pred"], result["stance"]["pred"], result["sentiment"]["pred"]
@@ -853,6 +912,229 @@ def session_history_to_markdown(history: List) -> str:
 
 
 # ============================================================================
+# CUSTOM VIEW FUNCTIONS & DATA FOR AESTHETICS (GRADIO PORT OVER)
+# ============================================================================
+
+def get_huph_logo_base64():
+    logo_path = Path(__file__).parent.parent / "huph_logo.png"
+    if logo_path.exists():
+        try:
+            with open(logo_path, "rb") as f:
+                return f"data:image/png;base64,{base64.b64encode(f.read()).decode()}"
+        except Exception:
+            pass
+    return "https://huph.edu.vn/uploads/logo/logo-huph.png"
+
+
+def render_result_cards_html(result: Dict, elapsed: float, model_choice: str) -> str:
+    """Render beautiful HTML cards with progress bars for multi-task predictions."""
+    html = '<div style="display: flex; flex-wrap: wrap; gap: 15px; width: 100%; font-family: \'Times New Roman\', Times, serif; margin-bottom: 10px;">'
+    for axis, axis_name in [("misinfo", "Tin giả / Xác thực"), ("stance", "Quan điểm"), ("sentiment", "Cảm xúc")]:
+        r = result[axis]
+        pred_id = r["pred"]
+        label = LABEL_MAPS[axis][pred_id]
+        icon = LABEL_ICONS[axis][pred_id]
+        color = LABEL_COLORS[axis][pred_id]
+        
+        conf_raw = max(r["conf_raw"]) * 100
+        conf_cal = max(r["conf_cal"]) * 100
+        T = r["T"]
+        has_cal = abs(T - 1.0) > 0.001
+        
+        if has_cal:
+            conf_html = f"""
+            <div style="font-size: 0.85rem; color: #8892b0; margin-top: 5px;">
+                Thô: <span style="text-decoration: line-through;">{conf_raw:.1f}%</span>
+            </div>
+            <div style="font-size: 1.05rem; color: {color}; font-weight: bold; margin-top: 2px;">
+                Đã hiệu chuẩn (T={T:.2f}): {conf_cal:.1f}%
+            </div>
+            """
+        else:
+            conf_html = f"""
+            <div style="font-size: 0.95rem; color: #8892b0; margin-top: 5px;">
+                Độ tin cậy: <strong style="color: {color};">{conf_raw:.1f}%</strong>
+            </div>
+            """
+
+        # Class breakdown items
+        breakdown_items = ""
+        for idx, prob_raw in enumerate(r["conf_raw"]):
+            prob_cal = r["conf_cal"][idx]
+            class_label = LABEL_MAPS[axis][idx]
+            class_color = LABEL_COLORS[axis][idx]
+            pct_raw = prob_raw * 100
+            pct_cal = prob_cal * 100
+            
+            if has_cal:
+                breakdown_items += f"""
+                <div style="margin-top: 8px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 12px; color: #a8b2d1;">
+                        <span>{class_label}</span>
+                        <span style="font-size: 10px; color: #8892b0;">Thô: {pct_raw:.1f}% → <strong style="color: {class_color};">{pct_cal:.1f}%</strong></span>
+                    </div>
+                    <div style="background: #112240; border-radius: 5px; height: 6px; margin-top: 2px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05);">
+                        <div style="background: {class_color}; width: {pct_cal}%; height: 100%; border-radius: 5px; box-shadow: 0 0 5px {class_color}80;"></div>
+                    </div>
+                </div>
+                """
+            else:
+                breakdown_items += f"""
+                <div style="margin-top: 8px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 12px; color: #a8b2d1;">
+                        <span>{class_label}</span>
+                        <span style="color: {class_color}; font-weight: bold;">{pct_raw:.1f}%</span>
+                    </div>
+                    <div style="background: #112240; border-radius: 5px; height: 6px; margin-top: 2px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05);">
+                        <div style="background: {class_color}; width: {pct_raw}%; height: 100%; border-radius: 5px; box-shadow: 0 0 5px {class_color}80;"></div>
+                    </div>
+                </div>
+                """
+
+        html += f"""
+        <div style="flex: 1; min-width: 240px; background: rgba(17, 34, 64, 0.6); border: 1px solid {color}80; border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 8px 16px rgba(0,0,0,0.3); transition: all 0.3s ease; backdrop-filter: blur(10px);">
+            <div style="font-size: 40px; margin-bottom: 5px;">{icon}</div>
+            <div style="font-size: 0.8rem; color: #8892b0; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 5px;">{axis_name}</div>
+            <div style="font-size: 1.5rem; font-weight: bold; color: {color}; margin-bottom: 8px;">{label}</div>
+            {conf_html}
+            
+            <div style="margin-top: 15px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 10px; text-align: left;">
+                <div style="font-size: 0.8rem; font-weight: bold; color: #64ffda; text-transform: uppercase; margin-bottom: 5px;">Chi tiết nhãn:</div>
+                {breakdown_items}
+            </div>
+        </div>
+        """
+    html += '</div>'
+    html += f"<div style='margin-top: 15px; font-style: italic; color: #8892b0; font-family: \"Times New Roman\", serif; font-size: 0.9rem; text-align: right;'>⏱️ Thời gian xử lý: {elapsed:.2f}s · Mô hình: {model_choice}</div>"
+    return html
+
+
+def make_speed_chart() -> go.Figure:
+    """Throughput (samples/sec) comparison bar chart."""
+    models = ["PhoBERT-v2", "XLM-R-v1", "Gemma-4 4B"]
+    throughputs = [120.5, 85.2, 1.8]
+    fig = go.Figure()
+    fig.add_trace(go.Bar(
+        x=models, y=throughputs,
+        marker_color=['#64ffda', '#007bff', '#FFA500'],
+        text=[f"{v:.1f} mẫu/s" for v in throughputs], textposition="auto"
+    ))
+    fig.update_layout(
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        font=dict(family='Times New Roman', color='#ccd6f6', size=13),
+        yaxis=dict(title='Số mẫu xử lý/giây', range=[0, 140]),
+        height=320,
+        margin=dict(l=20, r=20, t=30, b=20),
+    )
+    return fig
+
+
+def make_sunburst_chart() -> go.Figure:
+    """Sunburst label hierarchy chart."""
+    sun_data = pd.DataFrame({
+        "Label": ["Gold Test Set", "Tin giả", "Tin đúng", "Phản đối (Fake)", "Trung lập (Fake)", "Phản đối (True)", "Trung lập (True)", "Ủng hộ (True)"],
+        "Parent": ["", "Gold Test Set", "Gold Test Set", "Tin giả", "Tin giả", "Tin đúng", "Tin đúng", "Tin đúng"],
+        "Value": [186, 28, 158, 22, 6, 26, 78, 54]
+    })
+    fig_sun = px.sunburst(
+        sun_data, names='Label', parents='Parent', values='Value',
+        color_discrete_sequence=['#0d1b3e', '#ff4b4b', '#3db882', '#ff4b4b', '#007bff', '#ff4b4b', '#007bff', '#64ffda']
+    )
+    fig_sun.update_layout(
+        margin=dict(l=10, r=10, t=10, b=10),
+        paper_bgcolor='rgba(0,0,0,0)',
+        height=380
+    )
+    return fig_sun
+
+
+METRICS_DB = {
+    "Tin giả (Misinfo = Tin giả)": {
+        "support": 28, "tp": 20, "fp": 33, "fn": 8, "desc": "Nhận diện tin giả chứa thông tin sai lệch về tác dụng phụ nguy hiểm hoặc thuyết âm mưu vắc-xin."
+    },
+    "Tin chính xác (Misinfo = Chính xác)": {
+        "support": 158, "tp": 150, "fp": 8, "fn": 8, "desc": "Tin tức y tế chính thống, hướng dẫn tiêm chủng hoặc thông báo khoa học xác thực từ Bộ Y Tế."
+    },
+    "Lập trường Ủng hộ (Stance = Ủng hộ)": {
+        "support": 54, "tp": 36, "fp": 22, "fn": 18, "desc": "Người dùng bày tỏ thái độ đồng ý tiêm chủng, kêu gọi cộng đồng cùng tiêm phòng dịch."
+    },
+    "Lập trường Phản đối (Stance = Phản đối)": {
+        "support": 48, "tp": 30, "fp": 15, "fn": 18, "desc": "Lập trường bài trừ vắc-xin cực đoan, chống đối hoặc tuyên truyền tiêu cực về chiến dịch tiêm chủng."
+    },
+    "Lập trường Trung lập (Stance = Trung lập)": {
+        "support": 84, "tp": 58, "fp": 26, "fn": 26, "desc": "Báo cáo lịch tiêm, hỏi đáp thông tin y khoa khách quan hoặc chia sẻ trải nghiệm tiêm bình thường."
+    },
+    "Cảm xúc Tiêu cực (Sentiment = Tiêu cực)": {
+        "support": 71, "tp": 54, "fp": 17, "fn": 17, "desc": "Thể hiện sự lo lắng, sợ hãi tác dụng phụ y tế hoặc bức xúc chính sách giãn cách xã hội."
+    },
+    "Cảm xúc Trung tính (Sentiment = Trung tính)": {
+        "support": 75, "tp": 56, "fp": 15, "fn": 19, "desc": "Chia sẻ thông tin công cộng, số liệu thống kê tiêm chủng hoặc tin tức sự kiện không chứa sắc thái cảm xúc."
+    },
+    "Cảm xúc Tích cực (Sentiment = Tích cực)": {
+        "support": 40, "tp": 26, "fp": 13, "fn": 14, "desc": "Bày tỏ lòng biết ơn lực lượng y tế, sự an tâm và nhẹ nhõm sau khi đã tiêm đủ số mũi phòng ngừa."
+    }
+}
+
+
+def update_calculator(selected_class: str):
+    db = METRICS_DB[selected_class]
+    tp = db["tp"]
+    fp = db["fp"]
+    fn = db["fn"]
+    support = db["support"]
+    desc = db["desc"]
+    
+    precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+    recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+    f1 = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0.0
+    
+    metrics_html = f"""
+    <div style="display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px; font-family: 'Times New Roman', serif;">
+        <div style="flex: 1; min-width: 130px; border: 1px solid #64ffda; border-radius: 8px; padding: 10px; text-align: center; background: rgba(100,255,218,0.03);">
+            <p style="margin: 0; font-size: 0.85rem; color: #8892b0;">Support (Tổng mẫu)</p>
+            <h3 style="margin: 5px 0; color: #64ffda; font-size: 1.5rem;">{support}</h3>
+        </div>
+        <div style="flex: 1; min-width: 130px; border: 1px solid #3db882; border-radius: 8px; padding: 10px; text-align: center; background: rgba(61,184,130,0.03);">
+            <p style="margin: 0; font-size: 0.85rem; color: #8892b0;">True Positives (TP)</p>
+            <h3 style="margin: 5px 0; color: #3db882; font-size: 1.5rem;">{tp}</h3>
+        </div>
+        <div style="flex: 1; min-width: 130px; border: 1px solid #ff4b4b; border-radius: 8px; padding: 10px; text-align: center; background: rgba(255,75,75,0.03);">
+            <p style="margin: 0; font-size: 0.85rem; color: #8892b0;">False Positives (FP)</p>
+            <h3 style="margin: 5px 0; color: #ff4b4b; font-size: 1.5rem;">{fp}</h3>
+        </div>
+        <div style="flex: 1; min-width: 130px; border: 1px solid #FFA500; border-radius: 8px; padding: 10px; text-align: center; background: rgba(255,165,0,0.03);">
+            <p style="margin: 0; font-size: 0.85rem; color: #8892b0;">False Negatives (FN)</p>
+            <h3 style="margin: 5px 0; color: #FFA500; font-size: 1.5rem;">{fn}</h3>
+        </div>
+    </div>
+    <div style="font-style: italic; color: #ccd6f6; font-size: 0.95rem; margin-bottom: 20px;">
+        📌 <b>Định nghĩa nhãn</b>: {desc}
+    </div>
+    """
+    
+    precision_md = f"""
+##### **1. Precision**
+$$\\text{{Precision}} = \\frac{{\\text{{TP}}}}{{\\text{{TP}} + \\text{{FP}}}}$$
+$$\\text{{Precision}} = \\frac{{{tp}}}{{{tp} + {fp}}} = {precision:.4f}$$
+"""
+
+    recall_md = f"""
+##### **2. Recall**
+$$\\text{{Recall}} = \\frac{{\\text{{TP}}}}{{\\text{{TP}} + \\text{{FN}}}}$$
+$$\\text{{Recall}} = \\frac{{{tp}}}{{{tp} + {fn}}} = {recall:.4f}$$
+"""
+
+    f1_md = f"""
+##### **3. F1-Score**
+$$F_1 = 2 \\times \\frac{{\\text{{Precision}} \\times \\text{{Recall}}}}{{\\text{{Precision}} + \\text{{Recall}}}}$$
+$$F_1 = 2 \\times \\frac{{{precision:.4f} \\times {recall:.4f}}}{{{precision:.4f} + {recall:.4f}}} = {f1:.4f}$$
+"""
+
+    return metrics_html, precision_md, recall_md, f1_md
+
+
+# ============================================================================
 # HANDLERS (Enhanced with progress + report export)
 # ============================================================================
 
@@ -862,7 +1144,8 @@ def handle_analyze(
 ) -> Tuple:
     """Main analysis handler with progress indicator."""
     if not text or not text.strip():
-        return ("⚠️ Vui lòng nhập văn bản", None, "", "", None, history, 
+        error_html = '<div style="color: #ff4b4b; font-weight: bold; font-size: 1.1rem; padding: 15px; border: 1px solid #ff4b4b; border-radius: 8px; background: rgba(255,75,75,0.1); font-family: \'Times New Roman\', serif;">⚠️ Vui lòng nhập văn bản hoặc chọn mẫu thử!</div>'
+        return (error_html, None, "", "", None, history, 
                 session_history_to_markdown(history), "")
 
     progress(0.1, desc="🔬 Đang tải mô hình...")
@@ -871,7 +1154,8 @@ def handle_analyze(
     progress(0.3, desc=f"🧠 {model_choice} đang phân tích...")
     result = predict(text, model_choice)
     if not result:
-        return ("❌ Không thể load model — kiểm tra HF_TOKEN", None, "", "", None, history,
+        error_html = f'<div style="color: #ff4b4b; font-weight: bold; font-size: 1.1rem; padding: 15px; border: 1px solid #ff4b4b; border-radius: 8px; background: rgba(255,75,75,0.1); font-family: \'Times New Roman\', serif;">❌ Không thể load mô hình {model_choice} — kiểm tra HF_TOKEN</div>'
+        return (error_html, None, "", "", None, history,
                 session_history_to_markdown(history), "")
     
     progress(0.5, desc="📊 Đang tính radar chart...")
@@ -894,23 +1178,8 @@ def handle_analyze(
 
     elapsed = time.time() - start
 
-    # Summary với details
-    summary_md = ""
-    for axis, axis_name in [("misinfo", "Tin giả/Chính xác"), ("stance", "Quan điểm"), ("sentiment", "Cảm xúc")]:
-        r = result[axis]
-        label = LABEL_MAPS[axis][r["pred"]]
-        icon = LABEL_ICONS[axis][r["pred"]]
-        color = LABEL_COLORS[axis][r["pred"]]
-        conf_raw = max(r["conf_raw"]) * 100
-        conf_cal = max(r["conf_cal"]) * 100
-        T = r["T"]
-        has_cal = abs(T - 1.0) > 0.001
-        if has_cal:
-            conf_text = f"Thô: ~~{conf_raw:.1f}%~~ → **Hiệu chuẩn (T={T:.2f}): {conf_cal:.1f}%**"
-        else:
-            conf_text = f"Độ tin cậy: **{conf_raw:.1f}%**"
-        summary_md += f"### {icon} {axis_name}: <span style='color:{color}'>**{label}**</span>\n\n{conf_text}\n\n"
-    summary_md += f"\n*⏱️ Thời gian: {elapsed:.2f}s · Mô hình: {model_choice}*"
+    # Generate custom HTML result cards
+    summary_html = render_result_cards_html(result, elapsed, model_choice)
 
     # Build export report markdown
     report_md = build_report_markdown(text, model_choice, result, reasoning, elapsed)
@@ -927,7 +1196,7 @@ def handle_analyze(
     history_md = session_history_to_markdown(history)
 
     progress(1.0, desc="✅ Hoàn tất!")
-    return (summary_md, radar, reasoning_md, saliency_html, audio_path, history, history_md, report_md)
+    return (summary_html, radar, reasoning_md, saliency_html, audio_path, history, history_md, report_md)
 
 
 def build_report_markdown(text: str, model: str, result: Dict, reasoning: str, elapsed: float) -> str:
@@ -1158,135 +1427,468 @@ Dự án xây dựng hệ thống **Ensemble** tận dụng ưu điểm của ha
 
 ### 🧪 Quy trình thực nghiệm
 
-- **Dataset:** 1.856 mẫu Silver + 186 mẫu Gold Test
-- **Hardware:** GPU NVIDIA T4 (Kaggle)
 - **Optimization:** QLoRA 4-bit + Temperature Scaling
 - **Evaluation:** Macro F1 + ECE (Expected Calibration Error)
-
-### 💡 Tại sao Explainable AI (XAI)?
-
-Trong lĩnh vực y tế như vaccine, việc chỉ đưa ra nhãn 'Tin giả' là chưa đủ. Hệ thống cần giải thích **tại sao** để:
-1. Thuyết phục người dùng tin tưởng AI
-2. Hỗ trợ chuyên gia y tế ra quyết định
-3. Đáp ứng yêu cầu minh bạch trong y tế công cộng
 """
 
-THESIS_MD = """## 📑 Đề cương & Mục lục Đồ án
+CSS_STYLE = """
+/* Custom Global Styles for VaccineNLP */
+body, html, .gradio-container {
+    background-color: #0a192f !important;
+    background: linear-gradient(-45deg, #0a192f, #112240, #0d1b3e, #0a192f) !important;
+    background-size: 400% 400% !important;
+    animation: gradient 15s ease infinite !important;
+    color: #ccd6f6 !important;
+}
 
-### 📝 Tên Đề Tài
+@keyframes gradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
 
-**"Ứng dụng Xử lý Ngôn ngữ Tự nhiên trong phát hiện thông tin sai lệch về vaccine và phân tích thái độ cộng đồng trên môi trường số tại Việt Nam"**
+* {
+    font-family: 'Times New Roman', Times, serif !important;
+}
 
-*(Applying NLP for Vaccine Misinformation Detection and Community Attitude Analysis in Vietnamese Digital Environments)*
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.1);
+}
+::-webkit-scrollbar-thumb {
+    background: #64ffda;
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #4cd9b9;
+}
 
-### 📌 Cấu trúc 6 Chương
+/* Tabs Styling */
+.tabs {
+    border-bottom: 2px solid rgba(0, 123, 255, 0.2) !important;
+    background: transparent !important;
+}
 
-**CHƯƠNG 1: ĐẶT VẤN ĐỀ**
-- 1.1 Lý do chọn đề tài
-- 1.2 Mục tiêu nghiên cứu (MT1-MT3)
-- 1.3 Câu hỏi nghiên cứu (RQ1-RQ3)
-- 1.4 Giả thuyết H1, H2, H3
+.tab-nav {
+    display: flex;
+    gap: 8px;
+    background: transparent !important;
+    border-bottom: none !important;
+}
 
-**CHƯƠNG 2: TỔNG QUAN TÀI LIỆU**
-- 2.1 Vaccine misinformation: định nghĩa và phân loại
-- 2.2 NLP trong public health surveillance
-- 2.3 Transformer architectures, LLM, XAI
-- 2.4 Khoảng trống nghiên cứu
+.tab-nav button {
+    background-color: transparent !important;
+    color: #8892b0 !important;
+    border: none !important;
+    border-bottom: 2px solid transparent !important;
+    border-radius: 0 !important;
+    padding: 10px 25px !important;
+    font-weight: 500 !important;
+    text-transform: uppercase !important;
+    transition: all 0.3s ease !important;
+}
 
-**CHƯƠNG 3: PHƯƠNG PHÁP NGHIÊN CỨU**
-- 3.2 Thu thập dữ liệu Tier-Based (A/B/C)
-- 3.3 Tiền xử lý 8 bước tiếng Việt
-- 3.4 LLM-assisted Annotation + HITL
-- 3.5 Kiến trúc Dual-Student Hybrid
-- 3.6 Phương pháp thống kê (Chi-square, G-test)
+.tab-nav button:hover {
+    color: #64ffda !important;
+}
 
-**CHƯƠNG 4: KẾT QUẢ**
-- 4.1 Mô tả Gold Test Set (n=186)
-- 4.2 Macro F1 + Per-class + Calibration
-- 4.3 Đánh giá XAI (Gemma + Captum)
-- 4.4 Kiểm định H1, H2, H3
+.tab-nav button.selected {
+    color: #64ffda !important;
+    border-bottom: 2px solid #64ffda !important;
+    font-weight: bold !important;
+    background-color: rgba(100, 255, 218, 0.05) !important;
+}
 
-**CHƯƠNG 5: BÀN LUẬN**
-- 5.1 Diễn giải kết quả chính
-- 5.2 So sánh với nghiên cứu trước (ANTiVax, MiSoVac)
-- 5.3 Hạn chế của nghiên cứu
-- 5.4 Ứng dụng y tế công cộng
+/* Button style */
+button.primary, button.gr-button-primary {
+    background: linear-gradient(135deg, #007bff 0%, #00c853 100%) !important;
+    color: white !important;
+    border: none !important;
+    box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3) !important;
+}
 
-**CHƯƠNG 6: KẾT LUẬN VÀ KIẾN NGHỊ**
-- 6.1 Tổng kết MT1, MT2, MT3
-- 6.2 Kiến nghị cho Bộ Y tế và CDC
-- 6.3 Hướng phát triển mở rộng
+button.primary:hover, button.gr-button-primary:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 20px rgba(0, 123, 255, 0.5) !important;
+}
 
-### 🧪 Ba Giả thuyết Nghiên cứu (Cập nhật 21/05/2026)
+button.secondary, button.gr-button-secondary {
+    background-color: #112240 !important;
+    color: #ccd6f6 !important;
+    border: 1px solid rgba(100, 255, 218, 0.2) !important;
+}
 
-- **H1:** Cảm xúc tiêu cực ↔ Lập trường phản đối (Chi-square, p < 10⁻⁴⁰)
-- **H2:** Nền tảng nguồn tin ↔ Tỷ lệ tin giả (G-test, p = 2,14 × 10⁻³)
-- **H3:** Lập trường ↔ Tỷ lệ tin giả (Chi-square, p < 10⁻¹⁴)
+button.secondary:hover, button.gr-button-secondary:hover {
+    border-color: #64ffda !important;
+    color: #64ffda !important;
+    background-color: #172a45 !important;
+    box-shadow: 0 4px 12px rgba(100, 255, 218, 0.2) !important;
+}
 
-### 👥 Thông tin Nhóm
+/* Input boxes, text area, dropdown style */
+input, textarea, select {
+    background-color: #112240 !important;
+    color: #ccd6f6 !important;
+    border: 1px solid rgba(100, 255, 218, 0.2) !important;
+    border-radius: 10px !important;
+    padding: 10px 15px !important;
+}
 
-**Sinh viên thực hiện:**
-- Kim Mạnh Hưng · MSSV: 2211090016
-- Đinh Lê Quỳnh Phương · MSSV: 2211090031
+input:focus, textarea:focus, select:focus {
+    border-color: #64ffda !important;
+    box-shadow: 0 0 0 2px rgba(100, 255, 218, 0.2) !important;
+}
 
-**Giảng viên hướng dẫn:**
-- TS. Trần Lâm Quân
+/* Accordion styling */
+.gr-accordion {
+    background-color: rgba(17, 34, 64, 0.5) !important;
+    border: 1px solid rgba(0, 123, 255, 0.2) !important;
+    border-radius: 12px !important;
+    margin-bottom: 10px !important;
+}
 
-**Cơ sở đào tạo:**
-- Trường Đại học Y tế Công cộng (HUPH)
-- Lớp: CNCQ KHDL1-1A
-- Năm: 2026
+/* Custom resource hover card styles */
+.resource-card {
+    transition: all 0.3s ease;
+}
+.resource-card:hover {
+    border-color: #64ffda !important;
+    box-shadow: 0 10px 30px rgba(100, 255, 218, 0.15) !important;
+    transform: translateY(-5px);
+}
 """
 
-HEADER_HTML = """
-<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 15px; margin-bottom: 20px; color: white; font-family: 'Times New Roman', serif; box-shadow: 0 8px 20px rgba(0,0,0,0.2);">
-  <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center;">
-    <div style="flex: 2; min-width: 300px;">
-      <h1 style="margin: 0; font-size: 2rem;">🦠 VaccineNLP</h1>
-      <p style="margin: 5px 0; font-size: 1.1rem; opacity: 0.95;">
-        Phát hiện Tin giả & Phân tích Thái độ Vaccine tiếng Việt
-      </p>
-      <p style="margin: 5px 0; font-size: 0.95rem; opacity: 0.85; font-style: italic;">
-        Kiến trúc Dual-Student Hybrid · PhoBERT-v2 + Gemma-4 E4B
-      </p>
+SPEED_METRICS_HTML = """
+<div style="display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; font-family: 'Times New Roman', serif;">
+    <div style="flex: 1; min-width: 200px; border: 1px solid #64ffda; border-radius: 8px; padding: 15px; text-align: center; background: rgba(100,255,218,0.05);">
+        <p style="margin: 0; font-size: 0.9rem; color: #8892b0;">🏎️ Tốc độ PhoBERT-v2</p>
+        <h2 style="margin: 5px 0; color: #64ffda; font-size: 1.8rem; font-weight: bold;">120.5 mẫu/s</h2>
+        <span style="font-size: 0.8rem; color: #3db882; font-weight: bold;">Nhanh nhất (Real-time)</span>
     </div>
-    <div style="flex: 1; min-width: 250px; border-left: 2px solid rgba(255,255,255,0.3); padding-left: 20px;">
-      <div style="font-size: 0.85rem; opacity: 0.9; line-height: 1.6;">
-        <b>🎓 Đồ án tốt nghiệp HUPH 2026</b><br>
-        Kim Mạnh Hưng · 2211090016<br>
-        Đinh Lê Quỳnh Phương · 2211090031<br>
-        <span style="font-size: 0.8rem; opacity: 0.8;">GVHD: TS. Trần Lâm Quân</span>
+    <div style="flex: 1; min-width: 200px; border: 1px solid #007bff; border-radius: 8px; padding: 15px; text-align: center; background: rgba(0,123,255,0.05);">
+        <p style="margin: 0; font-size: 0.9rem; color: #8892b0;">🚗 Tốc độ XLM-R-v1</p>
+        <h2 style="margin: 5px 0; color: #007bff; font-size: 1.8rem; font-weight: bold;">85.2 mẫu/s</h2>
+        <span style="font-size: 0.8rem; color: #ff4b4b; font-weight: bold;">-29.3% so với PhoBERT</span>
+    </div>
+    <div style="flex: 1; min-width: 200px; border: 1px solid #FFA500; border-radius: 8px; padding: 15px; text-align: center; background: rgba(255,165,0,0.05);">
+        <p style="margin: 0; font-size: 0.9rem; color: #8892b0;">🐢 Tốc độ Gemma-4 4B</p>
+        <h2 style="margin: 5px 0; color: #FFA500; font-size: 1.8rem; font-weight: bold;">1.8 mẫu/s</h2>
+        <span style="font-size: 0.8rem; color: #ff4b4b; font-weight: bold;">Rần chậm (Phù hợp offline)</span>
+    </div>
+</div>
+"""
+
+RECOMMENDATIONS_HTML = """
+<div style="background: rgba(100, 255, 218, 0.03); border: 1px solid rgba(100, 255, 218, 0.2); border-radius: 8px; padding: 20px; font-family: 'Times New Roman', serif;">
+    <h4 style="margin-top: 0; color: #64ffda; font-size: 1.2rem;">🤝 Kiến trúc lai đề xuất cho dự án VaccineNLP (HUPH 2026):</h4>
+    <ol style="margin-bottom: 0; padding-left: 20px; line-height: 1.6; color: #ccd6f6;">
+        <li><b>Vòng ngoài (Real-time Classification - PhoBERT-v2)</b>: Nhờ tốc độ suy luận cực nhanh (120.5 mẫu/giây) và độ chính xác F1 vượt trội, PhoBERT-v2 được đề xuất làm màng lọc trực tiếp ở luồng dữ liệu mạng xã hội để phân loại nhanh tin giả, sắc thái và lập trường.</li>
+        <li><b>Vòng trong (Explainable & Strategic Consulting - Gemma-4 4B)</b>: Đối với các mẫu được PhoBERT-v2 nghi ngờ là "Tin giả" hoặc "Tiêu cực cực đoan", hệ thống sẽ đẩy vào hàng đợi offline để Gemma-4 lý luận chuyên sâu (XAI) giải thích lý do gán nhãn và đề xuất kịch bản phản hồi khủng hoảng cho chuyên gia y tế HUPH.</li>
+    </ol>
+</div>
+"""
+
+RESOURCES_HTML = """
+<div style="font-family: 'Times New Roman', Times, serif; color: #ccd6f6;">
+  <h2 style="color: #64ffda; margin-bottom: 20px; font-size: 1.8rem;">📚 Tài liệu & Notebooks Nghiên cứu</h2>
+  
+  <div style="display: flex; flex-wrap: wrap; gap: 20px;">
+    <!-- Column 1: Kim Manh Hung -->
+    <div style="flex: 1; min-width: 300px; background: rgba(17,34,64,0.4); border: 1px solid rgba(100,255,218,0.2); border-radius: 12px; padding: 25px; box-shadow: 0 8px 16px rgba(0,0,0,0.2);">
+      <h3 style="color: #64ffda; margin-top: 0; border-bottom: 1px solid rgba(100,255,218,0.3); padding-bottom: 10px; font-size: 1.3rem;">👨‍💻 1. Kim Mạnh Hưng (MSSV: 2211090016)</h3>
+      
+      <div style="margin-top: 15px;">
+        <h4 style="color: #007bff; margin-bottom: 5px; font-size: 1.05rem;">📘 I. KAGGLE NOTEBOOKS:</h4>
+        <ul style="list-style-type: none; padding-left: 0; line-height: 1.6;">
+          <li style="margin-bottom: 8px;">• <a href="https://www.kaggle.com/code/kimmnhhng/vaccinenlp-phobert-v2-multitask" target="_blank" style="color: #64ffda; text-decoration: none;">PhoBERT Multitask Classifier</a></li>
+          <li style="margin-bottom: 8px;">• <a href="https://www.kaggle.com/code/kimmnhhng/vaccinenlp-xlm-r-v1-multitask-classifier" target="_blank" style="color: #64ffda; text-decoration: none;">XLM-R Multitask Classifier</a></li>
+          <li style="margin-bottom: 8px;">• <a href="https://www.kaggle.com/code/kimmnhhng/vaccinenlp-gemma-4-training" target="_blank" style="color: #64ffda; text-decoration: none;">Gemma QLoRA Training (03A)</a></li>
+          <li style="margin-bottom: 8px;">• <a href="https://www.kaggle.com/code/kimmnhhng/vaccinenlp-gemma-4-inference" target="_blank" style="color: #64ffda; text-decoration: none;">Gemma XAI Inference (03B)</a></li>
+          <li style="margin-bottom: 8px;">• <a href="https://www.kaggle.com/code/kimmnhhng/vaccinenlp-model-benchmark-report" target="_blank" style="color: #64ffda; text-decoration: none;">Model Benchmark Report (04)</a></li>
+        </ul>
+      </div>
+      
+      <div style="margin-top: 20px;">
+        <h4 style="color: #007bff; margin-bottom: 5px; font-size: 1.05rem;">🤗 II. HUGGINGFACE:</h4>
+        <ul style="list-style-type: none; padding-left: 0; line-height: 1.6;">
+          <li style="margin-bottom: 8px;">• <a href="https://huggingface.co/hung2903/phobert-vaccine-multitask" target="_blank" style="color: #64ffda; text-decoration: none;">PhoBERT Multitask</a></li>
+          <li style="margin-bottom: 8px;">• <a href="https://huggingface.co/hung2903/xlmr-vaccine-multitask" target="_blank" style="color: #64ffda; text-decoration: none;">XLM-R Multitask</a></li>
+          <li style="margin-bottom: 8px;">• <a href="https://huggingface.co/hung2903/gemma-4-E4B-unsloth-vaccine-xai" target="_blank" style="color: #64ffda; text-decoration: none;">Gemma XAI Reasoning</a></li>
+        </ul>
+      </div>
+      
+      <div style="margin-top: 20px;">
+        <h4 style="color: #007bff; margin-bottom: 5px; font-size: 1.05rem;">💻 III. GITHUB:</h4>
+        <ul style="list-style-type: none; padding-left: 0; line-height: 1.6;">
+          <li>• <a href="https://github.com/hwngkm/VaccineNLP-Thesis" target="_blank" style="color: #64ffda; text-decoration: none;">VaccineNLP Thesis Repo</a></li>
+        </ul>
+      </div>
+    </div>
+    
+    <!-- Column 2: Dinh Le Quynh Phuong -->
+    <div style="flex: 1; min-width: 300px; background: rgba(17,34,64,0.4); border: 1px solid rgba(100,255,218,0.2); border-radius: 12px; padding: 25px; box-shadow: 0 8px 16px rgba(0,0,0,0.2);">
+      <h3 style="color: #64ffda; margin-top: 0; border-bottom: 1px solid rgba(100,255,218,0.3); padding-bottom: 10px; font-size: 1.3rem;">👩‍💻 2. Đinh Lê Quỳnh Phương (MSSV: 2211090031)</h3>
+      
+      <div style="margin-top: 15px;">
+        <h4 style="color: #007bff; margin-bottom: 5px; font-size: 1.05rem;">📘 I. KAGGLE NOTEBOOKS:</h4>
+        <ul style="list-style-type: none; padding-left: 0; line-height: 1.6;">
+          <li style="margin-bottom: 8px;">• <a href="https://www.kaggle.com/code/inhlqunhphng/vaccinenlp-phobert-v2-multitask-classifier" target="_blank" style="color: #64ffda; text-decoration: none;">PhoBERT Multitask Classifier</a></li>
+          <li style="margin-bottom: 8px;">• <a href="https://www.kaggle.com/code/inhlqunhphng/vaccinenlp-xlm-r-v1-multitask-classifier" target="_blank" style="color: #64ffda; text-decoration: none;">XLM-R Multitask Classifier</a></li>
+          <li style="margin-bottom: 8px;">• <a href="https://www.kaggle.com/code/inhlqunhphng/vaccinenlp-gemma-4-training" target="_blank" style="color: #64ffda; text-decoration: none;">Gemma QLoRA Training (03A)</a></li>
+          <li style="margin-bottom: 8px;">• <a href="https://www.kaggle.com/code/inhlqunhphng/vaccinenlp-gemma-4-inference" target="_blank" style="color: #64ffda; text-decoration: none;">Gemma XAI Inference (03B)</a></li>
+        </ul>
+      </div>
+      
+      <div style="margin-top: 20px;">
+        <h4 style="color: #007bff; margin-bottom: 5px; font-size: 1.05rem;">🤗 II. HUGGINGFACE:</h4>
+        <ul style="list-style-type: none; padding-left: 0; line-height: 1.6;">
+          <li style="margin-bottom: 8px;">• <a href="https://huggingface.co/quynhphuong1209/phobert-multitask" target="_blank" style="color: #64ffda; text-decoration: none;">PhoBERT Multitask</a></li>
+          <li style="margin-bottom: 8px;">• <a href="https://huggingface.co/quynhphuong1209/xlmr-multitask" target="_blank" style="color: #64ffda; text-decoration: none;">XLM-R Multitask</a></li>
+          <li style="margin-bottom: 8px;">• <a href="https://huggingface.co/quynhphuong1209/gemma-4-E4B-unsloth-vaccine-xai" target="_blank" style="color: #64ffda; text-decoration: none;">Gemma XAI Reasoning</a></li>
+        </ul>
+      </div>
+      
+      <div style="margin-top: 20px;">
+        <h4 style="color: #007bff; margin-bottom: 5px; font-size: 1.05rem;">💻 III. GITHUB:</h4>
+        <ul style="list-style-type: none; padding-left: 0; line-height: 1.6;">
+          <li>• <a href="https://github.com/quynhphuong1209/VaccineNLP_Project" target="_blank" style="color: #64ffda; text-decoration: none;">VaccineNLP Project Repo</a></li>
+        </ul>
       </div>
     </div>
   </div>
 </div>
 """
 
-FOOTER_HTML = """
-<div style="background: linear-gradient(135deg, #0a192f 0%, #112240 100%); color: #a8b2d1; padding: 30px; border-radius: 10px; margin-top: 30px; font-family: 'Times New Roman', serif;">
-  <div style="display: flex; flex-wrap: wrap; gap: 30px; justify-content: space-around;">
-    <div style="flex: 1; min-width: 200px;">
-      <h3 style="color: #007bff;">🏫 TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG</h3>
-      <p>📍 Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</p>
-      <p>🌐 <a href="https://huph.edu.vn/" style="color: #64ffda;">huph.edu.vn</a></p>
+METHODOLOGY_HTML = """
+<div style="font-family: 'Times New Roman', Times, serif; color: #ccd6f6; line-height: 1.6;">
+  <h2 style="color: #64ffda; border-bottom: 1px solid rgba(100,255,218,0.2); padding-bottom: 10px; font-size: 1.8rem; margin-bottom: 20px;">📜 Phương pháp luận & Kiến trúc Hệ thống</h2>
+  
+  <div style="display: flex; flex-wrap: wrap; gap: 20px;">
+    <div style="flex: 3; min-width: 300px;">
+      <h3 style="color: #007bff; font-size: 1.3rem;">🏗️ 1. Kiến trúc Dual-Student Hybrid</h3>
+      <p>Dự án xây dựng hệ thống <b>Ensemble</b> tận dụng ưu điểm của hai dòng kiến trúc Transformer phổ biến nhất hiện nay:</p>
+      
+      <div style="background: rgba(17,34,64,0.3); border-left: 4px solid #3db882; padding: 15px; border-radius: 4px; margin-bottom: 15px;">
+        <strong style="color: #3db882;">Động cơ Phân loại (Classification Engine):</strong>
+        <ul style="margin: 5px 0 0 0; padding-left: 20px;">
+          <li>PhoBERT-v2 (kiến trúc Encoder)</li>
+          <li>Multi-task Learning với 3 heads độc lập</li>
+          <li>Ưu điểm: Hiểu sâu ngữ pháp tiếng Việt, phân loại nhãn chính xác cao</li>
+        </ul>
+      </div>
+      
+      <div style="background: rgba(17,34,64,0.3); border-left: 4px solid #FFA500; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
+        <strong style="color: #FFA500;">Động cơ Giải thích (XAI Reasoning Engine):</strong>
+        <ul style="margin: 5px 0 0 0; padding-left: 20px;">
+          <li>Gemma-4 E4B-it (kiến trúc Decoder)</li>
+          <li>QLoRA 4-bit fine-tuning</li>
+          <li>Ưu điểm: Sinh văn bản giải thích Tiếng Việt mạch lạc</li>
+        </ul>
+      </div>
+      
+      <h4 style="color: #64ffda; margin-bottom: 10px;">🛠️ Sơ đồ Luồng Xử lý (System Pipeline)</h4>
+      <pre style="background: #112240; color: #64ffda; border: 1px solid rgba(100,255,218,0.2); border-radius: 8px; padding: 15px; font-family: monospace; font-size: 0.9rem; line-height: 1.4;">
+[ Văn bản đầu vào (Tiếng Việt) ]
+              ↓
+[ Tiền xử lý: 8 bước cleaning ]
+              ↓
+      ┌───────┴───────┐
+      ↓               ↓
+[ PhoBERT-v2 ]   [ Gemma-4 XAI ]
+      ↓               ↓
+[ Labels ]      [ Reasoning ]
+      ↓               ↓
+      └───────┬───────┘
+              ↓
+[ Hiệu chuẩn (Temperature Scaling) ]
+              ↓
+[ Hiển thị: Labels + Confidence + Reasoning ]
+      </pre>
     </div>
-    <div style="flex: 1; min-width: 250px;">
-      <h3 style="color: #007bff;">👥 NHÓM THỰC HIỆN</h3>
-      <p><b>Kim Mạnh Hưng</b> · 2211090016</p>
-      <p><b>Đinh Lê Quỳnh Phương</b> · 2211090031</p>
-      <p>Lớp: CNCQ KHDL1-1A</p>
-    </div>
-    <div style="flex: 1; min-width: 200px;">
-      <h3 style="color: #007bff;">👨‍🏫 GVHD</h3>
-      <p><b>TS. Trần Lâm Quân</b></p>
-      <p>📧 tlq@huph.edu.vn</p>
+    
+    <div style="flex: 2; min-width: 250px; display: flex; flex-direction: column; gap: 15px;">
+      <h3 style="color: #007bff; font-size: 1.3rem; margin-bottom: 5px;">🎯 2. Ba nhiệm vụ chính</h3>
+      
+      <div style="background: rgba(17,34,64,0.4); border: 1px solid rgba(100,255,218,0.1); border-radius: 8px; padding: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.15);">
+        <strong style="color: #ff4b4b; font-size: 1rem;">🚨 Misinformation Detection</strong>
+        <p style="margin: 5px 0 0 0; font-size: 0.9rem; color: #8892b0;">Xác định tin giả về vaccine dựa trên các nguồn tin cậy và đối chiếu chéo.</p>
+      </div>
+      
+      <div style="background: rgba(17,34,64,0.4); border: 1px solid rgba(100,255,218,0.1); border-radius: 8px; padding: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.15);">
+        <strong style="color: #007bff; font-size: 1rem;">🎯 Stance Analysis</strong>
+        <p style="margin: 5px 0 0 0; font-size: 0.9rem; color: #8892b0;">Phân tích quan điểm cộng đồng: Ủng hộ, Phản đối hoặc Trung lập với tiêm chủng vaccine.</p>
+      </div>
+      
+      <div style="background: rgba(17,34,64,0.4); border: 1px solid rgba(100,255,218,0.1); border-radius: 8px; padding: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.15);">
+        <strong style="color: #00c853; font-size: 1rem;">💭 Sentiment Analysis</strong>
+        <p style="margin: 5px 0 0 0; font-size: 0.9rem; color: #8892b0;">Nhận diện sắc thái cảm xúc của người viết: Tích cực, Tiêu cực, hoặc Trung tính.</p>
+      </div>
+      
+      <div style="background: rgba(17,34,64,0.4); border: 1px solid rgba(0,123,255,0.2); border-radius: 8px; padding: 15px; margin-top: 10px;">
+        <h4 style="color: #007bff; margin: 0 0 8px 0; font-size: 1.05rem;">🧪 Quy trình thực nghiệm</h4>
+        <ul style="margin: 0; padding-left: 20px; font-size: 0.9rem; line-height: 1.5; color: #8892b0;">
+          <li><b>Dataset:</b> 1.856 mẫu Silver + 186 mẫu Gold Test</li>
+          <li><b>Hardware:</b> GPU NVIDIA T4 (Kaggle)</li>
+          <li><b>Optimization:</b> QLoRA 4-bit + Temperature Scaling</li>
+          <li><b>Evaluation:</b> Macro F1 + ECE (Expected Calibration Error)</li>
+        </ul>
+      </div>
     </div>
   </div>
-  <hr style="border-color: rgba(255,255,255,0.1); margin: 20px 0;">
-  <p style="text-align: center; opacity: 0.7;">© 2026 VaccineNLP Project · Đồ án tốt nghiệp HUPH · v2.0</p>
+  
+  <div style="margin-top: 25px; border-top: 1px solid rgba(100,255,218,0.2); padding-top: 15px;">
+    <h3 style="color: #64ffda; font-size: 1.25rem;">💡 Tại sao Explainable AI (XAI)?</h3>
+    <p style="margin-top: 5px;">Trong lĩnh vực y tế như vaccine, việc chỉ đưa ra nhãn 'Tin giả' là chưa đủ. Hệ thống cần giải thích <b>tại sao</b> để:</p>
+    <ul style="padding-left: 20px; margin-top: 5px;">
+      <li style="margin-bottom: 5px;">Thuyết phục người dùng tin tưởng vào các khuyến nghị và cảnh báo của AI.</li>
+      <li style="margin-bottom: 5px;">Hỗ trợ đắc lực cho cán bộ và chuyên gia y tế công cộng ra quyết định nhanh chóng.</li>
+      <li style="margin-bottom: 5px;">Đáp ứng yêu cầu minh bạch và giải trình bắt buộc trong ứng dụng AI y tế công cộng.</li>
+    </ul>
+  </div>
 </div>
 """
 
+THESIS_HTML = """
+<div style="font-family: 'Times New Roman', Times, serif; color: #ccd6f6; line-height: 1.6;">
+  <h2 style="color: #64ffda; border-bottom: 1px solid rgba(100,255,218,0.2); padding-bottom: 10px; font-size: 1.8rem; margin-bottom: 20px;">📑 Đề cương & Mục lục Đồ án tốt nghiệp</h2>
+  
+  <div style="background: rgba(0, 123, 255, 0.05); border-left: 5px solid #007bff; padding: 20px; border-radius: 5px; margin-bottom: 25px; box-shadow: 0 4px 8px rgba(0,0,0,0.15);">
+    <h3 style="margin: 0; color: #ffffff; font-size: 1.15rem; text-transform: uppercase;">📝 Tên Đề Tài Đồ Án tốt nghiệp:</h3>
+    <p style="margin: 8px 0 0 0; font-size: 1.25rem; font-weight: bold; color: #64ffda; line-height: 1.4;">
+      "Ứng dụng Xử lý Ngôn ngữ Tự nhiên trong phát hiện thông tin sai lệch về vaccine và phân tích thái độ cộng đồng trên môi trường số tại Việt Nam"
+    </p>
+    <p style="margin: 5px 0 0 0; font-style: italic; color: #8892b0; font-size: 1rem;">
+      (Applying NLP for Vaccine Misinformation Detection and Community Attitude Analysis in Vietnamese Digital Environments)
+    </p>
+  </div>
+
+  <div style="display: flex; flex-wrap: wrap; gap: 20px; margin-bottom: 25px;">
+    <div style="flex: 1; min-width: 300px; background: rgba(17,34,64,0.4); border: 1px solid rgba(100,255,218,0.1); border-radius: 12px; padding: 20px;">
+      <h3 style="color: #007bff; border-bottom: 1px solid rgba(0,123,255,0.2); padding-bottom: 8px; margin-top: 0; font-size: 1.25rem;">📌 Cấu trúc 6 Chương chính</h3>
+      <ul style="list-style-type: none; padding-left: 0; line-height: 1.8;">
+        <li><b>CHƯƠNG 1: ĐẶT VẤN ĐỀ</b> (Lý do chọn đề tài, Mục tiêu MT1-MT3, Câu hỏi RQ1-RQ3)</li>
+        <li><b>CHƯƠNG 2: TỔNG QUAN TÀI LIỆU</b> (Định nghĩa Vaccine misinformation, NLP, XAI, Research Gap)</li>
+        <li><b>CHƯƠNG 3: PHƯƠNG PHÁP NGHIÊN CỨU</b> (Chiến lược Tier-Based A/B/C, 8 bước tiền xử lý, Annotation)</li>
+        <li><b>CHƯƠNG 4: KẾT QUẢ THỰC NGHIỆM</b> (Mô tả Gold Test Set n=186, Macro F1, Calibration, Kiểm định)</li>
+        <li><b>CHƯƠNG 5: BÀN LUẬN KHOA HỌC</b> (Diễn giải kết quả chính, so sánh ANTiVax/MiSoVac, Hạn chế đề tài)</li>
+        <li><b>CHƯƠNG 6: KẾT LUẬN VÀ KIẾN NGHỊ</b> (Tổng kết mục tiêu, kiến nghị CDC & Bộ Y tế, hướng phát triển)</li>
+      </ul>
+    </div>
+    
+    <div style="flex: 1; min-width: 300px; background: rgba(17,34,64,0.4); border: 1px solid rgba(100,255,218,0.1); border-radius: 12px; padding: 20px;">
+      <h3 style="color: #007bff; border-bottom: 1px solid rgba(0,123,255,0.2); padding-bottom: 8px; margin-top: 0; font-size: 1.25rem;">🧪 Ba Giả thuyết Nghiên cứu (Hypotheses)</h3>
+      <ul style="list-style-type: none; padding-left: 0; line-height: 1.8; color: #ccd6f6;">
+        <li style="margin-bottom: 12px;">
+          <strong style="color: #ff4b4b;">• Giả thuyết H1 (Chấp nhận):</strong><br>
+          Cảm xúc tiêu cực ↔ Lập trường phản đối vaccine (Kiểm định Chi-square đạt ý nghĩa thống kê cao, p < 10⁻⁴⁰).
+        </li>
+        <li style="margin-bottom: 12px;">
+          <strong style="color: #007bff;">• Giả thuyết H2 (Chấp nhận):</strong><br>
+          Nền tảng mạng xã hội ↔ Tỷ lệ lan truyền tin giả y tế (Kiểm định G-test, p = 2,14 × 10⁻³).
+        </li>
+        <li style="margin-bottom: 12px;">
+          <strong style="color: #00c853;">• Giả thuyết H3 (Chấp nhận):</strong><br>
+          Lập trường phản đối/nghi ngại ↔ Tỷ lệ xuất hiện tin giả (Kiểm định Chi-square, p < 10⁻¹⁴).
+        </li>
+      </ul>
+    </div>
+  </div>
+  
+  <div style="background: rgba(17,34,64,0.5); border: 1px solid rgba(100,255,218,0.2); border-radius: 12px; padding: 25px; box-shadow: 0 8px 16px rgba(0,0,0,0.2);">
+    <h3 style="color: #64ffda; margin-top: 0; border-bottom: 1px solid rgba(100,255,218,0.3); padding-bottom: 8px; font-size: 1.3rem;">👥 Thông tin Đồ án tốt nghiệp HUPH</h3>
+    <div style="display: flex; flex-wrap: wrap; gap: 30px; margin-top: 15px;">
+      <div style="flex: 1; min-width: 250px;">
+        <h4 style="color: #007bff; margin: 0 0 10px 0; font-size: 1.1rem;">Sinh viên thực hiện:</h4>
+        <p style="margin: 5px 0;"><b>1. Kim Mạnh Hưng</b> · MSSV: 2211090016</p>
+        <p style="margin: 5px 0;"><b>2. Đinh Lê Quỳnh Phương</b> · MSSV: 2211090031</p>
+        <p style="margin: 5px 0; color: #8892b0; font-size: 0.9rem;">Lớp: CNCQ Khoa học dữ liệu 1-1A</p>
+      </div>
+      <div style="flex: 1; min-width: 250px;">
+        <h4 style="color: #007bff; margin: 0 0 10px 0; font-size: 1.1rem;">Giảng viên hướng dẫn:</h4>
+        <p style="margin: 5px 0;"><b>TS. Trần Lâm Quân</b></p>
+        <p style="margin: 5px 0; color: #8892b0; font-size: 0.9rem;">Giảng viên Khoa học dữ liệu · Trường Đại học Y tế Công cộng</p>
+      </div>
+    </div>
+  </div>
+</div>
+"""
+
+
+def get_header_html():
+    logo_src = get_huph_logo_base64()
+    return f"""
+    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 15px; margin-bottom: 20px; color: white; font-family: 'Times New Roman', serif; box-shadow: 0 8px 20px rgba(0,0,0,0.2);">
+      <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center;">
+        <img src="{logo_src}" style="width: 70px; height: 70px; object-fit: contain; filter: drop-shadow(0 0 8px rgba(255,255,255,0.5));" alt="HUPH Logo">
+        <div style="flex: 2; min-width: 300px;">
+          <h1 style="margin: 0; font-size: 2rem;">🦠 VaccineNLP</h1>
+          <p style="margin: 5px 0; font-size: 1.1rem; opacity: 0.95;">
+            Phát hiện Tin giả & Phân tích Thái độ Vaccine tiếng Việt
+          </p>
+          <p style="margin: 5px 0; font-size: 0.95rem; opacity: 0.85; font-style: italic;">
+            Kiến trúc Dual-Student Hybrid · PhoBERT-v2 + Gemma-4 E4B
+          </p>
+        </div>
+        <div style="flex: 1; min-width: 250px; border-left: 2px solid rgba(255,255,255,0.3); padding-left: 20px;">
+          <div style="font-size: 0.85rem; opacity: 0.9; line-height: 1.6;">
+            <b>🎓 Đồ án tốt nghiệp HUPH 2026</b><br>
+            Kim Mạnh Hưng · 2211090016<br>
+            Đinh Lê Quỳnh Phương · 2211090031<br>
+            <span style="font-size: 0.8rem; opacity: 0.8;">GVHD: TS. Trần Lâm Quân</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    """
+
+
+def get_footer_html():
+    logo_src = get_huph_logo_base64()
+    return f"""
+    <div style="background: linear-gradient(135deg, #0a192f 0%, #112240 100%); color: #a8b2d1; padding: 40px 20px; border-radius: 15px; margin-top: 40px; font-family: 'Times New Roman', serif; border-top: 4px solid #007bff; box-shadow: 0 -10px 25px rgba(0, 123, 255, 0.15);">
+      <div style="display: flex; flex-wrap: wrap; gap: 30px; justify-content: space-around;">
+        <div style="flex: 1.2; min-width: 250px; text-align: center; border-right: 1px solid rgba(255,255,255,0.1); padding-right: 15px;">
+          <img src="{logo_src}" style="width: 90px; height: 90px; object-fit: contain; margin-bottom: 10px; filter: drop-shadow(0 0 8px rgba(0,123,255,0.2));" alt="HUPH Logo">
+          <h3 style="color: #ffffff; font-size: 1rem; margin: 5px 0;">TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG</h3>
+          <p style="font-size: 0.85rem; color: #8892b0; margin: 5px 0;">📍 Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</p>
+          <p style="font-size: 0.85rem; margin: 5px 0;">🌐 <a href="https://huph.edu.vn/" target="_blank" style="color: #64ffda; text-decoration: none;">huph.edu.vn</a></p>
+        </div>
+        <div style="flex: 1.5; min-width: 250px; border-right: 1px solid rgba(255,255,255,0.1); padding-right: 15px;">
+          <h3 style="color: #007bff; font-size: 1.1rem; text-transform: uppercase; margin-bottom: 15px;">🔬 Đề tài đồ án</h3>
+          <p style="color: #ffd700; font-weight: bold; font-style: italic; font-size: 0.95rem; line-height: 1.5;">
+            "Ứng dụng Xử lý Ngôn ngữ Tự nhiên trong phát hiện thông tin sai lệch về vaccine và phân tích thái độ cộng đồng trên môi trường số tại Việt Nam"
+          </p>
+          <p style="color: #8892b0; font-size: 0.85rem; margin-top: 8px;">
+            (Applying NLP for Vaccine Misinformation Detection and Community Attitude Analysis in Vietnamese Digital Environments)
+          </p>
+        </div>
+        <div style="flex: 1.2; min-width: 250px; border-right: 1px solid rgba(255,255,255,0.1); padding-right: 15px;">
+          <h3 style="color: #007bff; font-size: 1.1rem; text-transform: uppercase; margin-bottom: 15px;">👥 Nhóm thực hiện</h3>
+          <p style="margin: 5px 0;"><b>1. Kim Mạnh Hưng</b></p>
+          <p style="font-size: 0.85rem; color: #8892b0; margin: 0 0 10px 0;">MSSV: 2211090016 · Lớp: CNCQ KHDL1-1A</p>
+          <p style="margin: 5px 0;"><b>2. Đinh Lê Quỳnh Phương</b></p>
+          <p style="font-size: 0.85rem; color: #8892b0; margin: 0 0 10px 0;">MSSV: 2211090031 · Lớp: CNCQ KHDL1-1A</p>
+        </div>
+        <div style="flex: 1; min-width: 200px;">
+          <h3 style="color: #007bff; font-size: 1.1rem; text-transform: uppercase; margin-bottom: 15px;">👨‍🏫 GV Hướng dẫn</h3>
+          <p style="font-size: 1.05rem; font-weight: bold; color: #ffffff;">TS. Trần Lâm Quân</p>
+          <p style="font-size: 0.85rem; color: #8892b0; margin-top: 5px; line-height: 1.4;">
+            Giảng viên Khoa học dữ liệu<br>
+            Trường Đại học Y tế Công cộng<br>
+            📧 <a href="mailto:tlq@huph.edu.vn" style="color: #64ffda; text-decoration: none;">tlq@huph.edu.vn</a>
+          </p>
+        </div>
+      </div>
+      <hr style="border-color: rgba(255,255,255,0.1); margin: 25px 0 15px 0;">
+      <p style="text-align: center; font-size: 0.85rem; color: #8892b0; margin: 0;">
+        © 2026 VaccineNLP Project | Đồ án tốt nghiệp chuyên ngành Khoa học Dữ liệu - HUPH
+      </p>
+    </div>
+    """
 
 # ============================================================================
 # GRADIO UI BUILDER
@@ -1294,9 +1896,9 @@ FOOTER_HTML = """
 
 def build_app():
     """Build the Gradio Blocks app with 6 tabs."""
-    with gr.Blocks(title="VaccineNLP Demo v2.0", theme=gr.themes.Soft(primary_hue="indigo")) as app:
+    with gr.Blocks(title="VaccineNLP Demo v2.0", theme=gr.themes.Soft(primary_hue="indigo"), css=CSS_STYLE) as app:
         # Premium Header
-        gr.HTML(HEADER_HTML)
+        gr.HTML(get_header_html())
 
         session_state = gr.State([])
         report_state = gr.State("")
@@ -1341,7 +1943,7 @@ def build_app():
 
                     with gr.Column(scale=1):
                         gr.Markdown("### 📊 Kết quả phân loại")
-                        summary_out = gr.Markdown()
+                        summary_out = gr.HTML()
                         radar_out = gr.Plot()
 
                 # Quick Examples
@@ -1438,6 +2040,14 @@ def build_app():
                 gr.Plot(value=make_confusion_matrix_chart())
 
                 gr.Markdown("---")
+                gr.Markdown("## 🏎️ Hiệu năng Vận hành & Tốc độ Suy luận (Throughput)")
+                gr.HTML(SPEED_METRICS_HTML)
+                gr.Plot(value=make_speed_chart())
+
+                gr.Markdown("---")
+                gr.HTML(RECOMMENDATIONS_HTML)
+
+                gr.Markdown("---")
                 gr.Markdown(
                     """
                     ### 💡 Phân tích Kết quả
@@ -1484,25 +2094,52 @@ def build_app():
                         gr.Plot(value=make_per_class_chart("sentiment"))
                         gr.Markdown("**Nhận xét:** Gemma vượt trội ở cả 3 lớp Sentiment, F1 *Tích cực* cao nhất 0.7027.")
 
+                gr.Markdown("---")
+                gr.Markdown("## 🔍 Bộ máy tính chỉ số thực nghiệm (Interactive Metric Calculator)")
+                with gr.Row():
+                    with gr.Column(scale=1):
+                        calc_class_choice = gr.Dropdown(
+                            choices=list(METRICS_DB.keys()),
+                            value="Tin giả (Misinfo = Tin giả)",
+                            label="Lựa chọn nhãn lớp cụ thể để tính toán chỉ số:",
+                        )
+                        calc_metrics_area = gr.HTML(value=update_calculator("Tin giả (Misinfo = Tin giả)")[0])
+                    with gr.Column(scale=1):
+                        with gr.Row():
+                            calc_p_area = gr.Markdown(value=update_calculator("Tin giả (Misinfo = Tin giả)")[1])
+                            calc_r_area = gr.Markdown(value=update_calculator("Tin giả (Misinfo = Tin giả)")[2])
+                            calc_f1_area = gr.Markdown(value=update_calculator("Tin giả (Misinfo = Tin giả)")[3])
+                
+                calc_class_choice.change(
+                    fn=update_calculator,
+                    inputs=[calc_class_choice],
+                    outputs=[calc_metrics_area, calc_p_area, calc_r_area, calc_f1_area],
+                    api_name=False
+                )
+
+                gr.Markdown("---")
+                gr.Markdown("## 📊 Phân cấp nhãn Gold Test Set (Sunburst)")
+                gr.Plot(value=make_sunburst_chart())
+
             # ================================================================
             # TAB 4: TÀI LIỆU
             # ================================================================
             with gr.Tab("📚 TÀI LIỆU & NOTEBOOKS"):
-                gr.Markdown(RESOURCES_MD)
+                gr.HTML(RESOURCES_HTML)
 
             # ================================================================
             # TAB 5: PHƯƠNG PHÁP LUẬN
             # ================================================================
             with gr.Tab("📜 PHƯƠNG PHÁP LUẬN"):
-                gr.Markdown(METHODOLOGY_MD)
+                gr.HTML(METHODOLOGY_HTML)
 
             # ================================================================
             # TAB 6: ĐỀ CƯƠNG
             # ================================================================
             with gr.Tab("📑 ĐỀ CƯƠNG"):
-                gr.Markdown(THESIS_MD)
+                gr.HTML(THESIS_HTML)
 
-        gr.HTML(FOOTER_HTML)
+        gr.HTML(get_footer_html())
 
     return app
 
