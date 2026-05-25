@@ -910,6 +910,7 @@ def fetch_url_as_list(url: str, max_comments: int = 30) -> Tuple[List[str], str]
     else: # Apify (Facebook, TikTok, Threads)
         if not APIFY_TOKENS:
             return [], "❌ APIFY_TOKEN chưa được setup trong HF Spaces Secrets"
+        last_err = ""
         try:
             from apify_client import ApifyClient
             for token in APIFY_TOKENS:
@@ -933,16 +934,29 @@ def fetch_url_as_list(url: str, max_comments: int = 30) -> Tuple[List[str], str]
                     
                     if items:
                         for item in items[:max_comments]:
-                            txt = item.get("text", "") or item.get("caption", "") or item.get("comment", "") or item.get("fullText", "")
+                            # Capture a wide variety of text fields from different actors
+                            txt = (
+                                item.get("text", "") or 
+                                item.get("message", "") or 
+                                item.get("caption", "") or 
+                                item.get("comment", "") or 
+                                item.get("fullText", "") or 
+                                item.get("description", "") or 
+                                item.get("messageText", "") or
+                                item.get("title", "")
+                            )
                             if txt and txt.strip():
                                 texts.append(txt.strip())
-                        info = "📱 Mạng xã hội (Apify Scraper - Tier 3, ~60s)"
-                        break
+                        if texts:
+                            info = "📱 Mạng xã hội (Apify Scraper - Tier 3, ~60s)"
+                            break
                 except Exception as ex:
+                    last_err = str(ex)
                     logger.warning(f"Apify token failed: {ex}")
                     continue
             if not texts:
-                return [], "❌ Không thu thập được bài viết/bình luận nào từ Apify"
+                err_detail = f" (Chi tiết lỗi: {last_err})" if last_err else ""
+                return [], f"❌ Không thu thập được bài viết/bình luận nào từ Apify{err_detail}"
         except Exception as e:
             return [], f"❌ Apify error: {e}"
 
