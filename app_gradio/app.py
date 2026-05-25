@@ -912,28 +912,96 @@ def fetch_apify(url: str) -> str:
         return f"❌ Apify error: {e}"
 
 
-def fetch_url(url: str, max_comments: int = 30) -> Tuple[str, str]:
-    """Main fetcher dispatcher."""
+def fetch_url_as_list(url: str, max_comments: int = 30) -> Tuple[List[str], str]:
+    """Fetch content from URL and return as a list of individual text segments (posts/comments) along with source info."""
     if not url or not url.strip():
-        return "", "Vui lòng nhập URL"
+        return [], "❌ Vui lòng nhập URL"
     url = url.strip()
     if not url.startswith(("http://", "https://")):
-        return "", "❌ URL không hợp lệ"
+        return [], "❌ URL không hợp lệ"
 
     kind = detect_source(url)
+    texts = []
+    info = ""
+
     if kind == "news":
         content = fetch_news(url)
-        info = "📰 Báo điện tử (Tier 1, ~2s)"
-    elif kind == "youtube":
-        content = fetch_youtube(url, max_comments)
-        info = "🎬 YouTube (Tier 2, ~10s)"
-    else:
-        content = fetch_apify(url)
-        info = "📱 Mạng xã hội (Tier 3, ~60s)"
+        if content and not content.startswith("❌"):
+            texts = [content]
+            info = "📰 Báo điện tử (Tier 1, ~2s)"
+        else:
+            return [], content
 
-    if content.startswith("❌"):
-        return "", content
-    return content, f"**Nguồn:** {info}"
+    elif kind == "youtube":
+        try:
+            import yt_dlp
+            opts = {"quiet": True, "skip_download": True, "getcomments": True}
+            with yt_dlp.YoutubeDL(opts) as ydl:
+                info_dict = ydl.extract_info(url, download=False)
+                title = info_dict.get("title", "")
+                desc = info_dict.get("description", "") or ""
+                comments = info_dict.get("comments") or []
+                
+                if title:
+                    texts.append(f"[TIÊU ĐỀ VIDEO] {title}")
+                if desc.strip():
+                    texts.append(f"[MÔ TẢ VIDEO] {desc.strip()[:500]}")
+                for c in comments[:max_comments]:
+                    c_text = c.get("text", "").strip()
+                    if c_text:
+                        texts.append(c_text)
+                info = "🎬 YouTube (Tier 2, ~10s)"
+        except Exception as e:
+            return [], f"❌ YouTube fetch error: {e}"
+
+    else: # Apify (Facebook, TikTok, Threads)
+        if not APIFY_TOKENS:
+            return [], "❌ APIFY_TOKEN chưa được setup trong HF Spaces Secrets"
+        try:
+            from apify_client import ApifyClient
+            for token in APIFY_TOKENS:
+                try:
+                    client = ApifyClient(token)
+                    client.user().get()
+                    if "facebook.com" in url.lower():
+                        actor_id = "apify/facebook-posts-scraper"
+                        run_input = {"startUrls": [{"url": url}]}
+                    elif "tiktok.com" in url.lower():
+                        actor_id = "clockworks/tiktok-scraper"
+                        run_input = {"startUrls": [{"url": url}]}
+                    elif "threads.net" in url.lower():
+                        actor_id = "igview-owner/threads-search-scraper"
+                        run_input = {"startUrls": [{"url": url}]}
+                    else:
+                        return [], "❌ URL không được hỗ trợ"
+                    
+                    run = client.actor(actor_id).call(run_input=run_input)
+                    items = list(client.dataset(run["defaultDatasetId"]).iterate_items())
+                    
+                    if items:
+                        for item in items[:max_comments]:
+                            txt = item.get("text", "") or item.get("caption", "") or item.get("comment", "") or item.get("fullText", "")
+                            if txt and txt.strip():
+                                texts.append(txt.strip())
+                        info = "📱 Mạng xã hội (Apify Scraper - Tier 3, ~60s)"
+                        break
+                except Exception as ex:
+                    logger.warning(f"Apify token failed: {ex}")
+                    continue
+            if not texts:
+                return [], "❌ Không thu thập được bài viết/bình luận nào từ Apify"
+        except Exception as e:
+            return [], f"❌ Apify error: {e}"
+
+    return texts, info
+
+
+def fetch_url(url: str, max_comments: int = 30) -> Tuple[str, str]:
+    """Main fetcher dispatcher."""
+    texts, info = fetch_url_as_list(url, max_comments)
+    if not texts:
+        return "", info
+    return "\n\n".join(texts), f"**Nguồn:** {info}"
 
 
 # ============================================================================
@@ -1432,6 +1500,43 @@ def handle_fetch(url: str, max_comments: int) -> Tuple[str, str]:
     """Multi-source URL fetcher."""
     content, info = fetch_url(url, max_comments)
     return content, info
+
+
+def handle_fetch_url(url: str, max_comments: int) -> Tuple[str, gr.update, gr.update, gr.update, str]:
+    """Unified handler for fetching URL content as a list of segments."""
+    texts, info = fetch_url_as_list(url, max_comments)
+    if not texts:
+        error_msg = info if info.startswith("❌") else f"❌ Lỗi: {info}"
+        return (
+            "", 
+            gr.update(visible=False), 
+            gr.update(visible=False), 
+            gr.update(value=f"<p style='color:#ff4b4b;'>{error_msg}</p>"), 
+            ""
+        )
+    
+    rows = [[i + 1, t] for i, t in enumerate(texts)]
+    df = pd.DataFrame(rows, columns=["STT", "Nội dung thu thập được"])
+    batch_text_str = "\n".join(texts)
+    preview_text = texts[0] if texts else ""
+    status_html = f"<p style='color:#3db882; font-weight:bold;'>✅ Thu thập thành công {len(texts)} bài viết/bình luận từ {info}!</p>"
+    
+    return (
+        preview_text,
+        gr.update(value=df, visible=True),
+        gr.update(visible=True),
+        gr.update(value=status_html),
+        batch_text_str
+    )
+
+
+def handle_send_to_batch(batch_text_str: str) -> Tuple[str, gr.update]:
+    """Send fetched texts to batch textbox and open accordion."""
+    try:
+        gr.Info("🚀 Đã sao chép toàn bộ bài viết/comments vào ô Phân tích Batch! Vui lòng cuộn xuống dưới để thực hiện phân tích hàng loạt.")
+    except:
+        pass
+    return batch_text_str, gr.update(open=True)
 
 
 def handle_batch(text: str, model_choice: str, progress=gr.Progress()) -> str:
@@ -2069,6 +2174,7 @@ def build_app():
 
         session_state = gr.State([])
         report_state = gr.State("")
+        fetched_raw_state = gr.State("")
 
         with gr.Tabs():
             # ================================================================
@@ -2106,7 +2212,15 @@ def build_app():
                             )
                             max_cmt = gr.Slider(10, 100, value=30, step=10, label="Max comments")
                             fetch_btn = gr.Button("📥 Thu thập")
-                            fetch_status = gr.Markdown()
+                            fetch_status = gr.HTML(value="")
+                            fetched_table = gr.Dataframe(
+                                headers=["STT", "Nội dung thu thập được"],
+                                datatype=["str", "str"],
+                                wrap=True,
+                                visible=False,
+                                label="📋 Bảng danh sách bài viết / comments đã cào"
+                            )
+                            send_to_batch_btn = gr.Button("🚀 Gửi toàn bộ dữ liệu này sang Phân tích Batch", variant="secondary", visible=False)
 
                     with gr.Column(scale=1):
                         gr.Markdown("### 📊 Kết quả phân loại")
@@ -2172,14 +2286,14 @@ def build_app():
 
                 # URL fetch
                 fetch_btn.click(
-                    fn=handle_fetch,
+                    fn=handle_fetch_url,
                     inputs=[url_input, max_cmt],
-                    outputs=[text_input, fetch_status],
+                    outputs=[text_input, fetched_table, send_to_batch_btn, fetch_status, fetched_raw_state],
                     api_name=False
                 )
 
                 # Batch + Compare accordions
-                with gr.Accordion("📋 Batch Mode (phân tích nhiều mẫu cùng lúc)", open=False):
+                with gr.Accordion("📋 Batch Mode (phân tích nhiều mẫu cùng lúc)", open=False) as batch_accordion:
                     batch_input = gr.Textbox(
                         label="Mỗi dòng = 1 mẫu (tối đa 50)",
                         placeholder="Mẫu 1: Vaccine COVID gây vô sinh...\nMẫu 2: Tiêm phòng rất tốt...",
@@ -2188,6 +2302,14 @@ def build_app():
                     batch_btn = gr.Button("🚀 Phân tích Batch")
                     batch_out = gr.Markdown()
                     batch_btn.click(fn=handle_batch, inputs=[batch_input, model_choice], outputs=[batch_out], api_name=False)
+
+                # Send to batch click
+                send_to_batch_btn.click(
+                    fn=handle_send_to_batch,
+                    inputs=[fetched_raw_state],
+                    outputs=[batch_input, batch_accordion],
+                    api_name=False
+                )
 
                 with gr.Accordion("🔬 So sánh PhoBERT-v2 vs XLM-R-v1", open=False):
                     cmp_input = gr.Textbox(label="Văn bản", lines=4)
