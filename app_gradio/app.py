@@ -956,6 +956,41 @@ def fetch_apify(url: str) -> str:
         return f"❌ Apify error: {e}"
 
 
+def _is_valid_comment(txt: str) -> bool:
+    """Màng lọc thông minh đầu vào cho comments/posts mạng xã hội."""
+    if not txt:
+        return False
+    txt_strip = txt.strip()
+    
+    # 1. Lọc theo độ dài (loại bỏ "chấm", "hóng", "inbox", icon đơn lẻ)
+    if len(txt_strip) < 15 or len(txt_strip.split()) < 4:
+        return False
+        
+    # 2. Lọc spam bán hàng, tuyển dụng, quảng cáo (từ khóa rác)
+    spam_keywords = [
+        "inbox", "ib shop", "giá bao nhiêu", "mua ở đâu", "ship", "freeship", 
+        "liên hệ zalo", "sđt", "tuyển dụng", "tuyển ctv", "sỉ lẻ", "giá rẻ", 
+        "thanh lý", "chốt đơn", "nhận hàng", "uy tín", "đặt hàng", "zalo sđt",
+        "cam kết", "hiệu quả", "giá sỉ", "giá lẻ", "chuyên sỉ", "tuyển đại lý"
+    ]
+    txt_lower = txt_strip.lower()
+    if any(kw in txt_lower for kw in spam_keywords):
+        return False
+        
+    # 3. Lọc OOD (thú y, showbiz, không liên quan đến vaccine)
+    try:
+        from src.preprocessing.text_cleaner_v2 import is_human_vaccine_context
+        if not is_human_vaccine_context(txt_strip):
+            return False
+    except Exception:
+        # Fallback keyword filter if text_cleaner_v2 is unavailable
+        core_kws = ["vaccine", "vắc xin", "tiêm", "mũi", "bác sĩ", "bệnh", "y tế", "thuốc", "phòng dịch", "dịch bệnh", "cúm", "sởi", "hpv"]
+        if not any(kw in txt_lower for kw in core_kws):
+            return False
+            
+    return True
+
+
 def fetch_url_as_list(url: str, max_comments: int = 30) -> Tuple[List[str], str]:
     """Fetch content from URL and return as a list of individual text segments (posts/comments) along with source info."""
     if not url or not url.strip():
@@ -990,10 +1025,12 @@ def fetch_url_as_list(url: str, max_comments: int = 30) -> Tuple[List[str], str]
                     texts.append(f"[TIÊU ĐỀ VIDEO] {title}")
                 if desc.strip():
                     texts.append(f"[MÔ TẢ VIDEO] {desc.strip()[:500]}")
-                for c in comments[:max_comments]:
+                for c in comments:
                     c_text = c.get("text", "").strip()
-                    if c_text:
+                    if c_text and _is_valid_comment(c_text):
                         texts.append(c_text)
+                    if len(texts) >= max_comments + 2:  # +2 cho tiêu đề & mô tả
+                        break
                 info = "🎬 YouTube (Tier 2, ~10s)"
         except Exception as e:
             logger.warning(f"yt_dlp failed, trying Apify fallback: {e}")
@@ -1070,7 +1107,7 @@ def fetch_url_as_list(url: str, max_comments: int = 30) -> Tuple[List[str], str]
                     items = list(client.dataset(run["defaultDatasetId"]).iterate_items())
                     
                     if items:
-                        for item in items[:max_comments]:
+                        for item in items:
                             # Capture a wide variety of text fields from different actors
                             txt = (
                                 item.get("text", "") or 
@@ -1085,7 +1122,11 @@ def fetch_url_as_list(url: str, max_comments: int = 30) -> Tuple[List[str], str]
                                 item.get("body", "")
                             )
                             if txt and txt.strip():
-                                texts.append(txt.strip())
+                                clean_txt = txt.strip()
+                                if _is_valid_comment(clean_txt):
+                                    texts.append(clean_txt)
+                            if len(texts) >= apify_max_cmt:
+                                break
                         if texts:
                             info = source_display
                             break
