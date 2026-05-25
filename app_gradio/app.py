@@ -126,8 +126,34 @@ LABEL_COLORS = {
 }
 
 HF_TOKEN = os.environ.get("HF_TOKEN", "") or os.environ.get("VaccineNLP_TOKEN", "")
-APIFY_TOKENS = [os.environ.get(f"APIFY_TOKEN_{i}", "") for i in range(1, 6)]
-APIFY_TOKENS = [t for t in APIFY_TOKENS if t]
+
+# Load .env file if available (local development helper)
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
+# Robust Apify tokens collection supporting different naming conventions
+APIFY_TOKENS = []
+possible_apify_keys = [
+    "APIFY_TOKEN",
+    "APIFY_API_TOKEN",
+    "APIFY_TOKEN_1",
+    "APIFY_API_TOKEN_1",
+    "APIFY_TOKEN_2",
+    "APIFY_API_TOKEN_2",
+    "APIFY_TOKEN_3",
+    "APIFY_API_TOKEN_3",
+    "APIFY_TOKEN_4",
+    "APIFY_API_TOKEN_4",
+    "APIFY_TOKEN_5",
+    "APIFY_API_TOKEN_5",
+]
+for k in possible_apify_keys:
+    val = os.environ.get(k, "").strip()
+    if val and val not in APIFY_TOKENS:
+        APIFY_TOKENS.append(val)
 
 # Path B: External Gemma endpoint (Kaggle+ngrok)
 GEMMA_ENDPOINT_URL = os.environ.get("GEMMA_ENDPOINT_URL", "").strip() or "https://pearle-staglike-nonsyntonically.ngrok-free.dev/predict"
