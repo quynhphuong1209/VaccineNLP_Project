@@ -3238,14 +3238,6 @@ def build_app():
                             api_name=False
                         )
 
-                        # Send to batch click
-                        send_to_batch_btn.click(
-                            fn=handle_send_to_batch,
-                            inputs=[fetched_raw_state],
-                            outputs=[batch_input, batch_accordion],
-                            api_name=False
-                        )
-
                         # Batch + Compare accordions
                         with gr.Accordion("📋 Batch Mode (phân tích nhiều mẫu cùng lúc)", open=False) as batch_accordion:
                             batch_input = gr.Textbox(
@@ -3256,6 +3248,14 @@ def build_app():
                             batch_btn = gr.Button("🚀 Phân tích Batch")
                             batch_out = gr.Markdown()
                             batch_btn.click(fn=handle_batch, inputs=[batch_input, model_choice], outputs=[batch_out], api_name=False)
+
+                        # Send to batch click
+                        send_to_batch_btn.click(
+                            fn=handle_send_to_batch,
+                            inputs=[fetched_raw_state],
+                            outputs=[batch_input, batch_accordion],
+                            api_name=False
+                        )
 
                         with gr.Accordion("🔬 So sánh PhoBERT-v2 vs XLM-R-v1", open=False):
                             cmp_input = gr.Textbox(label="Văn bản", lines=4)
