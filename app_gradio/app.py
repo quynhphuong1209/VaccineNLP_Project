@@ -742,24 +742,24 @@ def render_saliency_html(tokens: List[str], attr_norm: List[float], pred_class: 
     if not tokens:
         return "<p><em>⚠️ Captum IG đã bị tắt hoặc lỗi load model</em></p>"
 
-    html = '<div style="line-height:1.9; padding:20px; border-radius:15px; background:#f8f9fa; border:1px dashed rgba(100,255,218,0.4); font-family:Times New Roman, serif;">'
+    html = '<div style="line-height:1.9; padding:20px; border-radius:15px; background:var(--custom-card-bg); border:1px dashed var(--custom-card-border); font-family:Times New Roman, serif;">'
     for tok, score in zip(tokens, attr_norm):
         if tok in ["<s>", "</s>", "<pad>", "[CLS]", "[SEP]", "<unk>"]:
             continue
         tok_clean = tok.replace("▁", " ").replace("@@", "").replace("Ġ", " ")
         abs_score = abs(score)
         if abs_score < 0.15:
-            html += f'<span style="color:#666; opacity:0.55;">{tok_clean}</span> '
+            html += f'<span style="color: var(--custom-text-muted); opacity:0.65;">{tok_clean}</span> '
         else:
             intensity = min(abs_score, 0.7)
             if pred_class == 0:
                 bg = f"rgba(255,75,75,{intensity})"
             else:
-                bg = f"rgba(100,255,218,{intensity})"
+                bg = f"rgba(var(--saliency-pos-color),{intensity})"
             html += f'<span style="background:{bg}; padding:2px 6px; border-radius:4px; font-weight:bold;">{tok_clean}</span> '
     html += "</div>"
     label = LABEL_MAPS["misinfo"].get(pred_class, "?")
-    html += f'<p style="font-size:11px; color:#888; margin-top:10px;">💡 Dự đoán: <b>{label}</b> · Token có màu đậm hơn = đóng góp lớn hơn vào quyết định model</p>'
+    html += f'<p style="font-size:11px; color: var(--custom-text-muted); margin-top:10px;">💡 Dự đoán: <b>{label}</b> · Token có màu đậm hơn = đóng góp lớn hơn vào quyết định model</p>'
     return html
 
 
@@ -767,26 +767,117 @@ def render_saliency_html(tokens: List[str], attr_norm: List[float], pred_class: 
 # AI VOICE (gTTS) - Thread-safe with unique temp file
 # ============================================================================
 
-def text_to_speech(text: str) -> Optional[str]:
-    """Generate audio with unique filename to avoid race condition."""
+def text_to_speech(text: str) -> str:
+    """Generate audio via gTTS, encode to base64, and return HTML player button."""
     if not text:
-        return None
+        return ""
     try:
         from gtts import gTTS
-        # Hash text để tạo unique filename
-        text_hash = hashlib.md5(text.encode("utf-8")).hexdigest()[:12]
-        # Dùng tempfile để đảm bảo writable + unique
-        tmp_file = tempfile.NamedTemporaryFile(
-            prefix=f"tts_{text_hash}_", suffix=".mp3", delete=False, dir="/tmp"
-        )
-        tmp_file.close()
+        import base64
+        from io import BytesIO
         
+        # Tạo âm thanh từ Google TTS
         tts = gTTS(text=text[:500], lang="vi")
-        tts.save(tmp_file.name)
-        return tmp_file.name
+        fp = BytesIO()
+        tts.write_to_fp(fp)
+        fp.seek(0)
+        
+        # Mã hóa sang Base64 để nhúng trực tiếp vào HTML
+        audio_b64 = base64.b64encode(fp.read()).decode()
+        
+        return f"""
+        <div style="margin-top: 15px; margin-bottom: 10px;">
+            <audio src="data:audio/mp3;base64,{audio_b64}"></audio>
+            <button class="tts-speak-btn" style="
+                background: linear-gradient(135deg, #00c853 0%, #b2ff59 100%);
+                color: #0a192f;
+                border: none;
+                padding: 12px 24px;
+                border-radius: 30px;
+                font-weight: bold;
+                cursor: pointer;
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                box-shadow: 0 4px 15px rgba(0, 200, 83, 0.3);
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                font-family: 'Times New Roman', serif;
+                font-size: 1rem;
+            " onclick="togglePlay(this)">
+                <span style="font-size: 1.2rem;">🔊</span> Nghe AI Giải Thích
+            </button>
+        </div>
+        <style>
+            .tts-speak-btn:hover {{
+                transform: translateY(-2px);
+                box-shadow: 0 6px 20px rgba(0, 200, 83, 0.4);
+                filter: brightness(1.05);
+            }}
+            .tts-speak-btn:active {{
+                transform: translateY(1px);
+                box-shadow: 0 2px 10px rgba(0, 200, 83, 0.2);
+            }}
+            @keyframes tts-pulse {{
+                0% {{ transform: scale(1); opacity: 0.9; }}
+                100% {{ transform: scale(1.15); opacity: 1; }}
+            }}
+            .tts-playing-icon {{
+                display: inline-block;
+                animation: tts-pulse 0.6s infinite alternate ease-in-out;
+            }}
+        </style>
+        <script>
+            if (typeof window.togglePlay !== 'function') {{
+                window.togglePlay = function(btn) {{
+                    const audio = btn.previousElementSibling;
+                    if (!audio) return;
+                    
+                    if (audio.paused) {{
+                        // Dừng tất cả audio khác nếu có
+                        document.querySelectorAll('audio').forEach(a => {{
+                            if (a !== audio) {{
+                                a.pause();
+                                a.currentTime = 0;
+                                const otherBtn = a.nextElementSibling;
+                                if (otherBtn && otherBtn.classList.contains('tts-speak-btn')) {{
+                                    otherBtn.innerHTML = '<span style="font-size: 1.2rem;">🔊</span> Nghe AI Giải Thích';
+                                    otherBtn.style.background = 'linear-gradient(135deg, #00c853 0%, #b2ff59 100%)';
+                                    otherBtn.style.boxShadow = '0 4px 15px rgba(0, 200, 83, 0.3)';
+                                    otherBtn.style.color = '#0a192f';
+                                }}
+                            }}
+                        }});
+                        
+                        audio.play().then(() => {{
+                            btn.innerHTML = '<span class="tts-playing-icon" style="font-size: 1.2rem;">⏹️</span> Đang đọc giải thích...';
+                            btn.style.background = 'linear-gradient(135deg, #ff4b4b 0%, #ff8f8f 100%)';
+                            btn.style.boxShadow = '0 4px 15px rgba(255, 75, 75, 0.3)';
+                            btn.style.color = '#ffffff';
+                        }}).catch(err => {{
+                            console.error("Lỗi phát audio:", err);
+                        }});
+                    }} else {{
+                        audio.pause();
+                        audio.currentTime = 0;
+                        btn.innerHTML = '<span style="font-size: 1.2rem;">🔊</span> Nghe AI Giải Thích';
+                        btn.style.background = 'linear-gradient(135deg, #00c853 0%, #b2ff59 100%)';
+                        btn.style.boxShadow = '0 4px 15px rgba(0, 200, 83, 0.3)';
+                        btn.style.color = '#0a192f';
+                    }}
+                    
+                    audio.onended = () => {{
+                        btn.innerHTML = '<span style="font-size: 1.2rem;">🔊</span> Nghe Lại';
+                        btn.style.background = 'linear-gradient(135deg, #00c853 0%, #b2ff59 100%)';
+                        btn.style.boxShadow = '0 4px 15px rgba(0, 200, 83, 0.3)';
+                        btn.style.color = '#0a192f';
+                    }};
+                }};
+            }}
+        </script>
+        """
     except Exception as e:
         logger.warning(f"gTTS failed: {e}")
-        return None
+        return ""
 
 
 # ============================================================================
@@ -1056,7 +1147,7 @@ def make_benchmark_chart() -> go.Figure:
     fig.update_layout(
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
-        barmode="group", width=1400, height=500,
+        barmode="group", height=500,
         yaxis=dict(title="Macro F1", range=[0, 1]),
         legend=dict(orientation="h", yanchor="bottom", y=1.02),
     )
@@ -1080,7 +1171,7 @@ def make_confusion_matrix_chart() -> go.Figure:
     fig.update_layout(
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
-        width=1400, height=500, margin=dict(l=20, r=20, t=50, b=20)
+        height=500, margin=dict(l=20, r=20, t=50, b=20)
     )
     return fig
 
@@ -1118,7 +1209,7 @@ def make_per_class_chart(task: str = "misinfo") -> go.Figure:
     fig.update_layout(
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
-        barmode="group", width=1400, height=480,
+        barmode="group", height=480,
         yaxis=dict(title="F1 Score", range=[0, 1.05]),
         legend=dict(orientation="h", yanchor="bottom", y=1.02),
         title=f"Per-class F1 — {task.upper()}"
@@ -1141,7 +1232,7 @@ def make_sankey_chart() -> go.Figure:
     fig.update_layout(
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
-        width=1400, height=500, margin=dict(l=15, r=15, t=15, b=15)
+        height=500, margin=dict(l=15, r=15, t=15, b=15)
     )
     return fig
 
@@ -1290,7 +1381,7 @@ def make_speed_chart() -> go.Figure:
         plot_bgcolor='rgba(0,0,0,0)',
         font=dict(family='Times New Roman', color='#ccd6f6', size=13),
         yaxis=dict(title='Số mẫu xử lý/giây', range=[0, 140]),
-        width=1400, height=420,
+        height=420,
         margin=dict(l=20, r=20, t=30, b=20),
     )
     return fig
@@ -1310,7 +1401,7 @@ def make_sunburst_chart() -> go.Figure:
     fig_sun.update_layout(
         margin=dict(l=10, r=10, t=10, b=10),
         paper_bgcolor='rgba(0,0,0,0)',
-        width=1400, height=480
+        height=480
     )
     return fig_sun
 
@@ -1357,24 +1448,24 @@ def update_calculator(selected_class: str):
     
     metrics_html = f"""
     <div style="display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px; font-family: 'Times New Roman', serif;">
-        <div style="flex: 1; min-width: 130px; border: 1px solid #64ffda; border-radius: 8px; padding: 10px; text-align: center; background: rgba(100,255,218,0.03);">
-            <p style="margin: 0; font-size: 0.85rem; color: #8892b0;">Support (Tổng mẫu)</p>
-            <h3 style="margin: 5px 0; color: #64ffda; font-size: 1.5rem;">{support}</h3>
+        <div style="flex: 1; min-width: 130px; border: 1px solid var(--custom-card-border); border-radius: 8px; padding: 10px; text-align: center; background: var(--custom-card-bg);">
+            <p style="margin: 0; font-size: 0.85rem; color: var(--custom-text-muted);">Support (Tổng mẫu)</p>
+            <h3 style="margin: 5px 0; color: var(--custom-text-neon); font-size: 1.5rem;">{support}</h3>
         </div>
         <div style="flex: 1; min-width: 130px; border: 1px solid #3db882; border-radius: 8px; padding: 10px; text-align: center; background: rgba(61,184,130,0.03);">
-            <p style="margin: 0; font-size: 0.85rem; color: #8892b0;">True Positives (TP)</p>
+            <p style="margin: 0; font-size: 0.85rem; color: var(--custom-text-muted);">True Positives (TP)</p>
             <h3 style="margin: 5px 0; color: #3db882; font-size: 1.5rem;">{tp}</h3>
         </div>
         <div style="flex: 1; min-width: 130px; border: 1px solid #ff4b4b; border-radius: 8px; padding: 10px; text-align: center; background: rgba(255,75,75,0.03);">
-            <p style="margin: 0; font-size: 0.85rem; color: #8892b0;">False Positives (FP)</p>
+            <p style="margin: 0; font-size: 0.85rem; color: var(--custom-text-muted);">False Positives (FP)</p>
             <h3 style="margin: 5px 0; color: #ff4b4b; font-size: 1.5rem;">{fp}</h3>
         </div>
         <div style="flex: 1; min-width: 130px; border: 1px solid #FFA500; border-radius: 8px; padding: 10px; text-align: center; background: rgba(255,165,0,0.03);">
-            <p style="margin: 0; font-size: 0.85rem; color: #8892b0;">False Negatives (FN)</p>
+            <p style="margin: 0; font-size: 0.85rem; color: var(--custom-text-muted);">False Negatives (FN)</p>
             <h3 style="margin: 5px 0; color: #FFA500; font-size: 1.5rem;">{fn}</h3>
         </div>
     </div>
-    <div style="font-style: italic; color: #ccd6f6; font-size: 0.95rem; margin-bottom: 20px;">
+    <div style="font-style: italic; color: var(--custom-text-normal); font-size: 0.95rem; margin-bottom: 20px;">
         📌 <b>Định nghĩa nhãn</b>: {desc}
     </div>
     """
@@ -1411,7 +1502,7 @@ def handle_analyze(
     """Main analysis handler with progress indicator."""
     if not text or not text.strip():
         error_html = '<div style="color: #ff4b4b; font-weight: bold; font-size: 1.1rem; padding: 15px; border: 1px solid #ff4b4b; border-radius: 8px; background: rgba(255,75,75,0.1); font-family: \'Times New Roman\', serif;">⚠️ Vui lòng nhập văn bản hoặc chọn mẫu thử!</div>'
-        return (error_html, None, "", "", None, history, 
+        return (error_html, None, "", "", "", history, 
                 session_history_to_markdown(history), "")
 
     progress(0.1, desc="🔬 Đang tải mô hình...")
@@ -1421,7 +1512,7 @@ def handle_analyze(
     result = predict(text, model_choice)
     if not result:
         error_html = f'<div style="color: #ff4b4b; font-weight: bold; font-size: 1.1rem; padding: 15px; border: 1px solid #ff4b4b; border-radius: 8px; background: rgba(255,75,75,0.1); font-family: \'Times New Roman\', serif;">❌ Không thể load mô hình {model_choice} — kiểm tra HF_TOKEN</div>'
-        return (error_html, None, "", "", None, history,
+        return (error_html, None, "", "", "", history,
                 session_history_to_markdown(history), "")
     
     progress(0.5, desc="📊 Đang tính radar chart...")
@@ -1440,7 +1531,7 @@ def handle_analyze(
 
     progress(0.9, desc="🔊 Đang tạo AI Voice...")
     voice_text = reasoning if reasoning and not reasoning.startswith("⚠️") else ""
-    audio_path = text_to_speech(voice_text) if voice_text else None
+    audio_html = text_to_speech(voice_text) if voice_text else ""
 
     elapsed = time.time() - start
 
@@ -1462,7 +1553,7 @@ def handle_analyze(
     history_md = session_history_to_markdown(history)
 
     progress(1.0, desc="✅ Hoàn tất!")
-    return (summary_html, radar, reasoning_md, saliency_html, audio_path, history, history_md, report_md)
+    return (summary_html, radar, reasoning_md, saliency_html, audio_html, history, history_md, report_md)
 
 
 def build_report_markdown(text: str, model: str, result: Dict, reasoning: str, elapsed: float) -> str:
@@ -1743,6 +1834,20 @@ CSS_STYLE = """
     --card-text-secondary: #334155;
     --progress-bar-bg: rgba(226, 232, 240, 0.8);
     --dropdown-bg: #ffffff;
+    
+    /* Custom utility variables for light theme */
+    --custom-card-bg: #ffffff;
+    --custom-card-border: #2563eb;
+    --custom-text-neon: #1d4ed8;       /* dark blue */
+    --custom-text-muted: #475569;      /* dark slate */
+    --custom-text-normal: #0f172a;     /* black */
+    --saliency-pos-color: 37, 99, 235; /* RGB for dark blue */
+    
+    --custom-phobert-bg: #ffffff;
+    --custom-xlmr-bg: #ffffff;
+    --custom-gemma-bg: #ffffff;
+    --custom-phobert-border: #2563eb;
+    --custom-phobert-text: #1d4ed8;
 }
 
 :root.dark, body.dark, .dark {
@@ -1770,7 +1875,27 @@ CSS_STYLE = """
     --card-text-secondary: #a8b2d1;
     --progress-bar-bg: rgba(10, 25, 47, 0.6);
     --dropdown-bg: #0f172a;
+    
+    /* Custom utility variables for dark theme */
+    --custom-card-bg: rgba(10, 25, 47, 0.4);
+    --custom-card-border: rgba(100, 255, 218, 0.3);
+    --custom-text-neon: #64ffda;        /* neon green */
+    --custom-text-muted: #8892b0;       /* muted grey */
+    --custom-text-normal: #ccd6f6;      /* light grey */
+    --saliency-pos-color: 100, 255, 218;/* RGB for neon green */
+    
+    --custom-phobert-bg: rgba(100, 255, 218, 0.05);
+    --custom-xlmr-bg: rgba(0, 123, 255, 0.05);
+    --custom-gemma-bg: rgba(255, 165, 0, 0.05);
+    --custom-phobert-border: #64ffda;
+    --custom-phobert-text: #64ffda;
 }
+
+.model-color-phobert { color: var(--custom-text-neon) !important; }
+.model-color-xlmr { color: #007bff !important; }
+.model-color-gemma { color: #FFA500 !important; }
+.dark .model-color-gemma { color: #FFA500 !important; }
+
 
 body, html {
     background-color: var(--bg-color) !important;
@@ -1784,6 +1909,8 @@ body, html {
 .gradio-container {
     max-width: 98% !important;
     width: 98% !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
     overflow: visible !important;
     /* NOTE: Do NOT add backdrop-filter here — it creates a containing block for position:fixed (dropdown lists) */
 }
@@ -1848,8 +1975,8 @@ body, html {
 
 /* Scrollbar styling */
 ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 12px;
+    height: 12px;
 }
 ::-webkit-scrollbar-track {
     background: rgba(10, 25, 47, 0.1);
@@ -1860,9 +1987,52 @@ body, html {
 ::-webkit-scrollbar-thumb {
     background: var(--accent-color);
     border-radius: 10px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
 }
 ::-webkit-scrollbar-thumb:hover {
     background: #4cd9b9;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+
+/* Global scrollbar buttons (up/down arrows) */
+::-webkit-scrollbar-button:vertical:start:decrement {
+    display: block !important;
+    height: 16px !important;
+    background-color: var(--input-bg) !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%232563eb'%3E%3Cpath d='M12 8l-6 6h12z'/%3E%3C/svg%3E") !important;
+    background-size: 10px 10px !important;
+    background-repeat: no-repeat !important;
+    background-position: center !important;
+    border: 1px solid var(--input-border) !important;
+    border-radius: 4px !important;
+}
+.dark ::-webkit-scrollbar-button:vertical:start:decrement {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2364ffda'%3E%3Cpath d='M12 8l-6 6h12z'/%3E%3C/svg%3E") !important;
+}
+::-webkit-scrollbar-button:vertical:start:decrement:hover {
+    background-color: var(--accent-bg) !important;
+    border-color: var(--accent-color) !important;
+}
+
+::-webkit-scrollbar-button:vertical:end:increment {
+    display: block !important;
+    height: 16px !important;
+    background-color: var(--input-bg) !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%232563eb'%3E%3Cpath d='M12 16l6-6H6z'/%3E%3C/svg%3E") !important;
+    background-size: 10px 10px !important;
+    background-repeat: no-repeat !important;
+    background-position: center !important;
+    border: 1px solid var(--input-border) !important;
+    border-radius: 4px !important;
+}
+.dark ::-webkit-scrollbar-button:vertical:end:increment {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2364ffda'%3E%3Cpath d='M12 16l6-6H6z'/%3E%3C/svg%3E") !important;
+}
+::-webkit-scrollbar-button:vertical:end:increment:hover {
+    background-color: var(--accent-bg) !important;
+    border-color: var(--accent-color) !important;
 }
 
 /* Tabs Navigation Styling */
@@ -1941,6 +2111,9 @@ body, html {
         font-size: 0.8rem !important;
         letter-spacing: 0.03em !important;
         border-radius: 6px !important;
+    }
+    .tab-scroll-btn {
+        top: 26px !important;
     }
 }
 
@@ -2100,6 +2273,8 @@ body:not(.dark) .theme-dark-btn {
 }
 
 #sidebar-col {
+    position: sticky !important;
+    top: 12px !important;
     background-color: var(--card-bg) !important;
     border-right: 1px solid var(--input-border) !important;
     padding: 20px !important;
@@ -2107,6 +2282,7 @@ body:not(.dark) .theme-dark-btn {
     overflow-y: auto !important;
     overflow-x: hidden !important;
     height: calc(100vh - 24px) !important;
+    max-height: calc(100vh - 24px) !important;
     box-sizing: border-box !important;
     width: 290px !important;
     min-width: 290px !important;
@@ -2117,22 +2293,23 @@ body:not(.dark) .theme-dark-btn {
 }
 
 #sidebar-col::-webkit-scrollbar {
-    width: 10px !important;
+    width: 12px !important;
+    display: block !important;
 }
 
 #sidebar-col::-webkit-scrollbar-track {
-    background: rgba(255,255,255,0.03) !important;
-    border-radius: 8px !important;
+    background: var(--input-bg) !important;
+    border-left: 1px solid var(--input-border) !important;
 }
 
 #sidebar-col::-webkit-scrollbar-thumb {
-    background-color: rgba(255,255,255,0.18) !important;
-    border-radius: 999px !important;
-    border: 2px solid rgba(0,0,0,0.0) !important;
+    background-color: var(--tab-button-text) !important;
+    border: 2px solid var(--input-bg) !important;
+    border-radius: 6px !important;
 }
 
 #sidebar-col::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(255,255,255,0.28) !important;
+    background-color: var(--accent-color) !important;
 }
 
 #main-layout-row {
@@ -2204,11 +2381,22 @@ body:not(.dark) .theme-dark-btn {
 }
 
 #sidebar-toggle-btn::before {
-    content: '<<';
+    content: "";
+    display: block;
+    width: 18px;
+    height: 18px;
+    background-color: var(--accent-color);
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='2.5' stroke='black'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M18.75 19.5l-7.5-7.5 7.5-7.5m-6 15L5.25 12l7.5-7.5'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='2.5' stroke='black'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M18.75 19.5l-7.5-7.5 7.5-7.5m-6 15L5.25 12l7.5-7.5'/%3E%3C/svg%3E");
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.25s ease;
 }
 
 #sidebar-toggle-btn.sidebar-is-collapsed::before {
-    content: '>>';
+    transform: rotate(180deg);
 }
 
 #sidebar-toggle-btn span {
@@ -2227,32 +2415,16 @@ body:not(.dark) .theme-dark-btn {
     left: 16px !important;
 }
 
-/* Sidebar scrolling */
-#sidebar-col {
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    height: calc(100vh - 16px) !important;
-}
-
-#sidebar-col::-webkit-scrollbar {
-    width: 10px !important;
-}
-
-#sidebar-col::-webkit-scrollbar-track {
-    background: rgba(255,255,255,0.06) !important;
-    border-radius: 999px !important;
-}
-
-#sidebar-col::-webkit-scrollbar-thumb {
-    background-color: rgba(255,255,255,0.2) !important;
-    border-radius: 999px !important;
-}
-
-#sidebar-col::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(255,255,255,0.35) !important;
-}
+/* Sidebar scrolling styles consolidated above */
 
 @media (max-width: 768px) {
+    .gradio-container {
+        max-width: 100% !important;
+        width: 100% !important;
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+        margin: 0 !important;
+    }
     #sidebar-col {
         position: fixed !important;
         top: 0 !important;
@@ -2278,16 +2450,18 @@ body:not(.dark) .theme-dark-btn {
     #sidebar-col.collapsed {
         transform: translateX(-290px) !important;
         opacity: 0 !important;
-        width: 290px !important;
-        min-width: 290px !important;
-        max-width: 290px !important;
-        padding: 20px !important;
+        width: 0px !important;
+        min-width: 0px !important;
+        max-width: 0px !important;
+        padding: 0px !important;
     }
 
     #content-col {
         width: 100% !important;
         max-width: 100% !important;
         padding-top: 60px !important;
+        padding-left: 8px !important;
+        padding-right: 8px !important;
     }
 
     #sidebar-col.collapsed ~ #content-col,
@@ -2307,6 +2481,7 @@ body:not(.dark) .theme-dark-btn {
 /* Custom Plotly adaptations for Dark/Light Mode */
 .js-plotly-plot {
     background-color: transparent !important;
+    width: 100% !important;
 }
 .js-plotly-plot .bg {
     fill: transparent !important;
@@ -2341,32 +2516,171 @@ body:not(.dark) .theme-dark-btn {
     fill: var(--text-color) !important;
     text-shadow: 0 1px 2px rgba(0,0,0,0.5) !important;
 }
+
+/* Sidebar scrollbar buttons (up/down arrows) */
+#sidebar-col::-webkit-scrollbar-button:vertical:start:decrement {
+    display: block !important;
+    height: 16px !important;
+    background-color: var(--input-bg) !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%232563eb'%3E%3Cpath d='M12 8l-6 6h12z'/%3E%3C/svg%3E") !important;
+    background-size: 10px 10px !important;
+    background-repeat: no-repeat !important;
+    background-position: center !important;
+    border: 1px solid var(--input-border) !important;
+    border-radius: 4px !important;
+}
+.dark #sidebar-col::-webkit-scrollbar-button:vertical:start:decrement {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2364ffda'%3E%3Cpath d='M12 8l-6 6h12z'/%3E%3C/svg%3E") !important;
+}
+#sidebar-col::-webkit-scrollbar-button:vertical:start:decrement:hover {
+    background-color: var(--accent-bg) !important;
+    border-color: var(--accent-color) !important;
+}
+
+#sidebar-col::-webkit-scrollbar-button:vertical:end:increment {
+    display: block !important;
+    height: 16px !important;
+    background-color: var(--input-bg) !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%232563eb'%3E%3Cpath d='M12 16l6-6H6z'/%3E%3C/svg%3E") !important;
+    background-size: 10px 10px !important;
+    background-repeat: no-repeat !important;
+    background-position: center !important;
+    border: 1px solid var(--input-border) !important;
+    border-radius: 4px !important;
+}
+.dark #sidebar-col::-webkit-scrollbar-button:vertical:end:increment {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2364ffda'%3E%3Cpath d='M12 16l6-6H6z'/%3E%3C/svg%3E") !important;
+}
+#sidebar-col::-webkit-scrollbar-button:vertical:end:increment:hover {
+    background-color: var(--accent-bg) !important;
+    border-color: var(--accent-color) !important;
+}
+
+/* Hide default Gradio footer and remove bottom spacing past custom footer */
+footer {
+    display: none !important;
+}
+
+.gradio-container {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+}
+
+/* Tab Scroll Buttons styling */
+.tabs {
+    position: relative !important;
+}
+.tab-scroll-btn {
+    position: absolute !important;
+    top: 32px !important;
+    transform: translateY(-50%) !important;
+    width: 32px !important;
+    height: 38px !important;
+    border-radius: 8px !important;
+    border: 1px solid var(--input-border) !important;
+    color: var(--accent-color) !important;
+    cursor: pointer !important;
+    z-index: 10 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 14px !important;
+    font-weight: bold !important;
+    transition: all 0.3s ease !important;
+    opacity: 0;
+    pointer-events: none;
+}
+.tab-scroll-btn-left {
+    left: 4px !important;
+    background: var(--bg-color) !important;
+}
+.dark .tab-scroll-btn-left {
+    background: rgba(3, 7, 18, 0.95) !important;
+}
+.tab-scroll-btn-right {
+    right: 4px !important;
+    background: var(--bg-color) !important;
+}
+.dark .tab-scroll-btn-right {
+    background: rgba(3, 7, 18, 0.95) !important;
+}
+.tab-scroll-btn.visible {
+    opacity: 0.9 !important;
+    pointer-events: auto !important;
+}
+.tab-scroll-btn:hover {
+    background-color: var(--accent-color) !important;
+    color: #030712 !important;
+    box-shadow: 0 0 8px var(--accent-color) !important;
+}
+
+/* Sidebar scroll buttons */
+.sidebar-scroll-btn {
+    position: sticky !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    background: var(--input-bg) !important;
+    border: 1px solid var(--input-border) !important;
+    color: var(--accent-color) !important;
+    text-align: center !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    z-index: 9999 !important;
+    transition: all 0.3s ease !important;
+    opacity: 0;
+    pointer-events: none;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+.sidebar-scroll-btn.visible {
+    opacity: 0.95 !important;
+    pointer-events: auto !important;
+    height: 32px !important;
+    margin: 4px 10px !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 12px var(--shadow-color) !important;
+}
+.sidebar-scroll-btn-up {
+    top: 5px !important;
+}
+.sidebar-scroll-btn-down {
+    bottom: 5px !important;
+}
+.sidebar-scroll-btn:hover {
+    background-color: var(--accent-color) !important;
+    color: #030712 !important;
+    box-shadow: 0 0 10px var(--accent-color) !important;
+}
 """
 
 SPEED_METRICS_HTML = """
 <div style="display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; font-family: 'Times New Roman', serif;">
-    <div style="flex: 1; min-width: 200px; border: 1px solid #64ffda; border-radius: 8px; padding: 15px; text-align: center; background: rgba(100,255,218,0.05);">
-        <p style="margin: 0; font-size: 0.9rem; color: #8892b0;">🏎️ Tốc độ PhoBERT-v2</p>
-        <h2 style="margin: 5px 0; color: #64ffda; font-size: 1.8rem; font-weight: bold;">120.5 mẫu/s</h2>
+    <div style="flex: 1; min-width: 200px; border: 1px solid var(--custom-phobert-border); border-radius: 8px; padding: 15px; text-align: center; background: var(--custom-phobert-bg);">
+        <p style="margin: 0; font-size: 0.9rem; color: var(--custom-text-muted);">🏎️ Tốc độ PhoBERT-v2</p>
+        <h2 style="margin: 5px 0; color: var(--custom-phobert-text); font-size: 1.8rem; font-weight: bold;">120.5 mẫu/s</h2>
         <span style="font-size: 0.8rem; color: #3db882; font-weight: bold;">Nhanh nhất (Real-time)</span>
     </div>
-    <div style="flex: 1; min-width: 200px; border: 1px solid #007bff; border-radius: 8px; padding: 15px; text-align: center; background: rgba(0,123,255,0.05);">
-        <p style="margin: 0; font-size: 0.9rem; color: #8892b0;">🚗 Tốc độ XLM-R-v1</p>
+    <div style="flex: 1; min-width: 200px; border: 1px solid #007bff; border-radius: 8px; padding: 15px; text-align: center; background: var(--custom-xlmr-bg);">
+        <p style="margin: 0; font-size: 0.9rem; color: var(--custom-text-muted);">🚗 Tốc độ XLM-R-v1</p>
         <h2 style="margin: 5px 0; color: #007bff; font-size: 1.8rem; font-weight: bold;">85.2 mẫu/s</h2>
         <span style="font-size: 0.8rem; color: #ff4b4b; font-weight: bold;">-29.3% so với PhoBERT</span>
     </div>
-    <div style="flex: 1; min-width: 200px; border: 1px solid #FFA500; border-radius: 8px; padding: 15px; text-align: center; background: rgba(255,165,0,0.05);">
-        <p style="margin: 0; font-size: 0.9rem; color: #8892b0;">🐢 Tốc độ Gemma-4 4B</p>
+    <div style="flex: 1; min-width: 200px; border: 1px solid #FFA500; border-radius: 8px; padding: 15px; text-align: center; background: var(--custom-gemma-bg);">
+        <p style="margin: 0; font-size: 0.9rem; color: var(--custom-text-muted);">🐢 Tốc độ Gemma-4 4B</p>
         <h2 style="margin: 5px 0; color: #FFA500; font-size: 1.8rem; font-weight: bold;">1.8 mẫu/s</h2>
-        <span style="font-size: 0.8rem; color: #ff4b4b; font-weight: bold;">Rần chậm (Phù hợp offline)</span>
+        <span style="font-size: 0.8rem; color: #ff4b4b; font-weight: bold;">Rất chậm (Phù hợp offline)</span>
     </div>
 </div>
 """
 
 RECOMMENDATIONS_HTML = """
-<div style="background: rgba(100, 255, 218, 0.03); border: 1px solid rgba(100, 255, 218, 0.2); border-radius: 8px; padding: 20px; font-family: 'Times New Roman', serif;">
-    <h4 style="margin-top: 0; color: #64ffda; font-size: 1.2rem;">🤝 Kiến trúc lai đề xuất cho dự án VaccineNLP (HUPH 2026):</h4>
-    <ol style="margin-bottom: 0; padding-left: 20px; line-height: 1.6; color: #ccd6f6;">
+<div style="background: var(--custom-card-bg); border: 1px solid var(--custom-card-border); border-radius: 8px; padding: 20px; font-family: 'Times New Roman', serif;">
+    <h4 style="margin-top: 0; color: var(--custom-text-neon); font-size: 1.2rem;">🤝 Kiến trúc lai đề xuất cho dự án VaccineNLP (HUPH 2026):</h4>
+    <ol style="margin-bottom: 0; padding-left: 20px; line-height: 1.6; color: var(--custom-text-normal);">
         <li><b>Vòng ngoài (Real-time Classification - PhoBERT-v2)</b>: Nhờ tốc độ suy luận cực nhanh (120.5 mẫu/giây) và độ chính xác F1 vượt trội, PhoBERT-v2 được đề xuất làm màng lọc trực tiếp ở luồng dữ liệu mạng xã hội để phân loại nhanh tin giả, sắc thái và lập trường.</li>
         <li><b>Vòng trong (Explainable & Strategic Consulting - Gemma-4 4B)</b>: Đối với các mẫu được PhoBERT-v2 nghi ngờ là "Tin giả" hoặc "Tiêu cực cực đoan", hệ thống sẽ đẩy vào hàng đợi offline để Gemma-4 lý luận chuyên sâu (XAI) giải thích lý do gán nhãn và đề xuất kịch bản phản hồi khủng hoảng cho chuyên gia y tế HUPH.</li>
     </ol>
@@ -2374,69 +2688,69 @@ RECOMMENDATIONS_HTML = """
 """
 
 RESOURCES_HTML = """
-<div style="font-family: 'Times New Roman', Times, serif; color: #ccd6f6;">
-  <h2 style="color: #64ffda; margin-bottom: 20px; font-size: 1.8rem;">📚 Tài liệu & Notebooks Nghiên cứu</h2>
+<div style="font-family: 'Times New Roman', Times, serif; color: var(--text-color);">
+  <h2 style="color: var(--accent-color); margin-bottom: 20px; font-size: 1.8rem;">📚 Tài liệu & Notebooks Nghiên cứu</h2>
   
   <div style="display: flex; flex-wrap: wrap; gap: 20px;">
     <!-- Column 1: Kim Manh Hung -->
-    <div style="flex: 1; min-width: 300px; background: rgba(17,34,64,0.4); border: 1px solid rgba(100,255,218,0.2); border-radius: 12px; padding: 25px; box-shadow: 0 8px 16px rgba(0,0,0,0.2);">
-      <h3 style="color: #64ffda; margin-top: 0; border-bottom: 1px solid rgba(100,255,218,0.3); padding-bottom: 10px; font-size: 1.3rem;">👨‍💻 1. Kim Mạnh Hưng (MSSV: 2211090016)</h3>
+    <div style="flex: 1; min-width: 300px; background: var(--card-bg); border: 1px solid var(--input-border); border-radius: 12px; padding: 25px; box-shadow: 0 8px 16px var(--shadow-color);">
+      <h3 style="color: var(--accent-color); margin-top: 0; border-bottom: 1px solid var(--input-border); padding-bottom: 10px; font-size: 1.3rem;">👨‍💻 1. Kim Mạnh Hưng (MSSV: 2211090016)</h3>
       
       <div style="margin-top: 15px;">
-        <h4 style="color: #007bff; margin-bottom: 5px; font-size: 1.05rem;">📘 I. KAGGLE NOTEBOOKS:</h4>
+        <h4 style="color: var(--accent-color); margin-bottom: 5px; font-size: 1.05rem; opacity: 0.95;">📘 I. KAGGLE NOTEBOOKS:</h4>
         <ul style="list-style-type: none; padding-left: 0; line-height: 1.6;">
-          <li style="margin-bottom: 8px;">• <a href="https://www.kaggle.com/code/kimmnhhng/vaccinenlp-phobert-v2-multitask" target="_blank" style="color: #64ffda; text-decoration: none;">PhoBERT Multitask Classifier</a></li>
-          <li style="margin-bottom: 8px;">• <a href="https://www.kaggle.com/code/kimmnhhng/vaccinenlp-xlm-r-v1-multitask-classifier" target="_blank" style="color: #64ffda; text-decoration: none;">XLM-R Multitask Classifier</a></li>
-          <li style="margin-bottom: 8px;">• <a href="https://www.kaggle.com/code/kimmnhhng/vaccinenlp-gemma-4-training" target="_blank" style="color: #64ffda; text-decoration: none;">Gemma QLoRA Training (03A)</a></li>
-          <li style="margin-bottom: 8px;">• <a href="https://www.kaggle.com/code/kimmnhhng/vaccinenlp-gemma-4-inference" target="_blank" style="color: #64ffda; text-decoration: none;">Gemma XAI Inference (03B)</a></li>
-          <li style="margin-bottom: 8px;">• <a href="https://www.kaggle.com/code/kimmnhhng/vaccinenlp-model-benchmark-report" target="_blank" style="color: #64ffda; text-decoration: none;">Model Benchmark Report (04)</a></li>
+          <li style="margin-bottom: 8px;">• <a href="https://www.kaggle.com/code/kimmnhhng/vaccinenlp-phobert-v2-multitask" target="_blank" style="color: var(--accent-color); text-decoration: none;">PhoBERT Multitask Classifier</a></li>
+          <li style="margin-bottom: 8px;">• <a href="https://www.kaggle.com/code/kimmnhhng/vaccinenlp-xlm-r-v1-multitask-classifier" target="_blank" style="color: var(--accent-color); text-decoration: none;">XLM-R Multitask Classifier</a></li>
+          <li style="margin-bottom: 8px;">• <a href="https://www.kaggle.com/code/kimmnhhng/vaccinenlp-gemma-4-training" target="_blank" style="color: var(--accent-color); text-decoration: none;">Gemma QLoRA Training (03A)</a></li>
+          <li style="margin-bottom: 8px;">• <a href="https://www.kaggle.com/code/kimmnhhng/vaccinenlp-gemma-4-inference" target="_blank" style="color: var(--accent-color); text-decoration: none;">Gemma XAI Inference (03B)</a></li>
+          <li style="margin-bottom: 8px;">• <a href="https://www.kaggle.com/code/kimmnhhng/vaccinenlp-model-benchmark-report" target="_blank" style="color: var(--accent-color); text-decoration: none;">Model Benchmark Report (04)</a></li>
         </ul>
       </div>
       
       <div style="margin-top: 20px;">
-        <h4 style="color: #007bff; margin-bottom: 5px; font-size: 1.05rem;">🤗 II. HUGGINGFACE:</h4>
+        <h4 style="color: var(--accent-color); margin-bottom: 5px; font-size: 1.05rem; opacity: 0.95;">🤗 II. HUGGINGFACE:</h4>
         <ul style="list-style-type: none; padding-left: 0; line-height: 1.6;">
-          <li style="margin-bottom: 8px;">• <a href="https://huggingface.co/hung2903/phobert-vaccine-multitask" target="_blank" style="color: #64ffda; text-decoration: none;">PhoBERT Multitask</a></li>
-          <li style="margin-bottom: 8px;">• <a href="https://huggingface.co/hung2903/xlmr-vaccine-multitask" target="_blank" style="color: #64ffda; text-decoration: none;">XLM-R Multitask</a></li>
-          <li style="margin-bottom: 8px;">• <a href="https://huggingface.co/hung2903/gemma-4-E4B-unsloth-vaccine-xai" target="_blank" style="color: #64ffda; text-decoration: none;">Gemma XAI Reasoning</a></li>
+          <li style="margin-bottom: 8px;">• <a href="https://huggingface.co/hung2903/phobert-vaccine-multitask" target="_blank" style="color: var(--accent-color); text-decoration: none;">PhoBERT Multitask</a></li>
+          <li style="margin-bottom: 8px;">• <a href="https://huggingface.co/hung2903/xlmr-vaccine-multitask" target="_blank" style="color: var(--accent-color); text-decoration: none;">XLM-R Multitask</a></li>
+          <li style="margin-bottom: 8px;">• <a href="https://huggingface.co/hung2903/gemma-4-E4B-unsloth-vaccine-xai" target="_blank" style="color: var(--accent-color); text-decoration: none;">Gemma XAI Reasoning</a></li>
         </ul>
       </div>
       
       <div style="margin-top: 20px;">
-        <h4 style="color: #007bff; margin-bottom: 5px; font-size: 1.05rem;">💻 III. GITHUB:</h4>
+        <h4 style="color: var(--accent-color); margin-bottom: 5px; font-size: 1.05rem; opacity: 0.95;">💻 III. GITHUB:</h4>
         <ul style="list-style-type: none; padding-left: 0; line-height: 1.6;">
-          <li>• <a href="https://github.com/hwngkm/VaccineNLP-Thesis" target="_blank" style="color: #64ffda; text-decoration: none;">VaccineNLP Thesis Repo</a></li>
+          <li>• <a href="https://github.com/hwngkm/VaccineNLP-Thesis" target="_blank" style="color: var(--accent-color); text-decoration: none;">VaccineNLP Thesis Repo</a></li>
         </ul>
       </div>
     </div>
     
     <!-- Column 2: Dinh Le Quynh Phuong -->
-    <div style="flex: 1; min-width: 300px; background: rgba(17,34,64,0.4); border: 1px solid rgba(100,255,218,0.2); border-radius: 12px; padding: 25px; box-shadow: 0 8px 16px rgba(0,0,0,0.2);">
-      <h3 style="color: #64ffda; margin-top: 0; border-bottom: 1px solid rgba(100,255,218,0.3); padding-bottom: 10px; font-size: 1.3rem;">👩‍💻 2. Đinh Lê Quỳnh Phương (MSSV: 2211090031)</h3>
+    <div style="flex: 1; min-width: 300px; background: var(--card-bg); border: 1px solid var(--input-border); border-radius: 12px; padding: 25px; box-shadow: 0 8px 16px var(--shadow-color);">
+      <h3 style="color: var(--accent-color); margin-top: 0; border-bottom: 1px solid var(--input-border); padding-bottom: 10px; font-size: 1.3rem;">👩‍💻 2. Đinh Lê Quỳnh Phương (MSSV: 2211090031)</h3>
       
       <div style="margin-top: 15px;">
-        <h4 style="color: #007bff; margin-bottom: 5px; font-size: 1.05rem;">📘 I. KAGGLE NOTEBOOKS:</h4>
+        <h4 style="color: var(--accent-color); margin-bottom: 5px; font-size: 1.05rem; opacity: 0.95;">📘 I. KAGGLE NOTEBOOKS:</h4>
         <ul style="list-style-type: none; padding-left: 0; line-height: 1.6;">
-          <li style="margin-bottom: 8px;">• <a href="https://www.kaggle.com/code/inhlqunhphng/vaccinenlp-phobert-v2-multitask-classifier" target="_blank" style="color: #64ffda; text-decoration: none;">PhoBERT Multitask Classifier</a></li>
-          <li style="margin-bottom: 8px;">• <a href="https://www.kaggle.com/code/inhlqunhphng/vaccinenlp-xlm-r-v1-multitask-classifier" target="_blank" style="color: #64ffda; text-decoration: none;">XLM-R Multitask Classifier</a></li>
-          <li style="margin-bottom: 8px;">• <a href="https://www.kaggle.com/code/inhlqunhphng/vaccinenlp-gemma-4-training" target="_blank" style="color: #64ffda; text-decoration: none;">Gemma QLoRA Training (03A)</a></li>
-          <li style="margin-bottom: 8px;">• <a href="https://www.kaggle.com/code/inhlqunhphng/vaccinenlp-gemma-4-inference" target="_blank" style="color: #64ffda; text-decoration: none;">Gemma XAI Inference (03B)</a></li>
+          <li style="margin-bottom: 8px;">• <a href="https://www.kaggle.com/code/inhlqunhphng/vaccinenlp-phobert-v2-multitask-classifier" target="_blank" style="color: var(--accent-color); text-decoration: none;">PhoBERT Multitask Classifier</a></li>
+          <li style="margin-bottom: 8px;">• <a href="https://www.kaggle.com/code/inhlqunhphng/vaccinenlp-xlm-r-v1-multitask-classifier" target="_blank" style="color: var(--accent-color); text-decoration: none;">XLM-R Multitask Classifier</a></li>
+          <li style="margin-bottom: 8px;">• <a href="https://www.kaggle.com/code/inhlqunhphng/vaccinenlp-gemma-4-training" target="_blank" style="color: var(--accent-color); text-decoration: none;">Gemma QLoRA Training (03A)</a></li>
+          <li style="margin-bottom: 8px;">• <a href="https://www.kaggle.com/code/inhlqunhphng/vaccinenlp-gemma-4-inference" target="_blank" style="color: var(--accent-color); text-decoration: none;">Gemma XAI Inference (03B)</a></li>
         </ul>
       </div>
       
       <div style="margin-top: 20px;">
-        <h4 style="color: #007bff; margin-bottom: 5px; font-size: 1.05rem;">🤗 II. HUGGINGFACE:</h4>
+        <h4 style="color: var(--accent-color); margin-bottom: 5px; font-size: 1.05rem; opacity: 0.95;">🤗 II. HUGGINGFACE:</h4>
         <ul style="list-style-type: none; padding-left: 0; line-height: 1.6;">
-          <li style="margin-bottom: 8px;">• <a href="https://huggingface.co/quynhphuong1209/phobert-multitask" target="_blank" style="color: #64ffda; text-decoration: none;">PhoBERT Multitask</a></li>
-          <li style="margin-bottom: 8px;">• <a href="https://huggingface.co/quynhphuong1209/xlmr-multitask" target="_blank" style="color: #64ffda; text-decoration: none;">XLM-R Multitask</a></li>
-          <li style="margin-bottom: 8px;">• <a href="https://huggingface.co/quynhphuong1209/gemma-4-E4B-unsloth-vaccine-xai" target="_blank" style="color: #64ffda; text-decoration: none;">Gemma XAI Reasoning</a></li>
+          <li style="margin-bottom: 8px;">• <a href="https://huggingface.co/quynhphuong1209/phobert-multitask" target="_blank" style="color: var(--accent-color); text-decoration: none;">PhoBERT Multitask</a></li>
+          <li style="margin-bottom: 8px;">• <a href="https://huggingface.co/quynhphuong1209/xlmr-multitask" target="_blank" style="color: var(--accent-color); text-decoration: none;">XLM-R Multitask</a></li>
+          <li style="margin-bottom: 8px;">• <a href="https://huggingface.co/quynhphuong1209/gemma-4-E4B-unsloth-vaccine-xai" target="_blank" style="color: var(--accent-color); text-decoration: none;">Gemma XAI Reasoning</a></li>
         </ul>
       </div>
       
       <div style="margin-top: 20px;">
-        <h4 style="color: #007bff; margin-bottom: 5px; font-size: 1.05rem;">💻 III. GITHUB:</h4>
+        <h4 style="color: var(--accent-color); margin-bottom: 5px; font-size: 1.05rem; opacity: 0.95;">💻 III. GITHUB:</h4>
         <ul style="list-style-type: none; padding-left: 0; line-height: 1.6;">
-          <li>• <a href="https://github.com/quynhphuong1209/VaccineNLP_Project" target="_blank" style="color: #64ffda; text-decoration: none;">VaccineNLP Project Repo</a></li>
+          <li>• <a href="https://github.com/quynhphuong1209/VaccineNLP_Project" target="_blank" style="color: var(--accent-color); text-decoration: none;">VaccineNLP Project Repo</a></li>
         </ul>
       </div>
     </div>
@@ -2445,15 +2759,15 @@ RESOURCES_HTML = """
 """
 
 METHODOLOGY_HTML = """
-<div style="font-family: 'Times New Roman', Times, serif; color: #ccd6f6; line-height: 1.6;">
-  <h2 style="color: #64ffda; border-bottom: 1px solid rgba(100,255,218,0.2); padding-bottom: 10px; font-size: 1.8rem; margin-bottom: 20px;">📜 Phương pháp luận & Kiến trúc Hệ thống</h2>
+<div style="font-family: 'Times New Roman', Times, serif; color: var(--text-color); line-height: 1.6;">
+  <h2 style="color: var(--accent-color); border-bottom: 1px solid var(--input-border); padding-bottom: 10px; font-size: 1.8rem; margin-bottom: 20px;">📜 Phương pháp luận & Kiến trúc Hệ thống</h2>
   
   <div style="display: flex; flex-wrap: wrap; gap: 20px;">
     <div style="flex: 3; min-width: 300px;">
-      <h3 style="color: #007bff; font-size: 1.3rem;">🏗️ 1. Kiến trúc Dual-Student Hybrid</h3>
+      <h3 style="color: var(--accent-color); font-size: 1.3rem;">🏗️ 1. Kiến trúc Dual-Student Hybrid</h3>
       <p>Dự án xây dựng hệ thống <b>Ensemble</b> tận dụng ưu điểm của hai dòng kiến trúc Transformer phổ biến nhất hiện nay:</p>
       
-      <div style="background: rgba(17,34,64,0.3); border-left: 4px solid #3db882; padding: 15px; border-radius: 4px; margin-bottom: 15px;">
+      <div style="background: var(--card-bg); border: 1px solid var(--input-border); border-left: 4px solid #3db882; padding: 15px; border-radius: 4px; margin-bottom: 15px;">
         <strong style="color: #3db882;">Động cơ Phân loại (Classification Engine):</strong>
         <ul style="margin: 5px 0 0 0; padding-left: 20px;">
           <li>PhoBERT-v2 (kiến trúc Encoder)</li>
@@ -2462,7 +2776,7 @@ METHODOLOGY_HTML = """
         </ul>
       </div>
       
-      <div style="background: rgba(17,34,64,0.3); border-left: 4px solid #FFA500; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
+      <div style="background: var(--card-bg); border: 1px solid var(--input-border); border-left: 4px solid #FFA500; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
         <strong style="color: #FFA500;">Động cơ Giải thích (XAI Reasoning Engine):</strong>
         <ul style="margin: 5px 0 0 0; padding-left: 20px;">
           <li>Gemma-4 E4B-it (kiến trúc Decoder)</li>
@@ -2471,8 +2785,8 @@ METHODOLOGY_HTML = """
         </ul>
       </div>
       
-      <h4 style="color: #64ffda; margin-bottom: 10px;">🛠️ Sơ đồ Luồng Xử lý (System Pipeline)</h4>
-      <pre style="background: #112240; color: #64ffda; border: 1px solid rgba(100,255,218,0.2); border-radius: 8px; padding: 15px; font-family: monospace; font-size: 0.9rem; line-height: 1.4;">
+      <h4 style="color: var(--accent-color); margin-bottom: 10px;">🛠️ Sơ đồ Luồng Xử lý (System Pipeline)</h4>
+      <pre style="background: var(--input-bg); color: var(--text-color); border: 1px solid var(--input-border); border-radius: 8px; padding: 15px; font-family: monospace; font-size: 0.9rem; line-height: 1.4;">
 [ Văn bản đầu vào (Tiếng Việt) ]
               ↓
 [ Tiền xử lý: 8 bước cleaning ]
@@ -2492,26 +2806,26 @@ METHODOLOGY_HTML = """
     </div>
     
     <div style="flex: 2; min-width: 250px; display: flex; flex-direction: column; gap: 15px;">
-      <h3 style="color: #007bff; font-size: 1.3rem; margin-bottom: 5px;">🎯 2. Ba nhiệm vụ chính</h3>
+      <h3 style="color: var(--accent-color); font-size: 1.3rem; margin-bottom: 5px;">🎯 2. Ba nhiệm vụ chính</h3>
       
-      <div style="background: rgba(17,34,64,0.4); border: 1px solid rgba(100,255,218,0.1); border-radius: 8px; padding: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.15);">
+      <div style="background: var(--card-bg); border: 1px solid var(--input-border); border-radius: 8px; padding: 15px; box-shadow: 0 4px 8px var(--shadow-color);">
         <strong style="color: #ff4b4b; font-size: 1rem;">🚨 Misinformation Detection</strong>
-        <p style="margin: 5px 0 0 0; font-size: 0.9rem; color: #8892b0;">Xác định tin giả về vaccine dựa trên các nguồn tin cậy và đối chiếu chéo.</p>
+        <p style="margin: 5px 0 0 0; font-size: 0.9rem; color: var(--card-text-muted);">Xác định tin giả về vaccine dựa trên các nguồn tin cậy và đối chiếu chéo.</p>
       </div>
       
-      <div style="background: rgba(17,34,64,0.4); border: 1px solid rgba(100,255,218,0.1); border-radius: 8px; padding: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.15);">
-        <strong style="color: #007bff; font-size: 1rem;">🎯 Stance Analysis</strong>
-        <p style="margin: 5px 0 0 0; font-size: 0.9rem; color: #8892b0;">Phân tích quan điểm cộng đồng: Ủng hộ, Phản đối hoặc Trung lập với tiêm chủng vaccine.</p>
+      <div style="background: var(--card-bg); border: 1px solid var(--input-border); border-radius: 8px; padding: 15px; box-shadow: 0 4px 8px var(--shadow-color);">
+        <strong style="color: var(--accent-color); font-size: 1rem;">🎯 Stance Analysis</strong>
+        <p style="margin: 5px 0 0 0; font-size: 0.9rem; color: var(--card-text-muted);">Phân tích quan điểm cộng đồng: Ủng hộ, Phản đối hoặc Trung lập với tiêm chủng vaccine.</p>
       </div>
       
-      <div style="background: rgba(17,34,64,0.4); border: 1px solid rgba(100,255,218,0.1); border-radius: 8px; padding: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.15);">
+      <div style="background: var(--card-bg); border: 1px solid var(--input-border); border-radius: 8px; padding: 15px; box-shadow: 0 4px 8px var(--shadow-color);">
         <strong style="color: #00c853; font-size: 1rem;">💭 Sentiment Analysis</strong>
-        <p style="margin: 5px 0 0 0; font-size: 0.9rem; color: #8892b0;">Nhận diện sắc thái cảm xúc của người viết: Tích cực, Tiêu cực, hoặc Trung tính.</p>
+        <p style="margin: 5px 0 0 0; font-size: 0.9rem; color: var(--card-text-muted);">Nhận diện sắc thái cảm xúc của người viết: Tích cực, Tiêu cực, hoặc Trung tính.</p>
       </div>
       
-      <div style="background: rgba(17,34,64,0.4); border: 1px solid rgba(0,123,255,0.2); border-radius: 8px; padding: 15px; margin-top: 10px;">
-        <h4 style="color: #007bff; margin: 0 0 8px 0; font-size: 1.05rem;">🧪 Quy trình thực nghiệm</h4>
-        <ul style="margin: 0; padding-left: 20px; font-size: 0.9rem; line-height: 1.5; color: #8892b0;">
+      <div style="background: var(--card-bg); border: 1px solid var(--input-border); border-radius: 8px; padding: 15px; margin-top: 10px; border-left: 4px solid var(--accent-color);">
+        <h4 style="color: var(--accent-color); margin: 0 0 8px 0; font-size: 1.05rem;">🧪 Quy trình thực nghiệm</h4>
+        <ul style="margin: 0; padding-left: 20px; font-size: 0.9rem; line-height: 1.5; color: var(--card-text-muted);">
           <li><b>Dataset:</b> 1.856 mẫu Silver + 186 mẫu Gold Test</li>
           <li><b>Hardware:</b> GPU NVIDIA T4 (Kaggle)</li>
           <li><b>Optimization:</b> QLoRA 4-bit + Temperature Scaling</li>
@@ -2521,8 +2835,8 @@ METHODOLOGY_HTML = """
     </div>
   </div>
   
-  <div style="margin-top: 25px; border-top: 1px solid rgba(100,255,218,0.2); padding-top: 15px;">
-    <h3 style="color: #64ffda; font-size: 1.25rem;">💡 Tại sao Explainable AI (XAI)?</h3>
+  <div style="margin-top: 25px; border-top: 1px solid var(--input-border); padding-top: 15px;">
+    <h3 style="color: var(--accent-color); font-size: 1.25rem;">💡 Tại sao Explainable AI (XAI)?</h3>
     <p style="margin-top: 5px;">Trong lĩnh vực y tế như vaccine, việc chỉ đưa ra nhãn 'Tin giả' là chưa đủ. Hệ thống cần giải thích <b>tại sao</b> để:</p>
     <ul style="padding-left: 20px; margin-top: 5px;">
       <li style="margin-bottom: 5px;">Thuyết phục người dùng tin tưởng vào các khuyến nghị và cảnh báo của AI.</li>
@@ -2534,22 +2848,22 @@ METHODOLOGY_HTML = """
 """
 
 THESIS_HTML = """
-<div style="font-family: 'Times New Roman', Times, serif; color: #ccd6f6; line-height: 1.6;">
-  <h2 style="color: #64ffda; border-bottom: 1px solid rgba(100,255,218,0.2); padding-bottom: 10px; font-size: 1.8rem; margin-bottom: 20px;">📑 Đề cương & Mục lục Đồ án tốt nghiệp</h2>
+<div style="font-family: 'Times New Roman', Times, serif; color: var(--text-color); line-height: 1.6;">
+  <h2 style="color: var(--accent-color); border-bottom: 1px solid var(--input-border); padding-bottom: 10px; font-size: 1.8rem; margin-bottom: 20px;">📑 Đề cương & Mục lục Đồ án tốt nghiệp</h2>
   
-  <div style="background: rgba(0, 123, 255, 0.05); border-left: 5px solid #007bff; padding: 20px; border-radius: 5px; margin-bottom: 25px; box-shadow: 0 4px 8px rgba(0,0,0,0.15);">
-    <h3 style="margin: 0; color: #ffffff; font-size: 1.15rem; text-transform: uppercase;">📝 Tên Đề Tài Đồ Án tốt nghiệp:</h3>
-    <p style="margin: 8px 0 0 0; font-size: 1.25rem; font-weight: bold; color: #64ffda; line-height: 1.4;">
+  <div style="background: var(--accent-bg); border-left: 5px solid var(--accent-color); padding: 20px; border-radius: 5px; margin-bottom: 25px; box-shadow: 0 4px 8px var(--shadow-color);">
+    <h3 style="margin: 0; color: var(--text-color); font-size: 1.15rem; text-transform: uppercase;">📝 Tên Đề Tài Đồ Án tốt nghiệp:</h3>
+    <p style="margin: 8px 0 0 0; font-size: 1.25rem; font-weight: bold; color: var(--accent-color); line-height: 1.4;">
       "Ứng dụng Xử lý Ngôn ngữ Tự nhiên trong phát hiện thông tin sai lệch về vaccine và phân tích thái độ cộng đồng trên môi trường số tại Việt Nam"
     </p>
-    <p style="margin: 5px 0 0 0; font-style: italic; color: #8892b0; font-size: 1rem;">
+    <p style="margin: 5px 0 0 0; font-style: italic; color: var(--card-text-muted); font-size: 1rem;">
       (Applying NLP for Vaccine Misinformation Detection and Community Attitude Analysis in Vietnamese Digital Environments)
     </p>
   </div>
 
   <div style="display: flex; flex-wrap: wrap; gap: 20px; margin-bottom: 25px;">
-    <div style="flex: 1; min-width: 300px; background: rgba(17,34,64,0.4); border: 1px solid rgba(100,255,218,0.1); border-radius: 12px; padding: 20px;">
-      <h3 style="color: #007bff; border-bottom: 1px solid rgba(0,123,255,0.2); padding-bottom: 8px; margin-top: 0; font-size: 1.25rem;">📌 Cấu trúc 6 Chương chính</h3>
+    <div style="flex: 1; min-width: 300px; background: var(--card-bg); border: 1px solid var(--input-border); border-radius: 12px; padding: 20px;">
+      <h3 style="color: var(--accent-color); border-bottom: 1px solid var(--input-border); padding-bottom: 8px; margin-top: 0; font-size: 1.25rem;">📌 Cấu trúc 6 Chương chính</h3>
       <ul style="list-style-type: none; padding-left: 0; line-height: 1.8;">
         <li><b>CHƯƠNG 1: ĐẶT VẤN ĐỀ</b> (Lý do chọn đề tài, Mục tiêu MT1-MT3, Câu hỏi RQ1-RQ3)</li>
         <li><b>CHƯƠNG 2: TỔNG QUAN TÀI LIỆU</b> (Định nghĩa Vaccine misinformation, NLP, XAI, Research Gap)</li>
@@ -2560,15 +2874,15 @@ THESIS_HTML = """
       </ul>
     </div>
     
-    <div style="flex: 1; min-width: 300px; background: rgba(17,34,64,0.4); border: 1px solid rgba(100,255,218,0.1); border-radius: 12px; padding: 20px;">
-      <h3 style="color: #007bff; border-bottom: 1px solid rgba(0,123,255,0.2); padding-bottom: 8px; margin-top: 0; font-size: 1.25rem;">🧪 Ba Giả thuyết Nghiên cứu (Hypotheses)</h3>
-      <ul style="list-style-type: none; padding-left: 0; line-height: 1.8; color: #ccd6f6;">
+    <div style="flex: 1; min-width: 300px; background: var(--card-bg); border: 1px solid var(--input-border); border-radius: 12px; padding: 20px;">
+      <h3 style="color: var(--accent-color); border-bottom: 1px solid var(--input-border); padding-bottom: 8px; margin-top: 0; font-size: 1.25rem;">🧪 Ba Giả thuyết Nghiên cứu (Hypotheses)</h3>
+      <ul style="list-style-type: none; padding-left: 0; line-height: 1.8; color: var(--text-color);">
         <li style="margin-bottom: 12px;">
           <strong style="color: #ff4b4b;">• Giả thuyết H1 (Chấp nhận):</strong><br>
           Cảm xúc tiêu cực ↔ Lập trường phản đối vaccine (Kiểm định Chi-square đạt ý nghĩa thống kê cao, p < 10⁻⁴⁰).
         </li>
         <li style="margin-bottom: 12px;">
-          <strong style="color: #007bff;">• Giả thuyết H2 (Chấp nhận):</strong><br>
+          <strong style="color: var(--accent-color);">• Giả thuyết H2 (Chấp nhận):</strong><br>
           Nền tảng mạng xã hội ↔ Tỷ lệ lan truyền tin giả y tế (Kiểm định G-test, p = 2,14 × 10⁻³).
         </li>
         <li style="margin-bottom: 12px;">
@@ -2579,19 +2893,19 @@ THESIS_HTML = """
     </div>
   </div>
   
-  <div style="background: rgba(17,34,64,0.5); border: 1px solid rgba(100,255,218,0.2); border-radius: 12px; padding: 25px; box-shadow: 0 8px 16px rgba(0,0,0,0.2);">
-    <h3 style="color: #64ffda; margin-top: 0; border-bottom: 1px solid rgba(100,255,218,0.3); padding-bottom: 8px; font-size: 1.3rem;">👥 Thông tin Đồ án tốt nghiệp HUPH</h3>
+  <div style="background: var(--card-bg); border: 1px solid var(--input-border); border-radius: 12px; padding: 25px; box-shadow: 0 8px 16px var(--shadow-color);">
+    <h3 style="color: var(--accent-color); margin-top: 0; border-bottom: 1px solid var(--input-border); padding-bottom: 8px; font-size: 1.3rem;">👥 Thông tin Đồ án tốt nghiệp HUPH</h3>
     <div style="display: flex; flex-wrap: wrap; gap: 30px; margin-top: 15px;">
       <div style="flex: 1; min-width: 250px;">
-        <h4 style="color: #007bff; margin: 0 0 10px 0; font-size: 1.1rem;">Sinh viên thực hiện:</h4>
+        <h4 style="color: var(--accent-color); margin: 0 0 10px 0; font-size: 1.1rem;">Sinh viên thực hiện:</h4>
         <p style="margin: 5px 0;"><b>1. Kim Mạnh Hưng</b> · MSSV: 2211090016</p>
         <p style="margin: 5px 0;"><b>2. Đinh Lê Quỳnh Phương</b> · MSSV: 2211090031</p>
-        <p style="margin: 5px 0; color: #8892b0; font-size: 0.9rem;">Lớp: CNCQ Khoa học dữ liệu 1-1A</p>
+        <p style="margin: 5px 0; color: var(--card-text-muted); font-size: 0.9rem;">Lớp: CNCQ Khoa học dữ liệu 1-1A</p>
       </div>
       <div style="flex: 1; min-width: 250px;">
-        <h4 style="color: #007bff; margin: 0 0 10px 0; font-size: 1.1rem;">Giảng viên hướng dẫn:</h4>
+        <h4 style="color: var(--accent-color); margin: 0 0 10px 0; font-size: 1.1rem;">Giảng viên hướng dẫn:</h4>
         <p style="margin: 5px 0;"><b>TS. Trần Lâm Quân</b></p>
-        <p style="margin: 5px 0; color: #8892b0; font-size: 0.9rem;">Giảng viên Khoa học dữ liệu · Trường Đại học Y tế Công cộng</p>
+        <p style="margin: 5px 0; color: var(--card-text-muted); font-size: 0.9rem;">Giảng viên Khoa học dữ liệu · Trường Đại học Y tế Công cộng</p>
       </div>
     </div>
   </div>
@@ -2638,12 +2952,12 @@ def get_sidebar_header_html() -> str:
 
 def get_header_html() -> str:
     return """
-    <div style="text-align: center; padding: 10px 10px 25px 10px; margin-bottom: 10px; font-family: 'Times New Roman', Times, serif; color: var(--text-color);">
-      <h1 style="margin: 0; font-size: 1.9rem; font-weight: 800; color: var(--header-text); line-height: 1.3; text-transform: uppercase; letter-spacing: 0.02em;">
+    <div style="text-align: center; padding: 15px 10px 30px 10px; margin-bottom: 15px; font-family: 'Times New Roman', Times, serif; color: var(--text-color);">
+      <h1 style="margin: 0; font-size: clamp(1.8rem, 4.2vw, 2.7rem); font-weight: 800; color: var(--header-text); line-height: 1.35; text-transform: uppercase; letter-spacing: 0.02em;">
         PHÁT HIỆN TIN GIẢ VÀ PHÂN TÍCH THÁI ĐỘ VỀ VACCINE TẠI VIỆT NAM 💉
       </h1>
-      <div style="width: 150px; height: 3px; background: var(--accent-color); margin: 15px auto;"></div>
-      <p style="margin: 0; font-size: 1.1rem; color: var(--card-text-muted); font-style: italic; font-weight: 500; max-width: 800px; margin: 0 auto; line-height: 1.4;">
+      <div style="width: 180px; height: 4px; background: var(--accent-color); margin: 18px auto; border-radius: 2px;"></div>
+      <p style="margin: 0; font-size: clamp(1rem, 2.2vw, 1.3rem); color: var(--card-text-muted); font-style: italic; font-weight: 500; max-width: 900px; margin: 0 auto; line-height: 1.45;">
         Vaccine Misinformation & Attitude Analysis Framework for Vietnamese Social Media
       </p>
     </div>
@@ -2770,7 +3084,6 @@ def get_leaderboard_html():
         }
         
     sorted_models = sorted(benchmark_results.items(), key=lambda x: x[1]['avg_f1'], reverse=True)
-    model_colors = {'phobert': '#64ffda', 'xlmr': '#007bff', 'gemma': '#FFA500'}
     model_medals = ['🥇', '🥈', '🎖️']
     model_descs = {
         'phobert': 'Phân loại tối ưu nhất, xử lý sắc thái tiếng Việt vượt trội.',
@@ -2785,12 +3098,12 @@ def get_leaderboard_html():
     
     leaderboard_rows = ""
     for rank, (mkey, mdata) in enumerate(sorted_models):
-        bg_extra = " background: rgba(100, 255, 218, 0.05);" if rank == 0 else ""
+        bg_extra = " background: var(--accent-bg);" if rank == 0 else ""
         fw = " font-weight:bold;" if rank == 0 else ""
         leaderboard_rows += f"""
             <tr style="border-bottom:1px solid {table_border};{bg_extra}">
                 <td style="padding:12px; font-weight:bold;">{rank+1}</td>
-                <td style="padding:12px; text-align:left; font-weight:bold; color:{model_colors[mkey]};">{mdata['name']}</td>
+                <td class="model-color-{mkey}" style="padding:12px; text-align:left; font-weight:bold;">{mdata['name']}</td>
                 <td style="padding:12px;{fw}">{mdata['misinfo']:.4f}</td>
                 <td style="padding:12px;{fw}">{mdata['stance']:.4f}</td>
                 <td style="padding:12px;{fw}">{mdata['sentiment']:.4f}</td>
@@ -2801,7 +3114,7 @@ def get_leaderboard_html():
     table_html = f"""
     <table style="width:100%; border-collapse:collapse; background:{table_bg}; border:1px solid {table_border}; border-radius:10px; overflow:hidden; font-family:'Times New Roman', serif; text-align:center;">
         <thead style="background:{header_bg}; color:{text_col}; font-weight:bold;">
-            <tr style="border-bottom:2px solid #64ffda;">
+            <tr style="border-bottom:2px solid var(--custom-card-border);">
                 <th style="padding:12px;">Hạng</th>
                 <th style="padding:12px; text-align:left;">Mô hình & Kiến trúc</th>
                 <th style="padding:12px;">Misinfo F1</th>
@@ -2855,7 +3168,7 @@ def get_per_class_table_html(task_key):
         rows_html += f'''<tr style="border-bottom:1px solid {table_border};">
             <td style="padding:10px; text-align:left; font-weight:bold; color:{color};">{name}</td>
             <td style="padding:10px; font-family:monospace;">{sup}</td>
-            <td style="padding:10px; font-weight:bold; color:#64ffda;">{p_f1:.4f}</td>
+            <td style="padding:10px; font-weight:bold; color:var(--custom-text-neon);">{p_f1:.4f}</td>
             <td style="padding:10px;">{x_f1:.4f}</td>
             <td style="padding:10px;">{g_f1:.4f}</td>
         </tr>'''
@@ -2863,7 +3176,7 @@ def get_per_class_table_html(task_key):
     table_html = f'''
     <table style="width:100%; border-collapse:collapse; background:{table_bg}; border:1px solid {table_border}; font-family:'Times New Roman', serif; text-align:center;">
         <thead style="background:{header_bg}; color:{text_col}; font-weight:bold;">
-            <tr style="border-bottom:1px solid #64ffda;">
+            <tr style="border-bottom:1px solid var(--custom-card-border);">
                 <th style="padding:10px; text-align:left;">{header_label}</th>
                 <th style="padding:10px;">Support</th>
                 <th style="padding:10px;">PhoBERT-v2 F1</th>
@@ -3038,10 +3351,10 @@ def build_app():
             const btn = document.getElementById('sidebar-toggle-btn');
             if (window.innerWidth <= 768) {
                 if (sidebar) sidebar.classList.add('collapsed');
-                if (btn) btn.innerText = '▶';
+                if (btn) btn.classList.add('sidebar-is-collapsed');
             } else {
                 if (sidebar) sidebar.classList.remove('collapsed');
-                if (btn) btn.innerText = '◀';
+                if (btn) btn.classList.remove('sidebar-is-collapsed');
             }
         }
 
@@ -3053,7 +3366,7 @@ def build_app():
                 if (sidebar && !sidebar.classList.contains('collapsed')) {
                     if (!sidebar.contains(e.target) && !btn.contains(e.target)) {
                         sidebar.classList.add('collapsed');
-                        btn.innerText = '▶';
+                        if (btn) btn.classList.add('sidebar-is-collapsed');
                     }
                 }
             }
@@ -3068,11 +3381,141 @@ def build_app():
         setTimeout(collapseSidebarOnMobile, 300);
         setTimeout(collapseSidebarOnMobile, 800);
 
+        /* Scroll helper functions for Svelte tabs and sidebar */
+        function setupTabScrolling() {
+            var tabContainers = document.querySelectorAll('.tabs');
+            tabContainers.forEach(function(container) {
+                var nav = container.querySelector('.tab-nav');
+                if (!nav) return;
+                
+                if (container.querySelector('.tab-scroll-btn-left')) return;
+                
+                var btnLeft = document.createElement('button');
+                btnLeft.className = 'tab-scroll-btn tab-scroll-btn-left';
+                btnLeft.innerHTML = '❮';
+                btnLeft.type = 'button';
+                
+                var btnRight = document.createElement('button');
+                btnRight.className = 'tab-scroll-btn tab-scroll-btn-right';
+                btnRight.innerHTML = '❯';
+                btnRight.type = 'button';
+                
+                container.appendChild(btnLeft);
+                container.appendChild(btnRight);
+                
+                function updateArrows() {
+                    var scrollLeft = nav.scrollLeft;
+                    var scrollWidth = nav.scrollWidth;
+                    var clientWidth = nav.clientWidth;
+                    
+                    if (scrollLeft > 5) {
+                        btnLeft.classList.add('visible');
+                    } else {
+                        btnLeft.classList.remove('visible');
+                    }
+                    
+                    if (scrollWidth - scrollLeft - clientWidth > 5) {
+                        btnRight.classList.add('visible');
+                    } else {
+                        btnRight.classList.remove('visible');
+                    }
+                }
+                
+                btnLeft.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    nav.scrollBy({ left: -220, behavior: 'smooth' });
+                });
+                
+                btnRight.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    nav.scrollBy({ left: 220, behavior: 'smooth' });
+                });
+                
+                nav.addEventListener('scroll', updateArrows);
+                window.addEventListener('resize', updateArrows);
+                
+                setTimeout(updateArrows, 200);
+            });
+        }
+
+        function setupSidebarScrollButtons() {
+            var sidebar = document.getElementById('sidebar-col');
+            if (!sidebar || sidebar.classList.contains('collapsed')) return;
+            
+            if (sidebar.querySelector('.sidebar-scroll-btn-up')) return;
+            
+            var btnUp = document.createElement('div');
+            btnUp.className = 'sidebar-scroll-btn sidebar-scroll-btn-up';
+            btnUp.innerHTML = '▲';
+            
+            var btnDown = document.createElement('div');
+            btnDown.className = 'sidebar-scroll-btn sidebar-scroll-btn-down';
+            btnDown.innerHTML = '▼';
+            
+            sidebar.insertBefore(btnUp, sidebar.firstChild);
+            sidebar.appendChild(btnDown);
+            
+            function updateSidebarButtons() {
+                var scrollTop = sidebar.scrollTop;
+                var scrollHeight = sidebar.scrollHeight;
+                var clientHeight = sidebar.clientHeight;
+                
+                if (scrollTop > 15) {
+                    btnUp.classList.add('visible');
+                } else {
+                    btnUp.classList.remove('visible');
+                }
+                
+                if (scrollHeight - scrollTop - clientHeight > 15) {
+                    btnDown.classList.add('visible');
+                } else {
+                    btnDown.classList.remove('visible');
+                }
+            }
+            
+            btnUp.addEventListener('click', function(e) {
+                e.stopPropagation();
+                sidebar.scrollBy({ top: -180, behavior: 'smooth' });
+            });
+            
+            btnDown.addEventListener('click', function(e) {
+                e.stopPropagation();
+                sidebar.scrollBy({ top: 180, behavior: 'smooth' });
+            });
+            
+            sidebar.addEventListener('scroll', updateSidebarButtons);
+            window.addEventListener('resize', updateSidebarButtons);
+            sidebar.addEventListener('mouseenter', updateSidebarButtons);
+            
+            setTimeout(updateSidebarButtons, 200);
+        }
+
+        /* Run multiple times to catch lazy-rendered Svelte components */
+        setTimeout(fixSidebarDropdowns, 300);
+        setTimeout(fixSidebarDropdowns, 800);
+        setTimeout(fixSidebarDropdowns, 2000);
+
+        setTimeout(setupTabScrolling, 300);
+        setTimeout(setupTabScrolling, 800);
+        setTimeout(setupTabScrolling, 2000);
+
+        setTimeout(setupSidebarScrollButtons, 300);
+        setTimeout(setupSidebarScrollButtons, 800);
+        setTimeout(setupSidebarScrollButtons, 2000);
+
+        setTimeout(collapseSidebarOnMobile, 50);
+        setTimeout(collapseSidebarOnMobile, 300);
+        setTimeout(collapseSidebarOnMobile, 800);
+
         /* Watch for new DOM nodes and re-apply fix */
         var observer = new MutationObserver(function(mutations) {
             for (var m = 0; m < mutations.length; m++) {
                 if (mutations[m].addedNodes.length > 0) {
                     setTimeout(fixSidebarDropdowns, 50);
+                    setTimeout(setupTabScrolling, 50);
+                    setTimeout(setupSidebarScrollButtons, 50);
                     break;
                 }
             }
@@ -3081,7 +3524,7 @@ def build_app():
     }""".strip()
     with gr.Blocks(title="VaccineNLP Demo v2.0", theme=gr.themes.Soft(primary_hue="indigo"), css=CSS_STYLE, fill_width=True, js=init_theme_js) as app:
         # Sidebar Toggle Button (positioned via CSS)
-        sidebar_toggle_btn = gr.Button("◀", elem_id="sidebar-toggle-btn", size="sm")
+        sidebar_toggle_btn = gr.Button("", elem_id="sidebar-toggle-btn", size="sm")
         
         with gr.Row(elem_id="main-layout-row"):
             # Left Sidebar Column
@@ -3157,11 +3600,6 @@ def build_app():
                     const btn = document.getElementById('sidebar-toggle-btn');
                     sidebar.classList.toggle('collapsed');
                     btn.classList.toggle('sidebar-is-collapsed');
-                    if (sidebar.classList.contains('collapsed')) {
-                        btn.innerText = '>>';
-                    } else {
-                        btn.innerText = '<<';
-                    }
                 }""".strip(),
                 api_name=False
             )
@@ -3233,7 +3671,7 @@ def build_app():
                             with gr.Column():
                                 gr.Markdown("### 💭 Chain-of-Thought Reasoning")
                                 reasoning_out = gr.Markdown()
-                                audio_out = gr.Audio(label="🔊 AI Voice (gTTS)", type="filepath")
+                                audio_out = gr.HTML(value="")
                             with gr.Column():
                                 gr.Markdown("### 🎯 Token Attribution (Captum IG)")
                                 saliency_out = gr.HTML(value="<p style='color:#888;'><em>💡 Bật checkbox <b>Captum IG</b> ở trên rồi nhấn Phân tích</em></p>")
