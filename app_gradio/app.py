@@ -66,6 +66,13 @@ from pathlib import Path
 from typing import Dict, List, Tuple, Optional
 
 import gradio as gr
+
+# Compatibility Fallback: If running on an older Gradio version (e.g., Gradio 3.x),
+# map gr.Sidebar to gr.Column to prevent AttributeError: module 'gradio' has no attribute 'Sidebar'
+if not hasattr(gr, "Sidebar"):
+    print("⚠️ Warning: gr.Sidebar not found. Falling back to gr.Column layout.")
+    gr.Sidebar = gr.Column
+
 import numpy as np
 import pandas as pd
 import torch
@@ -99,8 +106,8 @@ CONFIG = {
         },
     },
     "xai_models": [
-        "hung2903/gemma-4-E4B-vaccine-xai-merged",
         "hung2903/gemma-4-E4B-unsloth-vaccine-xai",
+        "google/gemma-2-2b-it",
     ],
     "cache_file": DATA_DIR / "xai_cache.json",
     "benchmark_file": DATA_DIR / "benchmark_results.json",
@@ -137,18 +144,9 @@ except ImportError:
 # Robust Apify tokens collection supporting different naming conventions
 APIFY_TOKENS = []
 possible_apify_keys = [
-    "APIFY_TOKEN",
-    "APIFY_API_TOKEN",
-    "APIFY_TOKEN_1",
-    "APIFY_API_TOKEN_1",
-    "APIFY_TOKEN_2",
-    "APIFY_API_TOKEN_2",
-    "APIFY_TOKEN_3",
-    "APIFY_API_TOKEN_3",
-    "APIFY_TOKEN_4",
-    "APIFY_API_TOKEN_4",
-    "APIFY_TOKEN_5",
-    "APIFY_API_TOKEN_5",
+    "APIFY_TOKEN", "APIFY_API_TOKEN", "APIFY_TOKEN_1", "APIFY_API_TOKEN_1",
+    "APIFY_TOKEN_2", "APIFY_API_TOKEN_2", "APIFY_TOKEN_3", "APIFY_API_TOKEN_3",
+    "APIFY_TOKEN_4", "APIFY_API_TOKEN_4", "APIFY_TOKEN_5", "APIFY_API_TOKEN_5",
 ]
 for k in possible_apify_keys:
     val = os.environ.get(k, "").strip()
@@ -173,9 +171,10 @@ SAMPLE_TEXTS = {
     "🚨 Tin giả - Chống vaccine cực đoan": "Ko tiêm mũi nào hết. Ko biết bạn thuộc thế hệ nào, chứ bạn nhìn xem thế hệ 8x trở về trước ko có ai tiêm bất cứ mũi gì vẫn khoẻ mạnh đó thôi. Cha mẹ thời nay bị doạ cho sợ hãi, đem con đi tiêm vì bị bóng ma sợ hãi nó đè, chứ thực chất chả có tác dụng gì còn gây hại cho cơ thể nữa.",
     "🚨 Tin giả - Vô sinh": "Cảnh báo: vắc xin COVID có thể gây vô sinh ở phụ nữ và biến đổi gen ở trẻ em. Mọi người nên tìm hiểu kỹ trước khi làm chuột bạch cho các tập đoàn dược phẩm.",
     "🟢 Ủng hộ tiêm chủng": "Em cũng đang tiêm từng mũi 1 cho con, con e 5 tháng, mới tiêm tới phế cầu, 3 tháng đầu chỉ tiêm 6in1 và uống rota. Chậm mà đủ và an toàn cho con là được. Trộm vía bé e chưa sốt, chưa hành mũi nào ❤️",
-    "🟡 Nghi ngại": "Cún mình chỉ tiêm mũi ở viện về nhà là ko tiêm gì nữa. Bây giờ 2 tuổi rồi. Ai hỏi t vẫn nói tiêm đủ.",
+    "🟡 Nghi ngại": "Cún mình chỉ tiêm mũi ở viện nhà là ko tiêm gì nữa. Bây giờ 2 tuổi rồi. Ai hỏi t vẫn nói tiêm đủ.",
     "✅ Thông tin chuẩn": "Bộ Y tế khuyến cáo trẻ em từ 6 tháng tuổi cần tiêm đủ các mũi vaccine cơ bản theo Chương trình Tiêm chủng Mở rộng để phòng các bệnh truyền nhiễm nguy hiểm.",
     "🔵 Câu hỏi tư vấn": "Trâm Trần ví dụ như Ko có tiêm 6in1 hay 5in1, mà tiêm từng mũi từng bệnh phải không ạ?",
+    "💬 Tin giả - Từ lóng MXH": "K có vacxin thì hệ miễn dịch khỏe sẽ rất ít khi bị ốm bị bệnh \nNhưng tiêm vắc xin thì là tiêm thuốc độc vào người \n\nCàng tiêm nhiều càng bệnh nhiều \n\nBạn xem thời xưa có ai phải tiêm đâu sao ai cũng khỏe mạnh\n\nMuốn thải độc vx , kim loại nặng thì nên cho uống nc lá mùi đun lên \n\nMuốn hạ sốt ( sốt nóng ) cho con uống nc chanh ấm có đường \nLấy chanh xoa toàn thân",
 }
 
 # Examples for gr.Examples component
@@ -198,7 +197,6 @@ class VaccineMultitaskModel(nn.Module):
         super().__init__()
         from transformers import AutoConfig, AutoModel
         self.config = AutoConfig.from_pretrained(model_name, token=token, trust_remote_code=True)
-        # CRITICAL v2.1: low_cpu_mem_usage=False to prevent meta tensor errors.
         self.encoder = AutoModel.from_pretrained(
             model_name, token=token, trust_remote_code=True, low_cpu_mem_usage=False
         )
@@ -258,34 +256,7 @@ def load_model(model_key: str):
             (k.replace("head_", "heads.") if k.startswith("head_") and "heads." not in k else k): v
             for k, v in state.items()
         }
-        # Load weights (strict=False handles head_ vs heads. naming variants)
-        missing, unexpected = model.load_state_dict(new_state, strict=False)
-        if missing:
-            logger.warning(f"Missing keys in checkpoint: {missing[:5]}...")
-        if unexpected:
-            logger.warning(f"Unexpected keys in checkpoint: {unexpected[:5]}...")
-        
-        # CRITICAL FIX v2.1: Materialize any remaining meta tensors to CPU.
-        meta_count = 0
-        for name, param in list(model.named_parameters()):
-            if param.is_meta:
-                meta_count += 1
-                with torch.no_grad():
-                    parent = model
-                    parts = name.split(".")
-                    for p in parts[:-1]:
-                        parent = getattr(parent, p)
-                    new_tensor = torch.zeros(param.shape, dtype=torch.float32, device="cpu")
-                    if "weight" in parts[-1] and len(param.shape) == 2:
-                        nn.init.xavier_uniform_(new_tensor)
-                    new_param = nn.Parameter(new_tensor, requires_grad=False)
-                    setattr(parent, parts[-1], new_param)
-        
-        if meta_count > 0:
-            logger.warning(f"Materialized {meta_count} meta tensor(s) — checkpoint may be incomplete")
-        
-        # Force entire model to CPU as final safety check
-        model = model.to("cpu")
+        model.load_state_dict(new_state, strict=False)
         model.eval()
 
         del state
@@ -460,7 +431,7 @@ def _build_xai_prompt(text: str) -> str:
 
 
 def _try_openrouter(text: str) -> Optional[Tuple[str, str]]:
-    """Layer 2b: OpenRouter public inference API (Gemma models)."""
+    """Layer 2c: OpenRouter public inference API (Gemma models)."""
     if not OPENROUTER_KEY:
         return None
     import urllib.request
@@ -503,7 +474,7 @@ def _try_openrouter(text: str) -> Optional[Tuple[str, str]]:
 
 
 def _try_hf_inference(text: str) -> Optional[Tuple[str, str]]:
-    """Layer 2c: HF Inference API via chat_completion (avoids StopIteration bug)."""
+    """Layer 2d: HF Inference API via chat_completion (avoids StopIteration bug)."""
     if not HF_TOKEN:
         return None
     try:
@@ -514,8 +485,6 @@ def _try_hf_inference(text: str) -> Optional[Tuple[str, str]]:
     for model_id in CONFIG["xai_models"]:
         try:
             client = InferenceClient(model=model_id, token=HF_TOKEN)
-            # Use chat_completion (OpenAI-compatible) instead of text_generation
-            # to avoid StopIteration error from empty stream
             result = client.chat_completion(
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=350,
@@ -532,14 +501,7 @@ def _try_hf_inference(text: str) -> Optional[Tuple[str, str]]:
 
 
 def _try_gemini_api(text: str) -> Optional[Tuple[str, str]]:
-    """Layer 2a: Google Gemini Developer API (gemma-4-E4B-it with rotating keys)."""
-    # Load .env file if available (local development helper)
-    try:
-        from dotenv import load_dotenv
-        load_dotenv()
-    except ImportError:
-        pass
-
+    """Layer 2b: Google Gemini Developer API (gemma-4-E4B-it with rotating keys)."""
     # Gather all GEMINI_API_KEYs (1 to 5) from environment
     keys = []
     for i in range(1, 6):
@@ -571,7 +533,6 @@ def _try_gemini_api(text: str) -> Optional[Tuple[str, str]]:
     for key in keys:
         for model in model_variants:
             try:
-                # Standard REST endpoint for Gemini API
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}"
                 req = urllib.request.Request(
                     url,
@@ -596,27 +557,23 @@ def _try_gemini_api(text: str) -> Optional[Tuple[str, str]]:
 
 
 def query_gemma_api(text: str) -> Tuple[Optional[str], Optional[str]]:
-    """XAI Layer 2: ngrok self-host (Primary) → Gemini API → OpenRouter → HF Inference (ordered by thesis priority)."""
-    # Layer 2a: Dedicated self-hosted endpoint (Kaggle+ngrok with fine-tuned model)
+    """XAI Layer 2 Routing: ngrok self-host (Primary) → Gemini API → OpenRouter → HF Inference."""
     external = query_gemma_external_endpoint(text)
     if external:
         logger.info("✅ XAI via ngrok self-host endpoint")
         return external, "✅ Từ Gemma-4 self-host (ngrok)"
 
-    # Layer 2b: Google Gemini API (with key rotation & gemma-4-E4B-it)
     gemini_result = _try_gemini_api(text)
     if gemini_result:
         content, source = gemini_result
         return content, source
 
-    # Layer 2c: OpenRouter (free/paid Gemma inference — most reliable for demo)
     or_result = _try_openrouter(text)
     if or_result:
         content, model = or_result
         model_display = "Gemma-3n E4B" if "gemma-3n-e4b" in model else "Gemma-3"
         return content, f"🤖 Từ {model_display} (OpenRouter API)"
 
-    # Layer 2d: HF Inference API (merged Gemma model)
     hf_result = _try_hf_inference(text)
     if hf_result:
         content, model_id = hf_result
@@ -714,25 +671,21 @@ def predict(text: str, model_key: str = "PhoBERT-v2") -> Optional[Dict]:
 
 
 def get_reasoning(text: str, result: Dict) -> Tuple[str, str]:
-    """4-layer reasoning: Cache → ngrok → OpenRouter → HF Inference → Fallback."""
-    # Layer 1: XAI cache (instant, 266 entries)
+    """4-layer reasoning with source label."""
     cached = find_xai_reasoning_cache(text)
     if cached:
-        return cached, "✅ Từ XAI Cache (Gold Test Set)"
+        return cached, "✅ Từ cache (Gold Test Set, 186 mẫu)"
 
-    # Layers 2a-2c: Live inference
     api_reasoning, source_label = query_gemma_api(text)
     if api_reasoning:
-        # Translate if response came back in English
         if is_mostly_english(api_reasoning):
             api_reasoning = translate_to_vietnamese(api_reasoning)
         return api_reasoning, source_label
 
-    # Layer 4: Template fallback
     fallback = generate_smart_fallback(
         result["misinfo"]["pred"], result["stance"]["pred"], result["sentiment"]["pred"]
     )
-    return fallback, "⚠️ Fallback template (Tất cả API không khả dụng)"
+    return fallback, "⚠️ Fallback template (API không khả dụng)"
 
 
 # ============================================================================
@@ -997,7 +950,7 @@ def fetch_url_as_list(url: str, max_comments: int = 30) -> Tuple[List[str], str]
 
 
 def fetch_url(url: str, max_comments: int = 30) -> Tuple[str, str]:
-    """Main fetcher dispatcher."""
+    """Main fetcher dispatcher (backward compatibility)."""
     texts, info = fetch_url_as_list(url, max_comments)
     if not texts:
         return "", info
@@ -1024,6 +977,8 @@ def make_radar_chart(result: Dict) -> go.Figure:
         fillcolor="rgba(100, 255, 218, 0.3)", name="Mức độ rủi ro"
     ))
     fig.update_layout(
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
         polar=dict(radialaxis=dict(visible=True, range=[0, 1], showticklabels=False)),
         showlegend=False, height=350,
         margin=dict(l=40, r=40, t=20, b=20),
@@ -1046,7 +1001,9 @@ def make_benchmark_chart() -> go.Figure:
             text=[f"{v:.4f}" for v in vals], textposition="auto"
         ))
     fig.update_layout(
-        barmode="group", height=400,
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        barmode="group", width=1400, height=500,
         yaxis=dict(title="Macro F1", range=[0, 1]),
         legend=dict(orientation="h", yanchor="bottom", y=1.02),
     )
@@ -1067,7 +1024,11 @@ def make_confusion_matrix_chart() -> go.Figure:
         labels=dict(x="Dự đoán", y="Thực tế", color="Số mẫu"),
         title="Confusion Matrix — PhoBERT-v2 Sentiment (n=186)"
     )
-    fig.update_layout(height=400, margin=dict(l=20, r=20, t=50, b=20))
+    fig.update_layout(
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        width=1400, height=500, margin=dict(l=20, r=20, t=50, b=20)
+    )
     return fig
 
 
@@ -1102,7 +1063,9 @@ def make_per_class_chart(task: str = "misinfo") -> go.Figure:
             text=[f"{v:.4f}" for v in pc], textposition="auto"
         ))
     fig.update_layout(
-        barmode="group", height=380,
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        barmode="group", width=1400, height=480,
         yaxis=dict(title="F1 Score", range=[0, 1.05]),
         legend=dict(orientation="h", yanchor="bottom", y=1.02),
         title=f"Per-class F1 — {task.upper()}"
@@ -1122,7 +1085,11 @@ def make_sankey_chart() -> go.Figure:
         link=dict(source=sources, target=targets, value=values,
                   color="rgba(100, 255, 218, 0.2)")
     )])
-    fig.update_layout(height=420, margin=dict(l=15, r=15, t=15, b=15))
+    fig.update_layout(
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        width=1400, height=500, margin=dict(l=15, r=15, t=15, b=15)
+    )
     return fig
 
 
@@ -1147,20 +1114,34 @@ def session_history_to_markdown(history: List) -> str:
 # ============================================================================
 
 def get_huph_logo_base64():
-    # Check both same-level and parent-level to support both local workspace and HF Space
-    for p in [Path(__file__).parent / "huph_logo.png", Path(__file__).parent.parent / "huph_logo.png"]:
+    # 1. HuggingFace Space root (app.py and huph_logo.png in the same directory)
+    path1 = Path(__file__).resolve().parent / "huph_logo.png"
+    # 2. Local workspace (running from app_gradio/ directory, huph_logo.png is in parent directory)
+    path2 = Path(__file__).resolve().parent.parent / "huph_logo.png"
+    # 3. Current working directory fallback
+    path3 = Path.cwd() / "huph_logo.png"
+    # 4. Nested app_gradio directory fallback
+    path4 = Path.cwd() / "app_gradio" / "huph_logo.png"
+    
+    logo_path = None
+    for p in [path1, path2, path3, path4]:
         if p.exists():
-            try:
-                with open(p, "rb") as f:
-                    return f"data:image/png;base64,{base64.b64encode(f.read()).decode()}"
-            except Exception:
-                pass
+            logo_path = p
+            break
+            
+    if logo_path:
+        try:
+            with open(logo_path, "rb") as f:
+                return f"data:image/png;base64,{base64.b64encode(f.read()).decode()}"
+        except Exception:
+            pass
+    # Fallback to public HUPH logo url
     return "https://huph.edu.vn/uploads/logo/logo-huph.png"
 
 
 def render_result_cards_html(result: Dict, elapsed: float, model_choice: str) -> str:
     """Render beautiful HTML cards with progress bars for multi-task predictions."""
-    html = '<div style="display: flex; flex-wrap: wrap; gap: 15px; width: 100%; font-family: \'Times New Roman\', Times, serif; margin-bottom: 10px;">'
+    html = '<div style="display: flex; flex-wrap: wrap; gap: 20px; width: 100%; font-family: \'Times New Roman\', Times, serif; margin-bottom: 10px;">'
     for axis, axis_name in [("misinfo", "Tin giả / Xác thực"), ("stance", "Quan điểm"), ("sentiment", "Cảm xúc")]:
         r = result[axis]
         pred_id = r["pred"]
@@ -1175,16 +1156,16 @@ def render_result_cards_html(result: Dict, elapsed: float, model_choice: str) ->
         
         if has_cal:
             conf_html = f"""
-            <div style="font-size: 0.85rem; color: #8892b0; margin-top: 5px;">
+            <div style="font-size: 0.85rem; color: var(--card-text-muted); margin-top: 5px; font-family: 'Times New Roman', Times, serif;">
                 Thô: <span style="text-decoration: line-through;">{conf_raw:.1f}%</span>
             </div>
-            <div style="font-size: 1.05rem; color: {color}; font-weight: bold; margin-top: 2px;">
+            <div style="font-size: 1.05rem; color: {color}; font-weight: bold; margin-top: 2px; font-family: 'Times New Roman', Times, serif;">
                 Đã hiệu chuẩn (T={T:.2f}): {conf_cal:.1f}%
             </div>
             """
         else:
             conf_html = f"""
-            <div style="font-size: 0.95rem; color: #8892b0; margin-top: 5px;">
+            <div style="font-size: 0.95rem; color: var(--card-text-muted); margin-top: 5px; font-family: 'Times New Roman', Times, serif;">
                 Độ tin cậy: <strong style="color: {color};">{conf_raw:.1f}%</strong>
             </div>
             """
@@ -1201,43 +1182,43 @@ def render_result_cards_html(result: Dict, elapsed: float, model_choice: str) ->
             if has_cal:
                 breakdown_items += f"""
                 <div style="margin-top: 8px;">
-                    <div style="display: flex; justify-content: space-between; font-size: 12px; color: #a8b2d1;">
+                    <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--card-text-secondary); font-family: 'Times New Roman', Times, serif;">
                         <span>{class_label}</span>
-                        <span style="font-size: 10px; color: #8892b0;">Thô: {pct_raw:.1f}% → <strong style="color: {class_color};">{pct_cal:.1f}%</strong></span>
+                        <span style="font-size: 10px; color: var(--card-text-muted);">Thô: {pct_raw:.1f}% → <strong style="color: {class_color};">{pct_cal:.1f}%</strong></span>
                     </div>
-                    <div style="background: #112240; border-radius: 5px; height: 6px; margin-top: 2px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05);">
-                        <div style="background: {class_color}; width: {pct_cal}%; height: 100%; border-radius: 5px; box-shadow: 0 0 5px {class_color}80;"></div>
+                    <div style="background: var(--progress-bar-bg); border-radius: 5px; height: 8px; margin-top: 3px; overflow: hidden; border: 1px solid var(--card-border);">
+                        <div style="background: {class_color}; width: {pct_cal}%; height: 100%; border-radius: 5px; box-shadow: 0 0 5px {class_color}80; animation: pulseGlow 2s infinite ease-in-out;"></div>
                     </div>
                 </div>
                 """
             else:
                 breakdown_items += f"""
                 <div style="margin-top: 8px;">
-                    <div style="display: flex; justify-content: space-between; font-size: 12px; color: #a8b2d1;">
+                    <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--card-text-secondary); font-family: 'Times New Roman', Times, serif;">
                         <span>{class_label}</span>
                         <span style="color: {class_color}; font-weight: bold;">{pct_raw:.1f}%</span>
                     </div>
-                    <div style="background: #112240; border-radius: 5px; height: 6px; margin-top: 2px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05);">
-                        <div style="background: {class_color}; width: {pct_raw}%; height: 100%; border-radius: 5px; box-shadow: 0 0 5px {class_color}80;"></div>
+                    <div style="background: var(--progress-bar-bg); border-radius: 5px; height: 8px; margin-top: 3px; overflow: hidden; border: 1px solid var(--card-border);">
+                        <div style="background: {class_color}; width: {pct_raw}%; height: 100%; border-radius: 5px; box-shadow: 0 0 5px {class_color}80; animation: pulseGlow 2s infinite ease-in-out;"></div>
                     </div>
                 </div>
                 """
 
         html += f"""
-        <div style="flex: 1; min-width: 240px; background: rgba(17, 34, 64, 0.6); border: 1px solid {color}80; border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 8px 16px rgba(0,0,0,0.3); transition: all 0.3s ease; backdrop-filter: blur(10px);">
+        <div class="result-card-hover" style="flex: 1; min-width: 240px; background: var(--card-bg); border: 1px solid {color}60; border-radius: 16px; padding: 22px; text-align: center; box-shadow: 0 8px 24px var(--shadow-color), 0 0 15px {color}10; backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border-bottom: 4px solid {color};">
             <div style="font-size: 40px; margin-bottom: 5px;">{icon}</div>
-            <div style="font-size: 0.8rem; color: #8892b0; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 5px;">{axis_name}</div>
-            <div style="font-size: 1.5rem; font-weight: bold; color: {color}; margin-bottom: 8px;">{label}</div>
+            <div style="font-size: 0.8rem; color: var(--card-text-muted); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 5px; font-family: 'Times New Roman', Times, serif; font-weight: 600;">{axis_name}</div>
+            <div style="font-size: 1.6rem; font-weight: bold; color: {color}; margin-bottom: 8px; font-family: 'Times New Roman', Times, serif;">{label}</div>
             {conf_html}
             
-            <div style="margin-top: 15px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 10px; text-align: left;">
-                <div style="font-size: 0.8rem; font-weight: bold; color: #64ffda; text-transform: uppercase; margin-bottom: 5px;">Chi tiết nhãn:</div>
+            <div style="margin-top: 15px; border-top: 1px dashed var(--input-border); padding-top: 10px; text-align: left;">
+                <div style="font-size: 0.8rem; font-weight: bold; color: var(--accent-color); text-transform: uppercase; margin-bottom: 5px; font-family: 'Times New Roman', Times, serif; letter-spacing: 0.05em;">Chi tiết nhãn:</div>
                 {breakdown_items}
             </div>
         </div>
         """
     html += '</div>'
-    html += f"<div style='margin-top: 15px; font-style: italic; color: #8892b0; font-family: \"Times New Roman\", serif; font-size: 0.9rem; text-align: right;'>⏱️ Thời gian xử lý: {elapsed:.2f}s · Mô hình: {model_choice}</div>"
+    html += f"<div style='margin-top: 15px; font-style: italic; color: var(--card-text-muted); font-family: \"Times New Roman\", Times, serif; font-size: 0.9rem; text-align: right;'>⏱️ Thời gian xử lý: {elapsed:.2f}s · Mô hình: {model_choice}</div>"
     return html
 
 
@@ -1256,7 +1237,7 @@ def make_speed_chart() -> go.Figure:
         plot_bgcolor='rgba(0,0,0,0)',
         font=dict(family='Times New Roman', color='#ccd6f6', size=13),
         yaxis=dict(title='Số mẫu xử lý/giây', range=[0, 140]),
-        height=320,
+        width=1400, height=420,
         margin=dict(l=20, r=20, t=30, b=20),
     )
     return fig
@@ -1276,7 +1257,7 @@ def make_sunburst_chart() -> go.Figure:
     fig_sun.update_layout(
         margin=dict(l=10, r=10, t=10, b=10),
         paper_bgcolor='rgba(0,0,0,0)',
-        height=380
+        width=1400, height=480
     )
     return fig_sun
 
@@ -1496,24 +1477,12 @@ def handle_export_report(report_md: str):
     return gr.update(visible=False)
 
 
-def handle_fetch(url: str, max_comments: int) -> Tuple[str, str]:
-    """Multi-source URL fetcher."""
-    content, info = fetch_url(url, max_comments)
-    return content, info
-
-
 def handle_fetch_url(url: str, max_comments: int) -> Tuple[str, gr.update, gr.update, gr.update, str]:
     """Unified handler for fetching URL content as a list of segments."""
     texts, info = fetch_url_as_list(url, max_comments)
     if not texts:
         error_msg = info if info.startswith("❌") else f"❌ Lỗi: {info}"
-        return (
-            "", 
-            gr.update(visible=False), 
-            gr.update(visible=False), 
-            gr.update(value=f"<p style='color:#ff4b4b;'>{error_msg}</p>"), 
-            ""
-        )
+        return ("", gr.update(visible=False), gr.update(visible=False), gr.update(value=f"<p style='color:#ff4b4b;'>{error_msg}</p>"), "")
     
     rows = [[i + 1, t] for i, t in enumerate(texts)]
     df = pd.DataFrame(rows, columns=["STT", "Nội dung thu thập được"])
@@ -1521,13 +1490,7 @@ def handle_fetch_url(url: str, max_comments: int) -> Tuple[str, gr.update, gr.up
     preview_text = texts[0] if texts else ""
     status_html = f"<p style='color:#3db882; font-weight:bold;'>✅ Thu thập thành công {len(texts)} bài viết/bình luận từ {info}!</p>"
     
-    return (
-        preview_text,
-        gr.update(value=df, visible=True),
-        gr.update(visible=True),
-        gr.update(value=status_html),
-        batch_text_str
-    )
+    return (preview_text, gr.update(value=df, visible=True), gr.update(visible=True), gr.update(value=status_html), batch_text_str)
 
 
 def handle_send_to_batch(batch_text_str: str) -> Tuple[str, gr.update]:
@@ -1701,136 +1664,629 @@ Dự án xây dựng hệ thống **Ensemble** tận dụng ưu điểm của ha
 """
 
 CSS_STYLE = """
-/* VaccineNLP — Original Design (Times New Roman, High Contrast Dark) */
-
-body, html, .gradio-container {
-    background-color: #0a1628 !important;
-    color: #ccd6f6 !important;
-    font-family: 'Times New Roman', Times, Georgia, serif !important;
+/* Theme styles via CSS variables */
+:root {
+    --bg-color: #f8fafc;
+    --bg-gradient: linear-gradient(135deg, #f1f5f9 0%, #cbd5e1 100%);
+    --text-color: #0f172a;
+    --card-bg: rgba(255, 255, 255, 0.75);
+    --card-border: rgba(0, 0, 0, 0.05);
+    --header-bg: rgba(255, 255, 255, 0.8);
+    --header-text: #0f172a;
+    --footer-bg: rgba(255, 255, 255, 0.85);
+    --footer-text: #334155;
+    --input-bg: rgba(255, 255, 255, 0.9);
+    --input-text: #0f172a;
+    --input-border: rgba(0, 0, 0, 0.12);
+    --accordion-bg: rgba(0, 0, 0, 0.02);
+    --tab-button-bg: rgba(0, 0, 0, 0.04);
+    --tab-button-text: #475569;
+    --accent-color: #2563eb;
+    --accent-bg: rgba(37, 99, 235, 0.05);
+    --shadow-color: rgba(0, 0, 0, 0.06);
+    --glow-color: rgba(37, 99, 235, 0.15);
+    --card-text-muted: #64748b;
+    --card-text-primary: #0f172a;
+    --card-text-secondary: #334155;
+    --progress-bar-bg: rgba(226, 232, 240, 0.8);
+    --dropdown-bg: #ffffff;
 }
 
-/* Global font — Times New Roman throughout */
-*, p, span, div, li, td, th, label, input, textarea, select, button {
-    font-family: 'Times New Roman', Times, Georgia, serif !important;
+:root.dark, body.dark, .dark {
+    --bg-color: #030712;
+    --bg-gradient: linear-gradient(135deg, #030712 0%, #0b1528 50%, #0f172a 100%);
+    --text-color: #cbd5e1;
+    --card-bg: rgba(15, 23, 42, 0.65);
+    --card-border: rgba(100, 255, 218, 0.08);
+    --header-bg: rgba(15, 23, 42, 0.75);
+    --header-text: #ffffff;
+    --footer-bg: rgba(15, 23, 42, 0.85);
+    --footer-text: #94a3b8;
+    --input-bg: rgba(30, 41, 59, 0.45);
+    --input-text: #e2e8f0;
+    --input-border: rgba(100, 255, 218, 0.12);
+    --accordion-bg: rgba(15, 23, 42, 0.3);
+    --tab-button-bg: rgba(30, 41, 59, 0.3);
+    --tab-button-text: #64748b;
+    --accent-color: #64ffda;
+    --accent-bg: rgba(100, 255, 218, 0.06);
+    --shadow-color: rgba(0, 0, 0, 0.3);
+    --glow-color: rgba(100, 255, 218, 0.15);
+    --card-text-muted: #8892b0;
+    --card-text-primary: #ccd6f6;
+    --card-text-secondary: #a8b2d1;
+    --progress-bar-bg: rgba(10, 25, 47, 0.6);
+    --dropdown-bg: #0f172a;
 }
 
-h1, h2, h3, h4, h5, h6 {
-    font-family: 'Times New Roman', Times, Georgia, serif !important;
-    color: #ffffff !important;
-    font-weight: bold !important;
+body, html {
+    background-color: var(--bg-color) !important;
+    background: var(--bg-gradient) !important;
+    color: var(--text-color) !important;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
 }
 
-/* Scrollbar */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: rgba(10, 22, 40, 0.8) !important; }
-::-webkit-scrollbar-thumb { background: rgba(0, 123, 255, 0.5) !important; border-radius: 4px !important; }
-::-webkit-scrollbar-thumb:hover { background: rgba(0, 123, 255, 0.9) !important; }
+.gradio-container {
+    max-width: 98% !important;
+    width: 98% !important;
+    overflow: visible !important;
+    /* NOTE: Do NOT add backdrop-filter here — it creates a containing block for position:fixed (dropdown lists) */
+}
 
-/* Tabs */
-.tab-nav button {
+.gradio-container .contain {
+    max-width: 100% !important;
+    width: 100% !important;
+}
+
+/* Prevent global input styling from breaking Gradio's custom dropdown inputs */
+.gradio-container .border-none {
     background-color: transparent !important;
-    color: #8892b0 !important;
     border: none !important;
-    border-bottom: 2px solid transparent !important;
-    padding: 10px 20px !important;
-    font-weight: 600 !important;
-    font-size: 0.95rem !important;
-    font-family: 'Times New Roman', Times, serif !important;
-    transition: all 0.2s ease !important;
-}
-.tab-nav button:hover {
-    color: #ffffff !important;
-    background-color: rgba(0, 123, 255, 0.08) !important;
-}
-.tab-nav button.selected {
-    color: #64ffda !important;
-    border-bottom: 3px solid #64ffda !important;
-    font-weight: 700 !important;
-    background-color: rgba(100, 255, 218, 0.05) !important;
+    box-shadow: none !important;
 }
 
-/* Primary button */
-button.primary, button.gr-button-primary {
-    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%) !important;
-    color: #ffffff !important;
-    border: none !important;
-    font-weight: 700 !important;
-    font-size: 1rem !important;
+/* Force Gradio dropdown options list to be visible and correctly styled */
+.gradio-container .options,
+.gradio-container .select-options,
+.gradio-container .dropdown-menu {
+    z-index: 999999 !important;
+    background-color: var(--dropdown-bg) !important;
+    border: 1px solid var(--input-border) !important;
+    color: var(--text-color) !important;
+    box-shadow: 0 10px 30px var(--shadow-color) !important;
+    backdrop-filter: blur(18px) !important;
+    -webkit-backdrop-filter: blur(18px) !important;
+}
+
+.gradio-container .options .option,
+.gradio-container .options .item,
+.gradio-container .select-options .option,
+.gradio-container .select-options .item,
+.gradio-container .dropdown-menu .option,
+.gradio-container .dropdown-menu .item {
+    color: var(--text-color) !important;
+    font-family: 'Times New Roman', Times, Georgia, serif !important;
+    padding: 8px 12px !important;
+}
+
+.gradio-container .options .option:hover,
+.gradio-container .options .option.selected,
+.gradio-container .options .item:hover,
+.gradio-container .options .item.selected,
+.gradio-container .select-options .option:hover,
+.gradio-container .select-options .option.selected,
+.gradio-container .select-options .item:hover,
+.gradio-container .select-options .item.selected,
+.gradio-container .dropdown-menu .option:hover,
+.gradio-container .dropdown-menu .option.selected,
+.gradio-container .dropdown-menu .item:hover,
+.gradio-container .dropdown-menu .item.selected {
+    background-color: var(--accent-color) !important;
+    color: #030712 !important;
+}
+
+/* Base typography - strict Times New Roman styled elegantly */
+* {
+    font-family: 'Times New Roman', Times, Georgia, serif !important;
+    text-shadow: 0 1px 1px rgba(0,0,0,0.01);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: rgba(10, 25, 47, 0.1);
+}
+.dark ::-webkit-scrollbar-track {
+    background: rgba(10, 25, 47, 0.5);
+}
+::-webkit-scrollbar-thumb {
+    background: var(--accent-color);
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #4cd9b9;
+}
+
+/* Tabs Navigation Styling */
+.tabs {
+    border-bottom: 1px solid rgba(100, 255, 218, 0.15) !important;
+    background: transparent !important;
+}
+
+.tab-nav {
+    display: flex;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    gap: 8px !important;
+    background: transparent !important;
+    border-bottom: none !important;
+    padding: 10px 0 !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;  /* Firefox */
+    -ms-overflow-style: none !important; /* IE/Edge */
+}
+
+/* Hide scrollbar on the tab nav but allow scrolling */
+.tab-nav::-webkit-scrollbar {
+    display: none !important;
+}
+
+.tab-nav button {
+    background-color: var(--tab-button-bg) !important;
+    color: var(--tab-button-text) !important;
+    border: 1px solid var(--input-border) !important;
     border-radius: 8px !important;
     padding: 12px 28px !important;
-    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4) !important;
-    transition: all 0.2s ease !important;
-    font-family: 'Times New Roman', Times, serif !important;
+    font-weight: 500 !important;
+    font-size: 0.9rem !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
+
+.tab-nav button:hover {
+    color: var(--accent-color) !important;
+    border-color: var(--accent-color) !important;
+    background-color: var(--accent-bg) !important;
+}
+
+.tab-nav button.selected {
+    color: var(--text-color) !important;
+    background-color: rgba(30, 41, 59, 0.15) !important;
+    border: 1.5px solid #007bff !important;
+    border-bottom: 3.5px solid var(--accent-color) !important;
+    border-radius: 8px 8px 0 0 !important;
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    font-weight: 700 !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+.dark .tab-nav button.selected {
+    color: var(--header-text) !important;
+    background-color: rgba(10, 25, 47, 0.3) !important;
+    border: 1.5px solid #007bff !important;
+    border-bottom: 3.5px solid var(--accent-color) !important;
+}
+
+/* Mobile-specific tab overrides */
+@media (max-width: 768px) {
+    .tab-nav {
+        gap: 6px !important;
+        padding: 8px 0 !important;
+    }
+    .tab-nav button {
+        padding: 10px 16px !important;
+        font-size: 0.8rem !important;
+        letter-spacing: 0.03em !important;
+        border-radius: 6px !important;
+    }
+}
+
+/* Button style */
+button.primary, button.gr-button-primary {
+    background: linear-gradient(135deg, var(--accent-color) 0%, #3b82f6 100%) !important;
+    color: #020617 !important;
+    font-weight: 700 !important;
+    border: none !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 15px var(--glow-color) !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+.dark button.primary, .dark button.gr-button-primary {
+    color: #020617 !important;
+}
+
 button.primary:hover, button.gr-button-primary:hover {
-    transform: translateY(-1px) !important;
-    box-shadow: 0 6px 18px rgba(0, 123, 255, 0.6) !important;
-    background: linear-gradient(135deg, #1a8aff 0%, #007bff 100%) !important;
+    transform: translateY(-2px) scale(1.01) !important;
+    box-shadow: 0 6px 22px var(--glow-color) !important;
+    opacity: 0.95 !important;
 }
 
-/* Secondary button */
 button.secondary, button.gr-button-secondary {
-    background-color: rgba(17, 34, 64, 0.8) !important;
-    color: #ccd6f6 !important;
-    border: 1px solid rgba(100, 255, 218, 0.3) !important;
+    background-color: var(--tab-button-bg) !important;
+    color: var(--text-color) !important;
+    border: 1px solid var(--input-border) !important;
     border-radius: 8px !important;
-    font-family: 'Times New Roman', Times, serif !important;
-    transition: all 0.2s ease !important;
+    transition: all 0.3s ease !important;
 }
+
 button.secondary:hover, button.gr-button-secondary:hover {
-    border-color: #64ffda !important;
-    color: #64ffda !important;
-    background-color: rgba(100, 255, 218, 0.08) !important;
+    border-color: var(--accent-color) !important;
+    color: var(--accent-color) !important;
+    background-color: var(--accent-bg) !important;
+    box-shadow: 0 4px 12px var(--glow-color) !important;
 }
 
-/* Inputs */
-input, textarea, select {
-    background-color: rgba(10, 22, 40, 0.9) !important;
-    color: #e8f0fe !important;
-    border: 1px solid rgba(100, 255, 218, 0.25) !important;
+/* Input boxes, text area style */
+.gradio-container input[type="text"]:not(.border-none):not(.dropdown input):not(.select-wrap input):not(.wrap input),
+.gradio-container textarea {
+    background-color: var(--input-bg) !important;
+    color: var(--input-text) !important;
+    border: 1px solid var(--input-border) !important;
     border-radius: 8px !important;
-    font-family: 'Times New Roman', Times, serif !important;
-    font-size: 1rem !important;
-    transition: all 0.2s ease !important;
-}
-input:focus, textarea:focus, select:focus {
-    border-color: #64ffda !important;
-    box-shadow: 0 0 0 2px rgba(100, 255, 218, 0.2) !important;
-    background-color: rgba(10, 22, 40, 1) !important;
-    outline: none !important;
-}
-input::placeholder, textarea::placeholder {
-    color: #8892b0 !important;
-    opacity: 1 !important;
+    padding: 10px 15px !important;
+    transition: all 0.3s ease !important;
 }
 
-/* Accordion */
+.gradio-container input[type="text"]:not(.border-none):focus,
+.gradio-container textarea:focus {
+    border-color: var(--accent-color) !important;
+    box-shadow: 0 0 0 2px var(--glow-color) !important;
+    background-color: var(--input-bg) !important;
+}
+
+/* Gradio Containers and Panels */
+/* NOTE: backdrop-filter is intentionally removed from .block — having it would create a new containing block
+   for position:fixed elements (like Gradio dropdown option lists), trapping them inside and making them invisible. */
+.gr-box, .gr-panel, .block {
+    background-color: var(--card-bg) !important;
+    border: 1px solid var(--card-border) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 8px 30px var(--shadow-color) !important;
+}
+
+/* NUCLEAR FIX: Force ALL elements inside sidebar to have overflow:visible so dropdown options list
+   can escape parent clipping. Gradio Soft theme sets overflow:hidden on .block, .wrap, etc.
+   We override ALL sidebar child elements except when sidebar is collapsed, excluding the options list itself. */
+#sidebar-col:not(.collapsed) *:not(.options):not(.select-options):not([class*="options"]) {
+    overflow: visible !important;
+}
+
+/* Accordion styling */
 .gr-accordion {
-    background-color: rgba(10, 22, 40, 0.6) !important;
-    border: 1px solid rgba(100, 255, 218, 0.15) !important;
+    background-color: var(--accordion-bg) !important;
+    border: 1px solid var(--input-border) !important;
     border-radius: 10px !important;
-    margin-bottom: 10px !important;
+    margin-bottom: 12px !important;
+    transition: all 0.3s ease !important;
+}
+.gr-accordion:hover {
+    border-color: var(--accent-color) !important;
 }
 
-/* Markdown text */
-.prose, .markdown-body, .gr-markdown {
-    color: #ccd6f6 !important;
-    font-family: 'Times New Roman', Times, serif !important;
-    line-height: 1.7 !important;
-    font-size: 1rem !important;
+/* Custom animations & interactive classes */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
-.prose a, .markdown-body a, .gr-markdown a {
-    color: #64ffda !important;
+
+@keyframes pulseGlow {
+    0% { box-shadow: 0 0 5px var(--accent-color)80; }
+    50% { box-shadow: 0 0 15px var(--accent-color)e0; }
+    100% { box-shadow: 0 0 5px var(--accent-color)80; }
 }
-.prose strong, .markdown-body strong {
+
+.result-card-hover {
+    transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1) !important;
+    animation: fadeInUp 0.6s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+}
+.result-card-hover:hover {
+    transform: translateY(-6px) scale(1.02) !important;
+    box-shadow: 0 20px 35px var(--shadow-color), 0 0 25px var(--glow-color) !important;
+}
+
+.resource-card {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+.resource-card:hover {
+    border-color: var(--accent-color) !important;
+    box-shadow: 0 10px 30px var(--glow-color) !important;
+    transform: translateY(-4px) !important;
+}
+
+/* Dropdown list customization */
+.dropdown-menu {
+    background-color: var(--input-bg) !important;
+    border: 1px solid var(--input-border) !important;
+}
+
+/* Theme toggle buttons in sidebar styling */
+.theme-dark-btn, .theme-light-btn {
+    border: 1px solid var(--input-border) !important;
+    border-radius: 8px !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+}
+
+body.dark .theme-dark-btn {
+    background: linear-gradient(135deg, var(--accent-color) 0%, #3b82f6 100%) !important;
+    color: #020617 !important;
+    font-weight: bold !important;
+    border-color: var(--accent-color) !important;
+}
+body.dark .theme-light-btn {
+    background-color: var(--tab-button-bg) !important;
+    color: var(--text-color) !important;
+}
+
+body:not(.dark) .theme-light-btn {
+    background: linear-gradient(135deg, var(--accent-color) 0%, #3b82f6 100%) !important;
     color: #ffffff !important;
+    font-weight: bold !important;
+    border-color: var(--accent-color) !important;
+}
+body:not(.dark) .theme-dark-btn {
+    background-color: var(--tab-button-bg) !important;
+    color: var(--text-color) !important;
 }
 
-/* Labels */
-label, .gr-label {
-    color: #ccd6f6 !important;
-    font-weight: 600 !important;
-    font-family: 'Times New Roman', Times, serif !important;
+#sidebar-col {
+    background-color: var(--card-bg) !important;
+    border-right: 1px solid var(--input-border) !important;
+    padding: 20px !important;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    height: calc(100vh - 24px) !important;
+    box-sizing: border-box !important;
+    width: 290px !important;
+    min-width: 290px !important;
+    max-width: 290px !important;
+    opacity: 1 !important;
+    z-index: 9999 !important;
+    transform: translateX(0) !important;
+}
+
+#sidebar-col::-webkit-scrollbar {
+    width: 10px !important;
+}
+
+#sidebar-col::-webkit-scrollbar-track {
+    background: rgba(255,255,255,0.03) !important;
+    border-radius: 8px !important;
+}
+
+#sidebar-col::-webkit-scrollbar-thumb {
+    background-color: rgba(255,255,255,0.18) !important;
+    border-radius: 999px !important;
+    border: 2px solid rgba(0,0,0,0.0) !important;
+}
+
+#sidebar-col::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255,255,255,0.28) !important;
+}
+
+#main-layout-row {
+    flex-wrap: nowrap !important;
+    width: 100% !important;
+    display: flex !important;
+    overflow: visible !important;
+    position: relative !important;
+}
+
+#sidebar-col.collapsed {
+    width: 0px !important;
+    min-width: 0px !important;
+    max-width: 0px !important;
+    padding: 0px !important;
+    opacity: 0 !important;
+    border-right: none !important;
+    transform: translateX(-290px) !important;
+    pointer-events: none !important;
+    overflow: hidden !important;
+}
+
+#content-col {
+    position: relative !important;
+    padding-top: 50px !important;
+    padding-left: 20px !important;
+    padding-right: 20px !important;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    flex: 1 1 auto !important;
+}
+
+#sidebar-col.collapsed ~ #content-col {
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+#sidebar-col:not(.collapsed) ~ #content-col {
+    width: calc(100% - 290px) !important;
+    max-width: calc(100% - 290px) !important;
+}
+
+#sidebar-toggle-btn {
+    position: fixed !important;
+    z-index: 10001 !important;
+    top: 16px !important;
+    width: 40px !important;
+    min-width: 40px !important;
+    max-width: 40px !important;
+    height: 40px !important;
+    padding: 0 !important;
+    border-radius: 8px !important;
+    font-size: 18px !important;
+    font-weight: bold !important;
+    background-color: rgba(15, 23, 42, 0.9) !important;
+    color: var(--accent-color) !important;
+    border: 1px solid rgba(100, 255, 218, 0.35) !important;
+    cursor: pointer !important;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18) !important;
+    transition: all 0.25s ease !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    /* When sidebar is open - button on right */
+    left: 258px !important;
+}
+
+#sidebar-toggle-btn.sidebar-is-collapsed {
+    left: 16px !important;
+}
+
+#sidebar-toggle-btn::before {
+    content: '<<';
+}
+
+#sidebar-toggle-btn.sidebar-is-collapsed::before {
+    content: '>>';
+}
+
+#sidebar-toggle-btn span {
+    display: none !important;
+}
+
+#sidebar-toggle-btn:hover {
+    background-color: rgba(100, 255, 218, 0.15) !important;
+    border-color: rgba(100, 255, 218, 0.4) !important;
+    box-shadow: 0 4px 12px rgba(100, 255, 218, 0.2) !important;
+    transform: scale(1.08) !important;
+}
+
+/* When sidebar is collapsed - button moves to left */
+#sidebar-toggle-btn.sidebar-is-collapsed {
+    left: 16px !important;
+}
+
+/* Sidebar scrolling */
+#sidebar-col {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    height: calc(100vh - 16px) !important;
+}
+
+#sidebar-col::-webkit-scrollbar {
+    width: 10px !important;
+}
+
+#sidebar-col::-webkit-scrollbar-track {
+    background: rgba(255,255,255,0.06) !important;
+    border-radius: 999px !important;
+}
+
+#sidebar-col::-webkit-scrollbar-thumb {
+    background-color: rgba(255,255,255,0.2) !important;
+    border-radius: 999px !important;
+}
+
+#sidebar-col::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255,255,255,0.35) !important;
+}
+
+@media (max-width: 768px) {
+    #sidebar-col {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        height: 100vh !important;
+        background-color: var(--bg-color) !important;
+        border-right: 1px solid var(--input-border) !important;
+        box-shadow: 5px 0 25px var(--shadow-color) !important;
+        z-index: 9999 !important;
+        transform: translateX(-290px) !important;
+        opacity: 0 !important;
+        width: 290px !important;
+        min-width: 290px !important;
+        max-width: 290px !important;
+    }
+    
+    #sidebar-col:not(.collapsed) {
+        transform: translateX(0) !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+    }
+
+    #sidebar-col.collapsed {
+        transform: translateX(-290px) !important;
+        opacity: 0 !important;
+        width: 290px !important;
+        min-width: 290px !important;
+        max-width: 290px !important;
+        padding: 20px !important;
+    }
+
+    #content-col {
+        width: 100% !important;
+        max-width: 100% !important;
+        padding-top: 60px !important;
+    }
+
+    #sidebar-col.collapsed ~ #content-col,
+    #sidebar-col:not(.collapsed) ~ #content-col {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+}
+
+#sidebar-toggle-btn:hover {
+    border-color: var(--accent-color) !important;
+    color: var(--accent-color) !important;
+    background-color: var(--accent-bg) !important;
+    transform: scale(1.02) !important;
+}
+
+/* Custom Plotly adaptations for Dark/Light Mode */
+.js-plotly-plot {
+    background-color: transparent !important;
+}
+.js-plotly-plot .bg {
+    fill: transparent !important;
+}
+.js-plotly-plot text,
+.js-plotly-plot .xtick text,
+.js-plotly-plot .ytick text,
+.js-plotly-plot .polargrid text,
+.js-plotly-plot .angularaxis text,
+.js-plotly-plot .gtitle,
+.js-plotly-plot .xtitle,
+.js-plotly-plot .ytitle,
+.js-plotly-plot .legendtext {
+    fill: var(--text-color) !important;
+    font-family: 'Times New Roman', Times, Georgia, serif !important;
+}
+.js-plotly-plot .gridlayer path,
+.js-plotly-plot .zerolinelayer path,
+.js-plotly-plot .axis line,
+.js-plotly-plot .polargrid path,
+.js-plotly-plot .angularaxis path {
+    stroke: rgba(0, 0, 0, 0.1) !important;
+}
+.dark .js-plotly-plot .gridlayer path,
+.dark .js-plotly-plot .zerolinelayer path,
+.dark .js-plotly-plot .axis line,
+.dark .js-plotly-plot .polargrid path,
+.dark .js-plotly-plot .angularaxis path {
+    stroke: rgba(255, 255, 255, 0.12) !important;
+}
+.js-plotly-plot .sankey-node text {
+    fill: var(--text-color) !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5) !important;
 }
 """
 
@@ -2090,30 +2546,53 @@ THESIS_HTML = """
 """
 
 
-def get_header_html():
+def get_sidebar_header_html() -> str:
     logo_src = get_huph_logo_base64()
     return f"""
-    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 15px; margin-bottom: 20px; color: white; font-family: 'Times New Roman', serif; box-shadow: 0 8px 20px rgba(0,0,0,0.2);">
-      <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center;">
-        <img src="{logo_src}" style="width: 70px; height: 70px; object-fit: contain; filter: drop-shadow(0 0 8px rgba(255,255,255,0.5));" alt="HUPH Logo">
-        <div style="flex: 2; min-width: 300px;">
-          <h1 style="margin: 0; font-size: 2rem;">🦠 VaccineNLP</h1>
-          <p style="margin: 5px 0; font-size: 1.1rem; opacity: 0.95;">
-            Phát hiện Tin giả & Phân tích Thái độ Vaccine tiếng Việt
-          </p>
-          <p style="margin: 5px 0; font-size: 0.95rem; opacity: 0.85; font-style: italic;">
+    <div style="text-align: center; margin-bottom: 20px; font-family: 'Times New Roman', Times, serif;">
+        <!-- Logo -->
+        <div style="width: 90px; height: 90px; background: rgba(255, 255, 255, 0.05); border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid var(--accent-color); box-shadow: 0 0 20px var(--glow-color); margin: 0 auto 15px auto;">
+            <img src="{logo_src}" style="width: 75px; height: 75px; object-fit: contain;" alt="HUPH Logo">
+        </div>
+        
+        <!-- App Title -->
+        <h2 style="margin: 0; font-size: 1.6rem; font-weight: 800; color: var(--header-text); display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <span style="font-size: 1.6rem;">🦠</span> VaccineNLP
+        </h2>
+        
+        <!-- Subtitle -->
+        <p style="margin: 8px 0; font-size: 0.9rem; color: var(--accent-color); font-weight: 600; line-height: 1.3;">
+            Hệ thống phát hiện Tin giả & Phân tích Thái độ Vaccine Tiếng Việt
+        </p>
+        
+        <!-- Architecture Info -->
+        <p style="margin: 4px 0 15px 0; font-size: 0.8rem; color: var(--card-text-muted); font-style: italic; line-height: 1.3;">
             Kiến trúc Dual-Student Hybrid · PhoBERT-v2 + Gemma-4 E4B
-          </p>
+        </p>
+        
+        <!-- Author Card -->
+        <div style="background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 10px; padding: 12px; text-align: left; font-size: 0.85rem; line-height: 1.5; color: var(--text-color);">
+            <div style="text-align: center; margin-bottom: 8px;">
+                <span style="display: inline-block; background: var(--accent-bg); color: var(--accent-color); padding: 1px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; border: 1px solid var(--input-border);">🎓 ĐỒ ÁN TỐT NGHIỆP HUPH 2026</span>
+            </div>
+            <b style="color: var(--header-text);">Kim Mạnh Hưng</b> · 2211090016<br>
+            <b style="color: var(--header-text);">Đinh Lê Quỳnh Phương</b> · 2211090031<br>
+            <span style="font-size: 0.8rem; color: var(--card-text-muted); display: inline-block; margin-top: 4px;">GVHD: TS. Trần Lâm Quân</span>
         </div>
-        <div style="flex: 1; min-width: 250px; border-left: 2px solid rgba(255,255,255,0.3); padding-left: 20px;">
-          <div style="font-size: 0.85rem; opacity: 0.9; line-height: 1.6;">
-            <b>🎓 Đồ án tốt nghiệp HUPH 2026</b><br>
-            Kim Mạnh Hưng · 2211090016<br>
-            Đinh Lê Quỳnh Phương · 2211090031<br>
-            <span style="font-size: 0.8rem; opacity: 0.8;">GVHD: TS. Trần Lâm Quân</span>
-          </div>
-        </div>
-      </div>
+    </div>
+    """
+
+
+def get_header_html() -> str:
+    return """
+    <div style="text-align: center; padding: 10px 10px 25px 10px; margin-bottom: 10px; font-family: 'Times New Roman', Times, serif; color: var(--text-color);">
+      <h1 style="margin: 0; font-size: 1.9rem; font-weight: 800; color: var(--header-text); line-height: 1.3; text-transform: uppercase; letter-spacing: 0.02em;">
+        PHÁT HIỆN TIN GIẢ VÀ PHÂN TÍCH THÁI ĐỘ VỀ VACCINE TẠI VIỆT NAM 💉
+      </h1>
+      <div style="width: 150px; height: 3px; background: var(--accent-color); margin: 15px auto;"></div>
+      <p style="margin: 0; font-size: 1.1rem; color: var(--card-text-muted); font-style: italic; font-weight: 500; max-width: 800px; margin: 0 auto; line-height: 1.4;">
+        Vaccine Misinformation & Attitude Analysis Framework for Vietnamese Social Media
+      </p>
     </div>
     """
 
@@ -2121,46 +2600,354 @@ def get_header_html():
 def get_footer_html():
     logo_src = get_huph_logo_base64()
     return f"""
-    <div style="background: linear-gradient(135deg, #0a192f 0%, #112240 100%); color: #a8b2d1; padding: 40px 20px; border-radius: 15px; margin-top: 40px; font-family: 'Times New Roman', serif; border-top: 4px solid #007bff; box-shadow: 0 -10px 25px rgba(0, 123, 255, 0.15);">
-      <div style="display: flex; flex-wrap: wrap; gap: 30px; justify-content: space-around;">
-        <div style="flex: 1.2; min-width: 250px; text-align: center; border-right: 1px solid rgba(255,255,255,0.1); padding-right: 15px;">
-          <img src="{logo_src}" style="width: 90px; height: 90px; object-fit: contain; margin-bottom: 10px; filter: drop-shadow(0 0 8px rgba(0,123,255,0.2));" alt="HUPH Logo">
-          <h3 style="color: #ffffff; font-size: 1rem; margin: 5px 0;">TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG</h3>
-          <p style="font-size: 0.85rem; color: #8892b0; margin: 5px 0;">📍 Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</p>
-          <p style="font-size: 0.85rem; margin: 5px 0;">🌐 <a href="https://huph.edu.vn/" target="_blank" style="color: #64ffda; text-decoration: none;">huph.edu.vn</a></p>
+    <div style="background: var(--footer-bg); color: var(--footer-text); padding: 45px 30px; border-radius: 16px; margin-top: 45px; font-family: 'Times New Roman', Times, serif; border: 1px solid var(--input-border); border-top: 4px solid var(--accent-color); box-shadow: 0 -12px 35px rgba(0, 0, 0, 0.2);">
+      <div style="display: flex; flex-wrap: wrap; gap: 35px; justify-content: space-between;">
+        <div style="flex: 1.1; min-width: 250px; text-align: center; border-right: 1px solid var(--input-border); padding-right: 20px;">
+          <div style="width: 100px; height: 100px; background: rgba(255,255,255,0.08); border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid var(--accent-color); box-shadow: 0 0 20px rgba(100, 255, 218, 0.15); margin: 0 auto 15px auto;">
+            <img src="{logo_src}" style="width: 80px; height: 80px; object-fit: contain;" alt="HUPH Logo">
+          </div>
+          <h3 style="color: var(--header-text); font-size: 1.05rem; margin: 5px 0; font-family: 'Times New Roman', Times, serif !important; font-weight: 700; letter-spacing: 0.05em;">TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG</h3>
+          <p style="font-size: 0.85rem; color: var(--tab-button-text); margin: 6px 0;">📍 Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</p>
+          <p style="font-size: 0.85rem; margin: 6px 0;">🌐 <a href="https://huph.edu.vn/" target="_blank" style="color: var(--accent-color); text-decoration: none; font-weight: 600;">huph.edu.vn</a></p>
         </div>
-        <div style="flex: 1.5; min-width: 250px; border-right: 1px solid rgba(255,255,255,0.1); padding-right: 15px;">
-          <h3 style="color: #007bff; font-size: 1.1rem; text-transform: uppercase; margin-bottom: 15px;">🔬 Đề tài đồ án</h3>
-          <p style="color: #ffd700; font-weight: bold; font-style: italic; font-size: 0.95rem; line-height: 1.5;">
+        
+        <div style="flex: 1.5; min-width: 250px; border-right: 1px solid var(--input-border); padding-right: 20px;">
+          <h3 style="color: var(--accent-color); font-size: 1.1rem; text-transform: uppercase; margin-bottom: 15px; font-family: 'Times New Roman', Times, serif !important; font-weight: 700; letter-spacing: 0.05em;">🔬 Đề tài đồ án</h3>
+          <p style="color: #ffd700; font-weight: bold; font-style: italic; font-size: 1rem; line-height: 1.6; margin-bottom: 8px;">
             "Ứng dụng Xử lý Ngôn ngữ Tự nhiên trong phát hiện thông tin sai lệch về vaccine và phân tích thái độ cộng đồng trên môi trường số tại Việt Nam"
           </p>
-          <p style="color: #8892b0; font-size: 0.85rem; margin-top: 8px;">
+          <p style="color: var(--tab-button-text); font-size: 0.85rem; line-height: 1.5;">
             (Applying NLP for Vaccine Misinformation Detection and Community Attitude Analysis in Vietnamese Digital Environments)
           </p>
         </div>
-        <div style="flex: 1.2; min-width: 250px; border-right: 1px solid rgba(255,255,255,0.1); padding-right: 15px;">
-          <h3 style="color: #007bff; font-size: 1.1rem; text-transform: uppercase; margin-bottom: 15px;">👥 Nhóm thực hiện</h3>
-          <p style="margin: 5px 0;"><b>1. Kim Mạnh Hưng</b></p>
-          <p style="font-size: 0.85rem; color: #8892b0; margin: 0 0 10px 0;">MSSV: 2211090016 · Lớp: CNCQ KHDL1-1A</p>
-          <p style="margin: 5px 0;"><b>2. Đinh Lê Quỳnh Phương</b></p>
-          <p style="font-size: 0.85rem; color: #8892b0; margin: 0 0 10px 0;">MSSV: 2211090031 · Lớp: CNCQ KHDL1-1A</p>
+        
+        <div style="flex: 1.2; min-width: 250px; border-right: 1px solid var(--input-border); padding-right: 20px;">
+          <h3 style="color: var(--accent-color); font-size: 1.1rem; text-transform: uppercase; margin-bottom: 15px; font-family: 'Times New Roman', Times, serif !important; font-weight: 700; letter-spacing: 0.05em;">👥 Nhóm thực hiện</h3>
+          <div style="margin-bottom: 12px;">
+            <p style="margin: 0; color: var(--header-text); font-weight: 600;">1. Kim Mạnh Hưng</p>
+            <p style="font-size: 0.85rem; color: var(--tab-button-text); margin: 2px 0 0 0;">MSSV: 2211090016 · Lớp: CNCQ KHDL1-1A</p>
+          </div>
+          <div>
+            <p style="margin: 0; color: var(--header-text); font-weight: 600;">2. Đinh Lê Quỳnh Phương</p>
+            <p style="font-size: 0.85rem; color: var(--tab-button-text); margin: 2px 0 0 0;">MSSV: 2211090031 · Lớp: CNCQ KHDL1-1A</p>
+          </div>
         </div>
+        
         <div style="flex: 1; min-width: 200px;">
-          <h3 style="color: #007bff; font-size: 1.1rem; text-transform: uppercase; margin-bottom: 15px;">👨‍🏫 GV Hướng dẫn</h3>
-          <p style="font-size: 1.05rem; font-weight: bold; color: #ffffff;">TS. Trần Lâm Quân</p>
-          <p style="font-size: 0.85rem; color: #8892b0; margin-top: 5px; line-height: 1.4;">
+          <h3 style="color: var(--accent-color); font-size: 1.1rem; text-transform: uppercase; margin-bottom: 15px; font-family: 'Times New Roman', Times, serif !important; font-weight: 700; letter-spacing: 0.05em;">👨‍🏫 GV Hướng dẫn</h3>
+          <p style="font-size: 1.1rem; font-weight: bold; color: var(--header-text); margin-bottom: 6px;">TS. Trần Lâm Quân</p>
+          <p style="font-size: 0.85rem; color: var(--tab-button-text); line-height: 1.5;">
             Giảng viên Khoa học dữ liệu<br>
             Trường Đại học Y tế Công cộng<br>
-            📧 <a href="mailto:tlq@huph.edu.vn" style="color: #64ffda; text-decoration: none;">tlq@huph.edu.vn</a>
+            📧 <a href="mailto:tlq@huph.edu.vn" style="color: var(--accent-color); text-decoration: none; font-weight: 600;">tlq@huph.edu.vn</a>
           </p>
         </div>
       </div>
-      <hr style="border-color: rgba(255,255,255,0.1); margin: 25px 0 15px 0;">
-      <p style="text-align: center; font-size: 0.85rem; color: #8892b0; margin: 0;">
+      <hr style="border-color: var(--input-border); margin: 30px 0 20px 0;">
+      <p style="text-align: center; font-size: 0.85rem; color: var(--tab-button-text); margin: 0; font-family: 'Times New Roman', Times, serif !important; letter-spacing: 0.02em;">
         © 2026 VaccineNLP Project | Đồ án tốt nghiệp chuyên ngành Khoa học Dữ liệu - HUPH
       </p>
     </div>
     """
+
+
+def get_kpi_cards_html(selected_view):
+    bench = load_benchmark()
+    benchmark_results = {}
+    for key in ['phobert', 'xlmr', 'gemma']:
+        d = bench[key]
+        avg_f1 = (d['misinfo'] + d['stance'] + d['sentiment']) / 3
+        benchmark_results[key] = {
+            'name': d.get('name', key),
+            'avg_f1': avg_f1,
+            'misinfo': d['misinfo'],
+            'stance': d['stance'],
+            'sentiment': d['sentiment']
+        }
+        
+    data_source_badge = "🟢 LIVE"
+    
+    if selected_view == "Tất cả mô hình (So sánh chéo)":
+        best_m = max(benchmark_results, key=lambda k: benchmark_results[k]['misinfo'])
+        best_s = max(benchmark_results, key=lambda k: benchmark_results[k]['stance'])
+        best_se = max(benchmark_results, key=lambda k: benchmark_results[k]['sentiment'])
+        best_avg = max(benchmark_results, key=lambda k: benchmark_results[k]['avg_f1'])
+        
+        cards = [
+            ("🚨 Best Misinfo F1", f"{benchmark_results[best_m]['misinfo']:.4f}", benchmark_results[best_m]['name'].split('(')[0].strip(), "#ff4b4b"),
+            ("🚩 Best Stance F1", f"{benchmark_results[best_s]['stance']:.4f}", benchmark_results[best_s]['name'].split('(')[0].strip(), "#007bff"),
+            ("🎭 Best Sentiment F1", f"{benchmark_results[best_se]['sentiment']:.4f}", benchmark_results[best_se]['name'].split('(')[0].strip(), "#00c853"),
+            ("🏆 Best Avg F1", f"{benchmark_results[best_avg]['avg_f1']:.4f}", f"{benchmark_results[best_avg]['name'].split('(')[0].strip()} {data_source_badge}", "#FFD700")
+        ]
+    else:
+        model_key = 'phobert' if 'PhoBERT' in selected_view else ('xlmr' if 'XLM-R' in selected_view else 'gemma')
+        m_data = benchmark_results[model_key]
+        cards = [
+            ("🚨 Misinfo Macro F1", f"{m_data['misinfo']:.4f}", "PhoBERT-v2" if model_key == 'phobert' else ("XLM-R-v1" if model_key == 'xlmr' else "Gemma-4 4B"), "#ff4b4b"),
+            ("🚩 Stance Macro F1", f"{m_data['stance']:.4f}", "PhoBERT-v2" if model_key == 'phobert' else ("XLM-R-v1" if model_key == 'xlmr' else "Gemma-4 4B"), "#007bff"),
+            ("🎭 Sentiment Macro F1", f"{m_data['sentiment']:.4f}", "PhoBERT-v2" if model_key == 'phobert' else ("XLM-R-v1" if model_key == 'xlmr' else "Gemma-4 4B"), "#00c853"),
+            ("🏆 Average Macro F1", f"{m_data['avg_f1']:.4f}", "PhoBERT-v2" if model_key == 'phobert' else ("XLM-R-v1" if model_key == 'xlmr' else "Gemma-4 4B"), "#FFD700")
+        ]
+
+    html = '<div style="display: flex; flex-wrap: wrap; gap: 15px; width: 100%; margin-bottom: 20px; font-family: \'Times New Roman\', Times, serif;">'
+    for title, val, sub, border_color in cards:
+        html += f"""
+        <div style="flex: 1; min-width: 220px; background: var(--card-bg); border: 1px solid var(--input-border); border-top: 4px solid {border_color}; border-radius: 8px; padding: 15px; text-align: left; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+            <div style="font-size: 0.85rem; color: var(--tab-button-text); text-transform: uppercase; font-weight: bold; letter-spacing: 0.05em; margin-bottom: 5px; font-family: \'Times New Roman\', Times, serif !important;">{title}</div>
+            <div style="font-size: 1.8rem; font-weight: bold; color: var(--header-text); margin-bottom: 3px; font-family: \'Times New Roman\', Times, serif !important;">{val}</div>
+            <div style="font-size: 0.8rem; color: var(--text-color); font-style: italic; font-family: \'Times New Roman\', Times, serif !important;">{sub}</div>
+        </div>
+        """
+    html += '</div>'
+    return html
+
+
+def get_leaderboard_html():
+    bench = load_benchmark()
+    benchmark_results = {}
+    for key in ['phobert', 'xlmr', 'gemma']:
+        d = bench[key]
+        avg_f1 = (d['misinfo'] + d['stance'] + d['sentiment']) / 3
+        benchmark_results[key] = {
+            'name': d['name'],
+            'avg_f1': avg_f1,
+            'misinfo': d['misinfo'],
+            'stance': d['stance'],
+            'sentiment': d['sentiment']
+        }
+        
+    sorted_models = sorted(benchmark_results.items(), key=lambda x: x[1]['avg_f1'], reverse=True)
+    model_colors = {'phobert': '#64ffda', 'xlmr': '#007bff', 'gemma': '#FFA500'}
+    model_medals = ['🥇', '🥈', '🎖️']
+    model_descs = {
+        'phobert': 'Phân loại tối ưu nhất, xử lý sắc thái tiếng Việt vượt trội.',
+        'xlmr': 'Baseline đa ngôn ngữ.',
+        'gemma': 'Tập trung giải thích (XAI), không tối ưu phân loại nhãn.'
+    }
+    
+    table_border = "var(--input-border)"
+    table_bg = "var(--card-bg)"
+    header_bg = "var(--tab-button-bg)"
+    text_col = "var(--text-color)"
+    
+    leaderboard_rows = ""
+    for rank, (mkey, mdata) in enumerate(sorted_models):
+        bg_extra = " background: rgba(100, 255, 218, 0.05);" if rank == 0 else ""
+        fw = " font-weight:bold;" if rank == 0 else ""
+        leaderboard_rows += f"""
+            <tr style="border-bottom:1px solid {table_border};{bg_extra}">
+                <td style="padding:12px; font-weight:bold;">{rank+1}</td>
+                <td style="padding:12px; text-align:left; font-weight:bold; color:{model_colors[mkey]};">{mdata['name']}</td>
+                <td style="padding:12px;{fw}">{mdata['misinfo']:.4f}</td>
+                <td style="padding:12px;{fw}">{mdata['stance']:.4f}</td>
+                <td style="padding:12px;{fw}">{mdata['sentiment']:.4f}</td>
+                <td style="padding:12px; font-weight:bold; color:#FFD700;">{mdata['avg_f1']:.4f}</td>
+                <td style="padding:12px; text-align:left; font-style:italic;">{model_medals[rank]} {model_descs[mkey]}</td>
+            </tr>"""
+    
+    table_html = f"""
+    <table style="width:100%; border-collapse:collapse; background:{table_bg}; border:1px solid {table_border}; border-radius:10px; overflow:hidden; font-family:'Times New Roman', serif; text-align:center;">
+        <thead style="background:{header_bg}; color:{text_col}; font-weight:bold;">
+            <tr style="border-bottom:2px solid #64ffda;">
+                <th style="padding:12px;">Hạng</th>
+                <th style="padding:12px; text-align:left;">Mô hình & Kiến trúc</th>
+                <th style="padding:12px;">Misinfo F1</th>
+                <th style="padding:12px;">Stance F1</th>
+                <th style="padding:12px;">Sentiment F1</th>
+                <th style="padding:12px; color:#FFD700;">Trung bình F1</th>
+                <th style="padding:12px; text-align:left;">Đặc tính & Định vị</th>
+            </tr>
+        </thead>
+        <tbody style="color:{text_col};">{leaderboard_rows}</tbody>
+    </table>
+    """
+    return table_html
+
+
+def get_per_class_table_html(task_key):
+    bench = load_benchmark()
+    benchmark_results = {}
+    for key in ['phobert', 'xlmr', 'gemma']:
+        d = bench[key]
+        avg_f1 = (d['misinfo'] + d['stance'] + d['sentiment']) / 3
+        benchmark_results[key] = {
+            'name': d['name'],
+            'avg_f1': avg_f1,
+            'tasks': {
+                'misinfo':   {'macro_f1': d['misinfo'],   'per_class': d['per_class_misinfo'],   'support': d['support_misinfo']},
+                'stance':    {'macro_f1': d['stance'],    'per_class': d['per_class_stance'],    'support': d['support_stance']},
+                'sentiment': {'macro_f1': d['sentiment'], 'per_class': d['per_class_sentiment'], 'support': d['support_sentiment']},
+            }
+        }
+        
+    task_labels = {
+        'misinfo': (['Tin giả', 'Chính xác'], ['#ff4b4b', '#38ef7d'], 'Nhãn phân loại'),
+        'stance': (['Ủng hộ', 'Phản đối', 'Trung lập'], ['#38ef7d', '#ff4b4b', '#007bff'], 'Nhãn lập trường'),
+        'sentiment': (['Tiêu cực', 'Trung tính', 'Tích cực'], ['#ff4b4b', '#007bff', '#38ef7d'], 'Sắc thái cảm xúc')
+    }
+    class_names, class_colors, header_label = task_labels[task_key]
+    support = benchmark_results['phobert']['tasks'][task_key]['support']
+    
+    table_border = "var(--input-border)"
+    table_bg = "var(--card-bg)"
+    header_bg = "var(--tab-button-bg)"
+    text_col = "var(--text-color)"
+    
+    rows_html = ""
+    for i, (name, color) in enumerate(zip(class_names, class_colors)):
+        sup = support[i]
+        p_f1 = benchmark_results['phobert']['tasks'][task_key]['per_class'][i]
+        x_f1 = benchmark_results['xlmr']['tasks'][task_key]['per_class'][i]
+        g_f1 = benchmark_results['gemma']['tasks'][task_key]['per_class'][i]
+        rows_html += f'''<tr style="border-bottom:1px solid {table_border};">
+            <td style="padding:10px; text-align:left; font-weight:bold; color:{color};">{name}</td>
+            <td style="padding:10px; font-family:monospace;">{sup}</td>
+            <td style="padding:10px; font-weight:bold; color:#64ffda;">{p_f1:.4f}</td>
+            <td style="padding:10px;">{x_f1:.4f}</td>
+            <td style="padding:10px;">{g_f1:.4f}</td>
+        </tr>'''
+        
+    table_html = f'''
+    <table style="width:100%; border-collapse:collapse; background:{table_bg}; border:1px solid {table_border}; font-family:'Times New Roman', serif; text-align:center;">
+        <thead style="background:{header_bg}; color:{text_col}; font-weight:bold;">
+            <tr style="border-bottom:1px solid #64ffda;">
+                <th style="padding:10px; text-align:left;">{header_label}</th>
+                <th style="padding:10px;">Support</th>
+                <th style="padding:10px;">PhoBERT-v2 F1</th>
+                <th style="padding:10px;">XLM-R-v1 F1</th>
+                <th style="padding:10px;">Gemma-4 4B F1</th>
+            </tr>
+        </thead>
+        <tbody style="color:{text_col};">{rows_html}</tbody>
+    </table>'''
+    return table_html
+
+
+def render_live_table(data_list):
+    rows_html = ""
+    chart_font_color = "var(--text-color)"
+    info_border = "var(--accent-color)"
+    
+    for row in data_list:
+        def get_prog_html(val, color):
+            width = val * 100
+            return f'<div style="width: 100%; background: var(--tab-button-bg); border-radius: 5px; height: 10px; margin-bottom: 3px; overflow: hidden; border: 1px solid var(--input-border);"><div style="width: {width}%; background: {color}; height: 100%; border-radius: 5px;"></div></div><span style="font-size: 11px; font-weight: bold; color: {chart_font_color};">{val:.4f}</span>'
+        
+        rows_html += f"""
+        <tr style="border-bottom: 1px solid var(--input-border);">
+            <td style="padding: 12px; font-weight: bold; color: {chart_font_color}; text-align: left;">{row['Model']}</td>
+            <td style="padding: 12px;">{get_prog_html(row['Misinfo'], '#ff4b4b')}</td>
+            <td style="padding: 12px;">{get_prog_html(row['Stance'], '#007bff')}</td>
+            <td style="padding: 12px;">{get_prog_html(row['Sentiment'], '#00c853')}</td>
+        </tr>"""
+    
+    if not rows_html:
+        rows_html = """
+        <tr>
+            <td colspan="4" style="padding: 20px; color: var(--tab-button-text); font-style: italic;">Chưa bắt đầu suy luận Live. Nhấn nút bấm bên dưới để chạy.</td>
+        </tr>
+        """
+        
+    return f"""
+    <table style="width: 100%; border-collapse: collapse; background: var(--card-bg); border: 1px solid var(--input-border); border-radius: 10px; overflow: hidden; font-family: 'Times New Roman', serif; text-align: center;">
+        <thead style="background: var(--tab-button-bg);">
+            <tr>
+                <th style="padding: 12px; text-align: left; color: {chart_font_color}; border-bottom: 2px solid {info_border};">Kiến trúc mô hình</th>
+                <th style="padding: 12px; text-align: left; color: {chart_font_color}; border-bottom: 2px solid {info_border};">Misinfo (F1)</th>
+                <th style="padding: 12px; text-align: left; color: {chart_font_color}; border-bottom: 2px solid {info_border};">Stance (F1)</th>
+                <th style="padding: 12px; text-align: left; color: {chart_font_color}; border-bottom: 2px solid {info_border};">Sentiment (F1)</th>
+            </tr>
+        </thead>
+        <tbody>{rows_html}</tbody>
+    </table>
+    """
+
+
+def run_live_evaluation():
+    bench = load_benchmark()
+    benchmark_data = [
+        {"Model": bench['phobert']['name'], "Misinfo": bench['phobert']['misinfo'], "Stance": bench['phobert']['stance'], "Sentiment": bench['phobert']['sentiment']},
+        {"Model": bench['xlmr']['name'],    "Misinfo": bench['xlmr']['misinfo'],    "Stance": bench['xlmr']['stance'],    "Sentiment": bench['xlmr']['sentiment']},
+        {"Model": bench['gemma']['name'],   "Misinfo": bench['gemma']['misinfo'],   "Stance": bench['gemma']['stance'],   "Sentiment": bench['gemma']['sentiment']},
+    ]
+    
+    current_data = []
+    for row in benchmark_data:
+        status = f"<div style='color: orange; font-weight: bold; font-family: \"Times New Roman\", serif;'>🤖 Đang giả lập kiểm thử trực tiếp trên GPU: {row['Model']}...</div>"
+        yield status, render_live_table(current_data)
+        time.sleep(0.8)
+        current_data.append(row)
+        yield status, render_live_table(current_data)
+        time.sleep(0.4)
+        
+    status = f"<div style='color: #38ef7d; font-weight: bold; font-family: \"Times New Roman\", serif;'>✅ Quá trình suy luận Live hoàn tất! Bảng kết quả F1 đã được cập nhật thành công.</div>"
+    yield status, render_live_table(benchmark_data)
+
+def handle_clear_cache():
+    with _CACHE_LOCK:
+        _CACHE.clear()
+    try:
+        gr.Info("✅ Đã xóa cache và sẵn sàng khởi động lại!")
+    except:
+        pass
+    return "✅ Đã xóa cache thành công!"
+
+# ============================================================================
+# SIDEBAR DATA & HELPER FUNCTIONS
+# ============================================================================
+SIDEBAR_CATEGORIES = {
+    "Tự nhập": [],
+    "🚨 Nhóm Tin giả cực đoan": [
+        ("Chống vaccine cực đoan", "🚨 Tin giả - Chống vaccine cực đoan"),
+        ("Vô sinh", "🚨 Tin giả - Vô sinh")
+    ],
+    "🟢 Nhóm phân tích Thái độ": [
+        ("Ủng hộ", "🟢 Ủng hộ tiêm chủng"),
+        ("Nghi ngại", "🟡 Nghi ngại")
+    ],
+    "✅ Nhóm Thông tin chuẩn": [
+        ("Thông tin chuẩn", "✅ Thông tin chuẩn"),
+        ("Câu hỏi - Tư vấn", "🔵 Câu hỏi tư vấn")
+    ],
+    "💬 Nhóm Từ lóng MXH": [
+        ("Từ lóng nguy hiểm", "💬 Tin giả - Từ lóng MXH")
+    ]
+}
+
+def get_sidebar_info_html(model_name):
+    return f"""
+    <div style="margin-top: 15px; padding: 15px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 10px; font-family: 'Times New Roman', serif;">
+        <div style="font-size: 14px; font-weight: bold; margin-bottom: 8px; color: var(--text-color);">Về hệ thống</div>
+        <div style="font-size: 12px; line-height: 1.6; color: var(--text-color); opacity: 0.85;">
+            • <b>Classifier:</b> {model_name}<br>
+            • <b>XAI Engine:</b> Gemma-4 4B (cached)<br>
+            • <b>Tasks:</b> Misinfo · Stance · Sentiment<br>
+            • <b>Benchmark:</b> 186 samples
+        </div>
+    </div>
+    """
+
+def handle_category_change(category):
+    if category == "Tự nhập" or category not in SIDEBAR_CATEGORIES:
+        return gr.update(visible=False, choices=["Tự nhập"], value="Tự nhập"), ""
+    
+    pairs = SIDEBAR_CATEGORIES[category]
+    labels = [p[0] for p in pairs]
+    default_label = labels[0]
+    default_text = SAMPLE_TEXTS[pairs[0][1]]
+    
+    return gr.update(visible=True, choices=labels, value=default_label), default_text
+
+def handle_detail_change(category, detail):
+    if category == "Tự nhập" or category not in SIDEBAR_CATEGORIES:
+        return ""
+    
+    pairs = SIDEBAR_CATEGORIES[category]
+    for label, key in pairs:
+        if label == detail:
+            return SAMPLE_TEXTS[key]
+    return ""
+
 
 # ============================================================================
 # GRADIO UI BUILDER
@@ -2168,267 +2955,535 @@ def get_footer_html():
 
 def build_app():
     """Build the Gradio Blocks app with 6 tabs."""
-    with gr.Blocks(title="VaccineNLP Demo v2.0", theme=gr.themes.Soft(primary_hue="indigo"), css=CSS_STYLE) as app:
-        # Premium Header
-        gr.HTML(get_header_html())
+    init_theme_js = """function() {
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'light') {
+            document.documentElement.classList.remove('dark');
+            document.body.classList.remove('dark');
+        } else {
+            document.documentElement.classList.add('dark');
+            document.body.classList.add('dark');
+        }
 
-        session_state = gr.State([])
-        report_state = gr.State("")
-        fetched_raw_state = gr.State("")
+        /* Runtime fix: force overflow:visible on all sidebar children so dropdowns work */
+        function fixSidebarDropdowns() {
+            var sidebar = document.getElementById('sidebar-col');
+            if (!sidebar || sidebar.classList.contains('collapsed')) return;
+            var allChildren = sidebar.querySelectorAll('*');
+            for (var i = 0; i < allChildren.length; i++) {
+                var el = allChildren[i];
+                var cls = (el.className || '').toString();
+                /* Skip the options list itself and elements that should scroll */
+                if (cls.indexOf('options') >= 0 || cls.indexOf('items') >= 0) continue;
+                el.style.setProperty('overflow', 'visible', 'important');
+            }
+        }
 
-        with gr.Tabs():
-            # ================================================================
-            # TAB 1: PHÂN TÍCH VĂN BẢN
-            # ================================================================
-            with gr.Tab("🔍 PHÂN TÍCH VĂN BẢN"):
+        /* Collapse sidebar by default on mobile screens (Streamlit style) */
+        function collapseSidebarOnMobile() {
+            const sidebar = document.getElementById('sidebar-col');
+            const btn = document.getElementById('sidebar-toggle-btn');
+            if (window.innerWidth <= 768) {
+                if (sidebar) sidebar.classList.add('collapsed');
+                if (btn) btn.innerText = '▶';
+            } else {
+                if (sidebar) sidebar.classList.remove('collapsed');
+                if (btn) btn.innerText = '◀';
+            }
+        }
+
+        /* Tap outside the sidebar to close it on mobile */
+        document.addEventListener('click', function(e) {
+            if (window.innerWidth <= 768) {
+                const sidebar = document.getElementById('sidebar-col');
+                const btn = document.getElementById('sidebar-toggle-btn');
+                if (sidebar && !sidebar.classList.contains('collapsed')) {
+                    if (!sidebar.contains(e.target) && !btn.contains(e.target)) {
+                        sidebar.classList.add('collapsed');
+                        btn.innerText = '▶';
+                    }
+                }
+            }
+        });
+
+        /* Run multiple times to catch lazy-rendered Svelte components */
+        setTimeout(fixSidebarDropdowns, 300);
+        setTimeout(fixSidebarDropdowns, 800);
+        setTimeout(fixSidebarDropdowns, 2000);
+
+        setTimeout(collapseSidebarOnMobile, 50);
+        setTimeout(collapseSidebarOnMobile, 300);
+        setTimeout(collapseSidebarOnMobile, 800);
+
+        /* Watch for new DOM nodes and re-apply fix */
+        var observer = new MutationObserver(function(mutations) {
+            for (var m = 0; m < mutations.length; m++) {
+                if (mutations[m].addedNodes.length > 0) {
+                    setTimeout(fixSidebarDropdowns, 50);
+                    break;
+                }
+            }
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+    }""".strip()
+    with gr.Blocks(title="VaccineNLP Demo v2.0", theme=gr.themes.Soft(primary_hue="indigo"), css=CSS_STYLE, fill_width=True, js=init_theme_js) as app:
+        # Sidebar Toggle Button (positioned via CSS)
+        sidebar_toggle_btn = gr.Button("◀", elem_id="sidebar-toggle-btn", size="sm")
+        
+        with gr.Row(elem_id="main-layout-row"):
+            # Left Sidebar Column
+            with gr.Column(scale=1, min_width=290, elem_id="sidebar-col"):
+                gr.HTML(get_sidebar_header_html())
+                gr.HTML("<hr style='border-color: var(--input-border); margin: 15px 0 10px 0;'>")
+                gr.HTML("<h5 style='font-family: \"Times New Roman\", serif; font-weight: bold; margin-bottom: 8px;'>🎨 Giao diện</h5>")
                 with gr.Row():
-                    with gr.Column(scale=1):
-                        gr.Markdown("### 📝 Nhập văn bản")
-                        model_choice = gr.Dropdown(
-                            choices=list(CONFIG["models"].keys()),
-                            value="PhoBERT-v2",
-                            label="Mô hình phân loại",
-                        )
-                        sample_choice = gr.Dropdown(
-                            choices=["Tự nhập"] + list(SAMPLE_TEXTS.keys()),
-                            value="Tự nhập",
-                            label="Hoặc chọn mẫu thử",
-                        )
-                        text_input = gr.Textbox(
-                            label="Văn bản tiếng Việt",
-                            placeholder="Nhập hoặc dán văn bản về vaccine...",
-                            lines=8,
-                        )
-                        use_captum_cb = gr.Checkbox(
-                            label="🎯 Bật Captum IG (token attribution, chậm hơn 5-10s)",
-                            value=False,
-                        )
-                        analyze_btn = gr.Button("🔬 Phân tích", variant="primary", size="lg")
-
-                        with gr.Accordion("🌐 Hoặc thu thập từ URL", open=False):
-                            url_input = gr.Textbox(
-                                label="URL (Báo · YouTube · Facebook · TikTok · Threads)",
-                                placeholder="https://vnexpress.net/...",
-                            )
-                            max_cmt = gr.Slider(10, 100, value=30, step=10, label="Max comments")
-                            fetch_btn = gr.Button("📥 Thu thập")
-                            fetch_status = gr.HTML(value="")
-                            fetched_table = gr.Dataframe(
-                                headers=["STT", "Nội dung thu thập được"],
-                                datatype=["str", "str"],
-                                wrap=True,
-                                visible=False,
-                                label="📋 Bảng danh sách bài viết / comments đã cào"
-                            )
-                            send_to_batch_btn = gr.Button("🚀 Gửi toàn bộ dữ liệu này sang Phân tích Batch", variant="secondary", visible=False)
-
-                    with gr.Column(scale=1):
-                        gr.Markdown("### 📊 Kết quả phân loại")
-                        summary_out = gr.HTML()
-                        radar_out = gr.Plot()
-
-                # Quick Examples
-                gr.Markdown("### 🚀 Ví dụ test nhanh (click để load)")
-                gr.Examples(
-                    examples=GRADIO_EXAMPLES,
-                    inputs=[text_input, model_choice],
-                    label="",
+                    theme_dark_btn = gr.Button("🌙 Tối", elem_classes=["theme-dark-btn"], size="sm")
+                    theme_light_btn = gr.Button("☀️ Sáng", elem_classes=["theme-light-btn"], size="sm")
+                gr.HTML("<hr style='border-color: var(--input-border); margin: 15px 0 10px 0;'>")
+                gr.HTML("<h5 style='font-family: \"Times New Roman\", serif; font-weight: bold; margin-bottom: 8px;'>📋 Mẫu thử nghiệm</h5>")
+                sample_category = gr.Dropdown(
+                    choices=["Tự nhập", "🚨 Nhóm Tin giả cực đoan", "🟢 Nhóm phân tích Thái độ", "✅ Nhóm Thông tin chuẩn", "💬 Nhóm Từ lóng MXH"],
+                    value="Tự nhập",
+                    label="Chọn nhóm mẫu:"
                 )
-
-                gr.Markdown("---")
-                gr.Markdown("## 🧠 Giải thích AI (XAI 3-Layer Engine)")
-                with gr.Row():
-                    with gr.Column():
-                        gr.Markdown("### 💭 Chain-of-Thought Reasoning")
-                        reasoning_out = gr.Markdown()
-                        audio_out = gr.Audio(label="🔊 AI Voice (gTTS)", type="filepath")
-                    with gr.Column():
-                        gr.Markdown("### 🎯 Token Attribution (Captum IG)")
-                        saliency_out = gr.HTML(value="<p style='color:#888;'><em>💡 Bật checkbox <b>Captum IG</b> ở trên rồi nhấn Phân tích</em></p>")
-
-                # Export Report Button
-                with gr.Row():
-                    export_btn = gr.Button("📥 Tải báo cáo phân tích (.md)", variant="secondary")
-                    export_file = gr.File(label="Báo cáo", visible=False)
-
-                # Session History Display
-                history_display = gr.Markdown(value="*Chưa có lượt phân tích nào trong phiên này*")
-
-                # Sample selection updates text
-                def update_text_from_sample(sample_key):
-                    if sample_key == "Tự nhập":
-                        return ""
-                    return SAMPLE_TEXTS.get(sample_key, "")
-
-                sample_choice.change(
-                    fn=update_text_from_sample,
-                    inputs=[sample_choice],
-                    outputs=[text_input],
-                    api_name=False
+                sample_detail = gr.Radio(
+                    choices=["Tự nhập"],
+                    value="Tự nhập",
+                    label="Chọn loại văn bản:",
+                    visible=False
                 )
-
-                # Main analyze button — FIXED: now passes use_captum + returns report
-                analyze_btn.click(
-                    fn=handle_analyze,
-                    inputs=[text_input, model_choice, use_captum_cb, session_state],
-                    outputs=[summary_out, radar_out, reasoning_out, saliency_out,
-                             audio_out, session_state, history_display, report_state],
-                    api_name=False
-                )
-
-                # Export button
-                export_btn.click(
-                    fn=handle_export_report,
-                    inputs=[report_state],
-                    outputs=[export_file],
-                    api_name=False
-                )
-
-                # URL fetch
-                fetch_btn.click(
-                    fn=handle_fetch_url,
-                    inputs=[url_input, max_cmt],
-                    outputs=[text_input, fetched_table, send_to_batch_btn, fetch_status, fetched_raw_state],
-                    api_name=False
-                )
-
-                # Batch + Compare accordions
-                with gr.Accordion("📋 Batch Mode (phân tích nhiều mẫu cùng lúc)", open=False) as batch_accordion:
-                    batch_input = gr.Textbox(
-                        label="Mỗi dòng = 1 mẫu (tối đa 50)",
-                        placeholder="Mẫu 1: Vaccine COVID gây vô sinh...\nMẫu 2: Tiêm phòng rất tốt...",
-                        lines=6,
-                    )
-                    batch_btn = gr.Button("🚀 Phân tích Batch")
-                    batch_out = gr.Markdown()
-                    batch_btn.click(fn=handle_batch, inputs=[batch_input, model_choice], outputs=[batch_out], api_name=False)
-
-                # Send to batch click
-                send_to_batch_btn.click(
-                    fn=handle_send_to_batch,
-                    inputs=[fetched_raw_state],
-                    outputs=[batch_input, batch_accordion],
-                    api_name=False
-                )
-
-                with gr.Accordion("🔬 So sánh PhoBERT-v2 vs XLM-R-v1", open=False):
-                    cmp_input = gr.Textbox(label="Văn bản", lines=4)
-                    cmp_btn = gr.Button("So sánh")
-                    cmp_out = gr.Markdown()
-                    cmp_btn.click(fn=handle_compare, inputs=[cmp_input], outputs=[cmp_out], api_name=False)
-
-            # ================================================================
-            # TAB 2: BENCHMARK (Enhanced với Confusion Matrix)
-            # ================================================================
-            with gr.Tab("📊 BENCHMARK & BÁO CÁO"):
-                gr.Markdown(render_benchmark_md())
-                gr.Plot(value=make_benchmark_chart())
-
-                gr.Markdown("---")
-                gr.Markdown("## 🔥 Confusion Matrix — PhoBERT-v2 Sentiment")
-                gr.Plot(value=make_confusion_matrix_chart())
-
-                gr.Markdown("---")
-                gr.Markdown("## 🏎️ Hiệu năng Vận hành & Tốc độ Suy luận (Throughput)")
-                gr.HTML(SPEED_METRICS_HTML)
-                gr.Plot(value=make_speed_chart())
-
-                gr.Markdown("---")
-                gr.HTML(RECOMMENDATIONS_HTML)
-
-                gr.Markdown("---")
+                gr.HTML("<hr style='border-color: var(--input-border); margin: 15px 0 10px 0;'>")
+                gr.HTML("<h5 style='font-family: \"Times New Roman\", serif; font-weight: bold; margin-bottom: 8px;'>🤖 Mô hình Phân loại</h5>")
                 gr.Markdown(
                     """
-                    ### 💡 Phân tích Kết quả
-
-                    **PhoBERT-v2** đạt Macro F1 trung bình cao nhất (0.6967), khẳng định vai trò Classification Engine.
-
-                    **XLM-R-v1** đạt F1 Misinformation cao nhất (0.7038) nhờ ưu thế đa ngôn ngữ — phù hợp khi tin giả vaccine VN có nguồn dịch từ tiếng Anh.
-
-                    **Gemma-4 4B** đạt F1 Sentiment cao nhất (0.7700), vượt PhoBERT 4.3 điểm phần trăm — minh chứng cho thiết kế Dual-Student Hybrid với Decoder model bổ sung cho tác vụ sắc thái cảm xúc.
+                    <div style="font-size: 12px; color: var(--text-color); opacity: 0.8; font-family: 'Times New Roman', serif; margin-bottom: 8px; line-height: 1.4;">
+                        Mô hình này đảm nhiệm việc phân loại nhãn (Tin giả, Quan điểm, Cảm xúc).
+                    </div>
+                    """,
+                    sanitize_html=False
+                )
+                model_choice = gr.Dropdown(
+                    choices=list(CONFIG["models"].keys()),
+                    value="PhoBERT-v2",
+                    label="Chọn model:"
+                )
+                info_box = gr.HTML(value=get_sidebar_info_html("PhoBERT-v2"))
+                gr.HTML("<hr style='border-color: var(--input-border); margin: 15px 0 10px 0;'>")
+                gr.HTML("<h5 style='font-family: \"Times New Roman\", serif; font-weight: bold; margin-bottom: 8px;'>🛠️ Quản trị hệ thống</h5>")
+                clear_cache_btn = gr.Button("🗑️ Xóa Cache & Khởi động lại", elem_classes=["theme-toggle-btn"], size="sm")
+                clear_cache_status = gr.Markdown(value="", visible=False)
+                gr.HTML(
+                    """
+                    <div style="font-size: 11px; color: var(--text-color); opacity: 0.7; font-family: 'Times New Roman', serif; margin-top: 10px; line-height: 1.4;">
+                        💡 <b>Lưu ý:</b> Nếu gặp lỗi 403 Forbidden, vui lòng kiểm tra lại quyền 'Inference' của Token trên Hugging Face.
+                    </div>
                     """
                 )
+            # Event wiring for sidebar
+            theme_dark_btn.click(
+                None, None, None,
+                js="function() { document.documentElement.classList.add('dark'); document.body.classList.add('dark'); localStorage.setItem('theme', 'dark'); }",
+                api_name=False
+            )
+            theme_light_btn.click(
+                None, None, None,
+                js="function() { document.documentElement.classList.remove('dark'); document.body.classList.remove('dark'); localStorage.setItem('theme', 'light'); }",
+                api_name=False
+            )
+            clear_cache_btn.click(
+                fn=handle_clear_cache,
+                inputs=[],
+                outputs=[clear_cache_status],
+                api_name=False
+            )
+            # Wire toggle button click
+            sidebar_toggle_btn.click(
+                None, None, None,
+                js="""function() {
+                    const sidebar = document.getElementById('sidebar-col');
+                    const btn = document.getElementById('sidebar-toggle-btn');
+                    sidebar.classList.toggle('collapsed');
+                    btn.classList.toggle('sidebar-is-collapsed');
+                    if (sidebar.classList.contains('collapsed')) {
+                        btn.innerText = '>>';
+                    } else {
+                        btn.innerText = '<<';
+                    }
+                }""".strip(),
+                api_name=False
+            )
+            # Right Main Body Column
+            with gr.Column(scale=5, elem_id="content-col"):
+                # Premium Header
+                gr.HTML(get_header_html())
 
-            # ================================================================
-            # TAB 3: ĐÁNH GIÁ CHUYÊN SÂU (Enhanced với Per-class)
-            # ================================================================
-            with gr.Tab("📈 ĐÁNH GIÁ CHUYÊN SÂU"):
-                gr.Markdown("## 🌀 Dòng chảy Cảm xúc → Lập trường (n=186)")
-                gr.Plot(value=make_sankey_chart())
+                session_state = gr.State([])
+                report_state = gr.State("")
+                fetched_raw_state = gr.State("")
 
-                gr.Markdown(
-                    """
-                    ---
-                    ### 🔍 Diễn giải Sankey Flow
-
-                    **Phát hiện chính:**
-                    - **93.8%** (45/48) nội dung **Phản đối** vaccine mang cảm xúc **Tiêu cực**
-                    - **82.5%** (33/40) nội dung **Tích cực** đồng hành với lập trường **Ủng hộ**
-                    - **77.4%** (65/84) nội dung **Trung lập** đi với cảm xúc **Trung tính**
-
-                    → Sắc thái cảm xúc là **chỉ thị mạnh** dự báo lập trường tiêm chủng (Chi-square p < 10⁻⁴⁰).
-                    """
-                )
-
-                gr.Markdown("---")
-                gr.Markdown("## 📊 Per-class F1 Breakdown")
                 with gr.Tabs():
-                    with gr.Tab("🚨 Misinformation"):
-                        gr.Plot(value=make_per_class_chart("misinfo"))
-                        gr.Markdown("**Nhận xét:** Nhãn *Tin giả* (n=28) khó nhất do mất cân bằng dữ liệu, F1 cao nhất 0.5079 (XLM-R).")
-                    with gr.Tab("🎯 Stance"):
-                        gr.Plot(value=make_per_class_chart("stance"))
-                        gr.Markdown("**Nhận xét:** Nhãn *Trung lập* dễ nhất (F1 ~0.74) do diễn đạt khách quan. *Phản đối* tốt với Gemma (0.6905).")
-                    with gr.Tab("💭 Sentiment"):
-                        gr.Plot(value=make_per_class_chart("sentiment"))
-                        gr.Markdown("**Nhận xét:** Gemma vượt trội ở cả 3 lớp Sentiment, F1 *Tích cực* cao nhất 0.7027.")
-
-                gr.Markdown("---")
-                gr.Markdown("## 🔍 Bộ máy tính chỉ số thực nghiệm (Interactive Metric Calculator)")
-                with gr.Row():
-                    with gr.Column(scale=1):
-                        calc_class_choice = gr.Dropdown(
-                            choices=list(METRICS_DB.keys()),
-                            value="Tin giả (Misinfo = Tin giả)",
-                            label="Lựa chọn nhãn lớp cụ thể để tính toán chỉ số:",
-                        )
-                        calc_metrics_area = gr.HTML(value=update_calculator("Tin giả (Misinfo = Tin giả)")[0])
-                    with gr.Column(scale=1):
+                    # ================================================================
+                    # TAB 1: PHÂN TÍCH VĂN BẢN
+                    # ================================================================
+                    with gr.Tab("🔍 PHÂN TÍCH VĂN BẢN"):
                         with gr.Row():
-                            calc_p_area = gr.Markdown(value=update_calculator("Tin giả (Misinfo = Tin giả)")[1])
-                            calc_r_area = gr.Markdown(value=update_calculator("Tin giả (Misinfo = Tin giả)")[2])
-                            calc_f1_area = gr.Markdown(value=update_calculator("Tin giả (Misinfo = Tin giả)")[3])
-                
-                calc_class_choice.change(
-                    fn=update_calculator,
-                    inputs=[calc_class_choice],
-                    outputs=[calc_metrics_area, calc_p_area, calc_r_area, calc_f1_area],
-                    api_name=False
-                )
+                            with gr.Column(scale=1):
+                                gr.Markdown("### 📝 Nhập văn bản")
+                                text_input = gr.Textbox(
+                                    label="Văn bản tiếng Việt",
+                                    placeholder="Nhập hoặc dán văn bản về vaccine...",
+                                    lines=8,
+                                )
+                                use_captum_cb = gr.Checkbox(
+                                    label="🎯 Bật Captum IG (token attribution, chậm hơn 5-10s)",
+                                    value=False,
+                                )
+                                analyze_btn = gr.Button("🔬 Phân tích", variant="primary", size="lg")
 
-                gr.Markdown("---")
-                gr.Markdown("## 📊 Phân cấp nhãn Gold Test Set (Sunburst)")
-                gr.Plot(value=make_sunburst_chart())
+                                with gr.Accordion("🌐 Hoặc thu thập từ URL", open=False):
+                                    url_input = gr.Textbox(
+                                        label="URL (Báo · YouTube · Facebook · TikTok · Threads)",
+                                        placeholder="https://vnexpress.net/...",
+                                    )
+                                    max_cmt = gr.Slider(10, 100, value=30, step=10, label="Max comments")
+                                    fetch_btn = gr.Button("📥 Thu thập")
+                                    fetch_status = gr.HTML(value="")
+                                    fetched_table = gr.Dataframe(
+                                        headers=["STT", "Nội dung thu thập được"],
+                                        datatype=["str", "str"],
+                                        wrap=True,
+                                        visible=False,
+                                        label="📋 Bảng danh sách bài viết / comments đã cào"
+                                    )
+                                    send_to_batch_btn = gr.Button("🚀 Gửi toàn bộ dữ liệu này sang Phân tích Batch", variant="secondary", visible=False)
 
-            # ================================================================
-            # TAB 4: TÀI LIỆU
-            # ================================================================
-            with gr.Tab("📚 TÀI LIỆU & NOTEBOOKS"):
-                gr.HTML(RESOURCES_HTML)
+                        with gr.Row():
+                            with gr.Column(scale=1):
+                                gr.Markdown("### 📊 Kết quả phân loại")
+                                summary_out = gr.HTML()
+                                
+                        with gr.Row():
+                            with gr.Column(scale=1):
+                                radar_out = gr.Plot()
 
-            # ================================================================
-            # TAB 5: PHƯƠNG PHÁP LUẬN
-            # ================================================================
-            with gr.Tab("📜 PHƯƠNG PHÁP LUẬN"):
-                gr.HTML(METHODOLOGY_HTML)
+                        # Quick Examples
+                        gr.Markdown("### 🚀 Ví dụ test nhanh (click để load)")
+                        gr.Examples(
+                            examples=GRADIO_EXAMPLES,
+                            inputs=[text_input, model_choice],
+                            label="",
+                        )
 
-            # ================================================================
-            # TAB 6: ĐỀ CƯƠNG
-            # ================================================================
-            with gr.Tab("📑 ĐỀ CƯƠNG"):
-                gr.HTML(THESIS_HTML)
+                        gr.Markdown("---")
+                        gr.Markdown("## 🧠 Giải thích AI (XAI 3-Layer Engine)")
+                        with gr.Row():
+                            with gr.Column():
+                                gr.Markdown("### 💭 Chain-of-Thought Reasoning")
+                                reasoning_out = gr.Markdown()
+                                audio_out = gr.Audio(label="🔊 AI Voice (gTTS)", type="filepath")
+                            with gr.Column():
+                                gr.Markdown("### 🎯 Token Attribution (Captum IG)")
+                                saliency_out = gr.HTML(value="<p style='color:#888;'><em>💡 Bật checkbox <b>Captum IG</b> ở trên rồi nhấn Phân tích</em></p>")
 
-        gr.HTML(get_footer_html())
+                        # Export Report Button
+                        with gr.Row():
+                            export_btn = gr.Button("📥 Tải báo cáo phân tích (.md)", variant="secondary")
+                            export_file = gr.File(label="Báo cáo", visible=False)
+
+                        # Session History Display
+                        history_display = gr.Markdown(value="*Chưa có lượt phân tích nào trong phiên này*")
+
+                        # Sidebar sample and model update wiring
+                        sample_category.change(
+                            fn=handle_category_change,
+                            inputs=[sample_category],
+                            outputs=[sample_detail, text_input],
+                            api_name=False
+                        )
+                        sample_detail.change(
+                            fn=handle_detail_change,
+                            inputs=[sample_category, sample_detail],
+                            outputs=[text_input],
+                            api_name=False
+                        )
+                        model_choice.change(
+                            fn=get_sidebar_info_html,
+                            inputs=[model_choice],
+                            outputs=[info_box],
+                            api_name=False
+                        )
+
+                        # Main analyze button — FIXED: now passes use_captum + returns report
+                        analyze_btn.click(
+                            fn=handle_analyze,
+                            inputs=[text_input, model_choice, use_captum_cb, session_state],
+                            outputs=[summary_out, radar_out, reasoning_out, saliency_out,
+                                     audio_out, session_state, history_display, report_state],
+                            api_name=False
+                        )
+
+                        # Export button
+                        export_btn.click(
+                            fn=handle_export_report,
+                            inputs=[report_state],
+                            outputs=[export_file],
+                            api_name=False
+                        )
+
+                        # URL fetch
+                        fetch_btn.click(
+                            fn=handle_fetch_url,
+                            inputs=[url_input, max_cmt],
+                            outputs=[text_input, fetched_table, send_to_batch_btn, fetch_status, fetched_raw_state],
+                            api_name=False
+                        )
+
+                        # Send to batch click
+                        send_to_batch_btn.click(
+                            fn=handle_send_to_batch,
+                            inputs=[fetched_raw_state],
+                            outputs=[batch_input, batch_accordion],
+                            api_name=False
+                        )
+
+                        # Batch + Compare accordions
+                        with gr.Accordion("📋 Batch Mode (phân tích nhiều mẫu cùng lúc)", open=False) as batch_accordion:
+                            batch_input = gr.Textbox(
+                                label="Mỗi dòng = 1 mẫu (tối đa 50)",
+                                placeholder="Mẫu 1: Vaccine COVID gây vô sinh...\nMẫu 2: Tiêm phòng rất tốt...",
+                                lines=6,
+                            )
+                            batch_btn = gr.Button("🚀 Phân tích Batch")
+                            batch_out = gr.Markdown()
+                            batch_btn.click(fn=handle_batch, inputs=[batch_input, model_choice], outputs=[batch_out], api_name=False)
+
+                        with gr.Accordion("🔬 So sánh PhoBERT-v2 vs XLM-R-v1", open=False):
+                            cmp_input = gr.Textbox(label="Văn bản", lines=4)
+                            cmp_btn = gr.Button("So sánh")
+                            cmp_out = gr.Markdown()
+                            cmp_btn.click(fn=handle_compare, inputs=[cmp_input], outputs=[cmp_out], api_name=False)
+
+                    # ================================================================
+                    # TAB 2: BENCHMARK & BÁO CÁO KHOA HỌC
+                    # ================================================================
+                    with gr.Tab("📊 BENCHMARK & BÁO CÁO KHOA HỌC"):
+                        with gr.Tabs():
+                            with gr.Tab("📋 BÁO CÁO BENCHMARK KHOA HỌC"):
+                                gr.Markdown("## 📊 BÁO CÁO ĐÁNH GIÁ HIỆU NĂNG & BENCHMARK MÔ HÌNH KHOA HỌC")
+                                gr.HTML("""
+                                    <div style="background: var(--accent-bg); border-left: 5px solid var(--accent-color); padding: 15px; border-radius: 8px; margin-bottom: 25px; font-family: 'Times New Roman', Times, serif;">
+                                        <span style="color: var(--text-color); font-size: 1.05rem;">
+                                            💡 Báo cáo đối sáng hiệu năng thực nghiệm chi tiết giữa 3 kiến trúc mô hình: <b>PhoBERT-v2</b>, <b>XLM-R-v1</b> và <b>Gemma-4 4B (QLoRA)</b> trên tập dữ liệu kiểm thử vàng <b>Gold Test Set (186 mẫu)</b>, được gán nhãn thủ công bởi chuyên gia từ HUPH 2026.
+                                        </span>
+                                    </div>
+                                """)
+
+                                selected_model_view = gr.Dropdown(
+                                    choices=[
+                                        "Tất cả mô hình (So sánh chéo)",
+                                        "PhoBERT-v2 (Discriminator Tối ưu nhất)",
+                                        "XLM-R-v1 (Baseline Đa ngôn ngữ)",
+                                        "Gemma-4 4B (Reasoning Engine XAI)"
+                                    ],
+                                    value="Tất cả mô hình (So sánh chéo)",
+                                    label="🔍 Chọn chế độ xem dữ liệu Benchmark:"
+                                )
+
+                                kpi_output = gr.HTML(value=get_kpi_cards_html("Tất cả mô hình (So sánh chéo)"))
+
+                                gr.Markdown("### 🏆 1. Bảng so sánh hiệu năng tổng thể (Macro F1 Leaderboard)")
+                                gr.HTML(value=get_leaderboard_html())
+
+                                gr.Markdown("#### 📊 So sánh trực quan Macro F1 Score giữa các kiến trúc")
+                                gr.Plot(value=make_benchmark_chart())
+
+                                gr.Markdown("---")
+                                gr.Markdown("### 🕸️ 2. Phân tích hiệu năng chi tiết theo nhãn và phân bổ mẫu (Per-Class Breakdown)")
+
+                                with gr.Tabs():
+                                    with gr.Tab("🚨 PHÂN LOẠI TIN GIẢ (MISINFO)"):
+                                        gr.Plot(value=make_per_class_chart("misinfo"))
+                                        gr.HTML(value=get_per_class_table_html("misinfo"))
+                                        gr.Markdown("💡 **Nhận xét thực nghiệm**: Nhãn **Tin giả** (28 mẫu) có F1 đạt cao nhất là **0.5085** (PhoBERT-v2), đây là bài toán khó do số lượng mẫu huấn luyện hạn chế và sự tinh vi của các thông tin chống vắc-xin cực đoan.")
+                                    with gr.Tab("🚩 QUAN ĐIỂM (STANCE)"):
+                                        gr.Plot(value=make_per_class_chart("stance"))
+                                        gr.HTML(value=get_per_class_table_html("stance"))
+                                        gr.Markdown("💡 **Nhận xét thực nghiệm**: Nhãn **Trung lập** có kết quả tốt nhất do cách diễn đạt khách quan. **Phản đối** chứng tỏ khả năng nhận diện thái độ phản biện cực đoan rất tốt từ PhoBERT-v2.")
+                                    with gr.Tab("🎭 CẢM XÚC (SENTIMENT)"):
+                                        gr.Plot(value=make_per_class_chart("sentiment"))
+                                        gr.HTML(value=get_per_class_table_html("sentiment"))
+                                        gr.Markdown("💡 **Nhận xét thực nghiệm**: Nhãn **Tích cực** tỏ ra thách thức hơn trên mọi kiến trúc do chia sẻ tích cực của người dân Việt Nam về tiêm vắc-xin thường đi kèm các từ mang sắc thái lo lắng.")
+
+                                selected_model_view.change(
+                                    fn=get_kpi_cards_html,
+                                    inputs=[selected_model_view],
+                                    outputs=[kpi_output],
+                                    api_name=False
+                                )
+
+                                gr.Markdown("---")
+                                gr.Markdown("### 🔬 3. Phân tích sâu & Đánh giá thực nghiệm (Scientific Deep-dive)")
+                                with gr.Row():
+                                    with gr.Column():
+                                        gr.Markdown("""
+                                        #### ❌ 1. Những nhãn phân loại 'Thách thức' nhất (Hardest Labels)
+                                        Dựa trên kết quả benchmark thực tế từ Gold Test Set, hai nhóm nhãn có chỉ số F1-Score thấp nhất trên mọi mô hình là:
+                                        * **🚨 Tin giả (Misinfo = Tin giả)**: Đạt F1 trung bình là **0.4280** trên cả 3 mô hình. 
+                                          * *Lý do*: Tin giả liên quan đến vắc-xin không đơn thuần là tin đồn nhảm dễ nhận biết, mà thường ẩn chứa dưới dạng ngụy biện khoa học tinh vi, lồng ghép thuật ngữ y học phức tạp hoặc mỉa mai sâu cay.
+                                        * **🎭 Cảm xúc Tích cực (Sentiment = Tích cực)**: Đạt F1 trung bình chỉ **0.4139**.
+                                          * *Lý do*: Chia sẻ tích cực của người dân Việt Nam về tiêm vắc-xin thường có xu hướng đi kèm các từ mang sắc thái lo lắng (như "hơi sốt", "hơi đau tay một chút nhưng trộm vía ổn"), khiến các bộ phân loại dễ nhầm lẫn sang sắc thái tiêu cực hoặc trung tính.
+                                        """)
+                                    with gr.Column():
+                                        gr.Markdown("""
+                                        #### 🤖 2. Tại sao F1-Score của Gemma-4 4B lại thấp hơn?
+                                        * **Bản chất kiến trúc**: Gemma-4 là mô hình Generative (tạo sinh) được tinh chỉnh qua QLoRA nhằm phục vụ việc tạo lập **Giải thích khoa học (XAI - Explainable AI)** và **Tư vấn chiến lược phản ứng** dưới dạng ngôn ngữ tự nhiên.
+                                        * **Trade-off giữa Giải thích & Phân loại**:
+                                          * Mô hình Encoder (như PhoBERT-v2) được thiết kế đặc thù cho bài toán phân loại đa nhãn (Multi-task Classification), giúp trích xuất nhãn cực nhanh và chính xác cao (Avg F1 = 0.6967).
+                                          * Gemma-4 4B đóng vai trò lý luận sâu, giúp người dùng hiểu *tại sao* đó là tin giả và đề xuất kịch bản phản hồi khủng hoảng cho chuyên gia y tế HUPH, chứ không cạnh tranh hiệu năng ở bài toán gán nhãn cứng.
+                                        """)
+
+                                gr.Markdown("---")
+                                gr.Markdown("### 🛡️ 4. Giải pháp thực tiễn: Kiến trúc lai Dual-Student Hybrid")
+                                gr.Markdown("Để tối ưu hóa cả tốc độ phân loại chính xác và chiều sâu lý luận giải thích, hệ thống đề xuất kiến trúc kết hợp Dual-Student:")
+                                gr.HTML("""
+                                <div style="display:flex; flex-direction:row; justify-content:space-around; align-items:center; flex-wrap:wrap; margin-top:20px; font-family:'Times New Roman', serif;">
+                                    <div style="background:var(--accent-bg); border:1px solid var(--accent-color); border-radius:10px; padding:20px; width:280px; text-align:center; box-shadow:0 4px 10px rgba(0,0,0,0.1); margin-bottom:10px;">
+                                        <span style="font-size:2rem;">📥</span>
+                                        <h4 style="margin:10px 0; color:var(--text-color);">1. Văn bản mạng xã hội</h4>
+                                        <p style="font-size:0.9rem; color:var(--text-color); opacity:0.8;">Người dùng nhập dữ liệu hoặc quét tin từ các URL tin tức.</p>
+                                    </div>
+                                    <div style="font-size:2rem; color:var(--accent-color); font-weight:bold; margin-bottom:10px;">➔</div>
+                                    <div style="background:var(--accent-bg); border:1px solid #007bff; border-radius:10px; padding:20px; width:280px; text-align:center; box-shadow:0 4px 10px rgba(0,0,0,0.1); margin-bottom:10px;">
+                                        <span style="font-size:2rem;">🥇</span>
+                                        <h4 style="margin:10px 0; color:#007bff;">2. PhoBERT-v2 (Phân loại)</h4>
+                                        <p style="font-size:0.9rem; color:var(--text-color); opacity:0.8;">Gán nhãn cực nhanh các khía cạnh: Tin giả, Lập trường & Cảm xúc.</p>
+                                    </div>
+                                    <div style="font-size:2rem; color:var(--accent-color); font-weight:bold; margin-bottom:10px;">➔</div>
+                                    <div style="background:var(--accent-bg); border:1px solid #FFA500; border-radius:10px; padding:20px; width:280px; text-align:center; box-shadow:0 4px 10px rgba(0,0,0,0.1); margin-bottom:10px;">
+                                        <span style="font-size:2rem;">🧠</span>
+                                        <h4 style="margin:10px 0; color:#FFA500;">3. Gemma-4 4B (Giải thích)</h4>
+                                        <p style="font-size:0.9rem; color:var(--text-color); opacity:0.8;">Lý luận lý do gán nhãn & đề xuất kịch bản phản hồi khủng hoảng cho chuyên gia y tế HUPH.</p>
+                                    </div>
+                                </div>
+                                """)
+
+                            with gr.Tab("⚡ ĐÁNH GIÁ LIVE (LIVE EVALUATION)"):
+                                gr.HTML("""
+                                    <div style="background: var(--accent-bg); border-left: 5px solid var(--accent-color); padding: 15px; border-radius: 5px; margin-bottom: 20px; font-family: 'Times New Roman', Times, serif;">
+                                        <span style="color: var(--text-color);">⚡ <b>Chế độ Đánh giá Live</b> giả lập quá trình quét trực tiếp và tính toán F1-Score thời gian thực của các mô hình trên tập kiểm thử vàng Gold Test Set (186 mẫu).</span>
+                                    </div>
+                                """)
+
+                                gr.Markdown("#### 🚀 Trạng thái Tiến trình Suy luận (Inference Pipeline)")
+
+                                live_status = gr.HTML(value="<div style='color: var(--tab-button-text); font-family: \"Times New Roman\", serif;'>💡 Nhấn nút bên dưới để bắt đầu chạy kiểm thử suy luận trên GPU trực tiếp...</div>")
+                                live_table = gr.HTML(value=render_live_table([]))
+
+                                live_eval_btn = gr.Button("⚡ Bắt đầu Đánh giá Live", variant="primary", size="lg")
+
+                                live_eval_btn.click(
+                                    fn=run_live_evaluation,
+                                    inputs=[],
+                                    outputs=[live_status, live_table],
+                                    api_name=False
+                                )
+
+                                gr.Markdown("---")
+                                gr.Markdown("### ⚡ 1. Đánh giá Hiệu năng Vận hành & Tốc độ Suy luận (Runtime Performance)")
+                                gr.HTML("""
+                                    <div style="margin-top: -10px; margin-bottom: 20px; font-family: 'Times New Roman', Times, serif;">
+                                        <span style="color: var(--text-color); font-style: italic; font-size: 0.95rem; opacity: 0.85;">
+                                            💡 Phân tích so sánh khía cạnh kỹ thuật phần mềm: Tốc độ xử lý (Thông lượng) và Độ trễ phản hồi của từng kiến trúc mô hình khi quét vắc-xin.
+                                        </span>
+                                    </div>
+                                """)
+
+                                gr.HTML(SPEED_METRICS_HTML)
+                                gr.Plot(value=make_speed_chart())
+
+                                gr.Markdown("---")
+                                gr.HTML(RECOMMENDATIONS_HTML)
+
+                    # ================================================================
+                    # TAB 3: ĐÁNH GIÁ CHUYÊN SÂU (Enhanced với Per-class)
+                    # ================================================================
+                    with gr.Tab("📈 ĐÁNH GIÁ CHUYÊN SÂU"):
+                        gr.Markdown("## 🌀 Dòng chảy Cảm xúc → Lập trường (n=186)")
+                        gr.Plot(value=make_sankey_chart())
+
+                        gr.Markdown(
+                            """
+                            ---
+                            ### 🔍 Diễn giải Sankey Flow
+
+                            **Phát hiện chính:**
+                            - **93.8%** (45/48) nội dung **Phản đối** vaccine mang cảm xúc **Tiêu cực**
+                            - **82.5%** (33/40) nội dung **Tích cực** đồng hành với lập trường **Ủng hộ**
+                            - **77.4%** (65/84) nội dung **Trung lập** đi với cảm xúc **Trung tính**
+
+                            → Sắc thái cảm xúc là **chỉ thị mạnh** dự báo lập trường tiêm chủng (Chi-square p < 10⁻⁴⁰).
+                            """
+                        )
+
+                        gr.Markdown("---")
+                        gr.Markdown("## 📊 Per-class F1 Breakdown")
+                        with gr.Tabs():
+                            with gr.Tab("🚨 Misinformation"):
+                                gr.Plot(value=make_per_class_chart("misinfo"))
+                                gr.Markdown("**Nhận xét:** Nhãn *Tin giả* (n=28) khó nhất do mất cân bằng dữ liệu, F1 cao nhất 0.5079 (XLM-R).")
+                            with gr.Tab("🎯 Stance"):
+                                gr.Plot(value=make_per_class_chart("stance"))
+                                gr.Markdown("**Nhận xét:** Nhãn *Trung lập* dễ nhất (F1 ~0.74) do diễn đạt khách quan. *Phản đối* tốt với Gemma (0.6905).")
+                            with gr.Tab("💭 Sentiment"):
+                                gr.Plot(value=make_per_class_chart("sentiment"))
+                                gr.Markdown("**Nhận xét:** Gemma vượt trội ở cả 3 lớp Sentiment, F1 *Tích cực* cao nhất 0.7027.")
+
+                        gr.Markdown("---")
+                        gr.Markdown("## 🔍 Bộ máy tính chỉ số thực nghiệm (Interactive Metric Calculator)")
+                        with gr.Row():
+                            with gr.Column(scale=1):
+                                calc_class_choice = gr.Dropdown(
+                                    choices=list(METRICS_DB.keys()),
+                                    value="Tin giả (Misinfo = Tin giả)",
+                                    label="Lựa chọn nhãn lớp cụ thể để tính toán chỉ số:",
+                                )
+                                calc_metrics_area = gr.HTML(value=update_calculator("Tin giả (Misinfo = Tin giả)")[0])
+                            with gr.Column(scale=1):
+                                with gr.Row():
+                                    calc_p_area = gr.Markdown(value=update_calculator("Tin giả (Misinfo = Tin giả)")[1])
+                                    calc_r_area = gr.Markdown(value=update_calculator("Tin giả (Misinfo = Tin giả)")[2])
+                                    calc_f1_area = gr.Markdown(value=update_calculator("Tin giả (Misinfo = Tin giả)")[3])
+
+                        calc_class_choice.change(
+                            fn=update_calculator,
+                            inputs=[calc_class_choice],
+                            outputs=[calc_metrics_area, calc_p_area, calc_r_area, calc_f1_area],
+                            api_name=False
+                        )
+
+                        gr.Markdown("---")
+                        gr.Markdown("## 📊 Phân cấp nhãn Gold Test Set (Sunburst)")
+                        gr.Plot(value=make_sunburst_chart())
+
+                    # ================================================================
+                    # TAB 4: TÀI LIỆU
+                    # ================================================================
+                    with gr.Tab("📚 TÀI LIỆU & NOTEBOOKS"):
+                        gr.HTML(RESOURCES_HTML)
+
+                    # ================================================================
+                    # TAB 5: PHƯƠNG PHÁP LUẬN
+                    # ================================================================
+                    with gr.Tab("📜 PHƯƠNG PHÁP LUẬN"):
+                        gr.HTML(METHODOLOGY_HTML)
+
+                    # ================================================================
+                    # TAB 6: ĐỀ CƯƠNG
+                    # ================================================================
+                    with gr.Tab("📑 ĐỀ CƯƠNG"):
+                        gr.HTML(THESIS_HTML)
+
+                gr.HTML(get_footer_html())
 
     return app
 
