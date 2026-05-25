@@ -132,6 +132,9 @@ APIFY_TOKENS = [t for t in APIFY_TOKENS if t]
 # Path B: External Gemma endpoint (Kaggle+ngrok)
 GEMMA_ENDPOINT_URL = os.environ.get("GEMMA_ENDPOINT_URL", "").strip()
 
+# Path C: OpenRouter fallback (public LLM inference)
+OPENROUTER_KEY = os.environ.get("OPENROUTER_KEY", "") or os.environ.get("OPENROUTER_API_KEY", "")
+
 # Thread-safe cache lock
 _CACHE_LOCK = threading.Lock()
 _CACHE = {}
@@ -415,50 +418,113 @@ def query_gemma_external_endpoint(text: str) -> Optional[str]:
     return None
 
 
-def query_gemma_api(text: str) -> Optional[str]:
-    """Layer 2: External endpoint → HF Inference API (Gemma-4 only)."""
-    # Layer 2a: Try external endpoint first (faster, dedicated)
-    external = query_gemma_external_endpoint(text)
-    if external:
-        return external
-    
-    # Layer 2b: HF Inference API
+def _build_xai_prompt(text: str) -> str:
+    """Build structured Vietnamese XAI prompt."""
+    return (
+        "Bạn là chuyên gia AI có khả năng giải thích (Explainable AI) trong lĩnh vực Y tế Công cộng Việt Nam. "
+        "Hãy phân tích văn bản sau theo cấu trúc 3 bước bằng TIẾNG VIỆT:\n"
+        "1. **Tính xác thực (Misinformation):** Văn bản có chứa thông tin sai lệch không? Dấu hiệu nào?\n"
+        "2. **Thái độ (Stance):** Người viết ủng hộ, phản đối hay trung lập với vaccine?\n"
+        "3. **Cảm xúc (Sentiment):** Sắc thái cảm xúc là tiêu cực, trung tính hay tích cực?\n"
+        f"\nVăn bản cần phân tích:\n{text.strip()[:800]}"
+    )
+
+
+def _try_openrouter(text: str) -> Optional[str]:
+    """Layer 2b: OpenRouter public inference API (google/gemma-3-4b-it or llama fallback)."""
+    if not OPENROUTER_KEY:
+        return None
+    import urllib.request
+    prompt = _build_xai_prompt(text)
+    payload = json.dumps({
+        "model": "google/gemma-3-4b-it:free",
+        "messages": [{"role": "user", "content": prompt}],
+        "max_tokens": 400,
+        "temperature": 0.7,
+    }).encode()
+    # Fallback chain: gemma-3-4b → llama-3.2-3b
+    or_models = [
+        "google/gemma-3-4b-it:free",
+        "meta-llama/llama-3.2-3b-instruct:free",
+    ]
+    for or_model in or_models:
+        try:
+            body = json.dumps({
+                "model": or_model,
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": 400,
+                "temperature": 0.7,
+            }).encode()
+            req = urllib.request.Request(
+                "https://openrouter.ai/api/v1/chat/completions",
+                data=body,
+                headers={
+                    "Authorization": f"Bearer {OPENROUTER_KEY}",
+                    "Content-Type": "application/json",
+                    "HTTP-Referer": "https://huggingface.co/spaces/hung2903/vaccinenlp-demo",
+                    "X-Title": "VaccineNLP XAI Demo",
+                },
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=25) as resp:
+                data = json.loads(resp.read().decode())
+            content = data["choices"][0]["message"]["content"].strip()
+            if content and len(content) > 30:
+                logger.info(f"✅ OpenRouter ({or_model}) reasoning OK")
+                return content
+        except Exception as e:
+            logger.debug(f"OpenRouter {or_model} failed: {e}")
+            continue
+    return None
+
+
+def _try_hf_inference(text: str) -> Optional[str]:
+    """Layer 2c: HF Inference API via chat_completion (avoids StopIteration bug)."""
     if not HF_TOKEN:
         return None
-
     try:
         from huggingface_hub import InferenceClient
     except ImportError:
         return None
-
-    short_text = text.strip()[:1000]
-
+    prompt = _build_xai_prompt(text)
     for model_id in CONFIG["xai_models"]:
         try:
-            # All entries in xai_models are Gemma-4 variants (v2.1)
-            prompt = (
-                f"Bạn là Trí tuệ Nhân tạo có khả năng giải thích (Explainable AI) "
-                f"trong lĩnh vực Y tế Công cộng. Hãy phân tích văn bản sau đây về "
-                f"chủ đề vắc-xin, đưa ra lý luận chi tiết HOÀN TOÀN bằng tiếng Việt "
-                f"về tính xác thực, thái độ và cảm xúc. Tuyệt đối không dùng tiếng Anh."
-                f"\n\nVăn bản: {short_text}"
-            )
-            formatted = f"<start_of_turn>user\n{prompt}<end_of_turn>\n<start_of_turn>model\nLý luận: "
-            stop_seqs = ["<end_of_turn>", "<|turn>"]
-
             client = InferenceClient(model=model_id, token=HF_TOKEN)
-            response = client.text_generation(
-                formatted, max_new_tokens=350, temperature=0.7,
-                repetition_penalty=1.2, stop_sequences=stop_seqs,
+            # Use chat_completion (OpenAI-compatible) instead of text_generation
+            # to avoid StopIteration error from empty stream
+            result = client.chat_completion(
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=350,
+                temperature=0.7,
             )
-            if response and len(response.strip()) > 10:
-                clean = response.replace("<end_of_turn>", "").replace("<|turn>", "").strip()
-                if not clean.startswith("Lý luận"):
-                    clean = "Lý luận: " + clean
-                return clean
+            content = result.choices[0].message.content or ""
+            if content.strip() and len(content.strip()) > 30:
+                logger.info(f"✅ HF Inference ({model_id}) reasoning OK")
+                return content.strip()
         except Exception as e:
-            logger.debug(f"Gemma-4 endpoint {model_id} failed: {e}")
+            logger.debug(f"HF Inference {model_id} failed: {e}")
             continue
+    return None
+
+
+def query_gemma_api(text: str) -> Optional[str]:
+    """XAI Layer 2: ngrok → OpenRouter → HF Inference (ordered by reliability)."""
+    # Layer 2a: Dedicated self-hosted endpoint (Kaggle+ngrok)
+    external = query_gemma_external_endpoint(text)
+    if external:
+        logger.info("✅ XAI via ngrok self-host endpoint")
+        return external
+
+    # Layer 2b: OpenRouter (free public inference — most reliable for demo)
+    or_result = _try_openrouter(text)
+    if or_result:
+        return or_result
+
+    # Layer 2c: HF Inference API (merged Gemma model)
+    hf_result = _try_hf_inference(text)
+    if hf_result:
+        return hf_result
+
     return None
 
 
@@ -551,26 +617,32 @@ def predict(text: str, model_key: str = "PhoBERT-v2") -> Optional[Dict]:
 
 
 def get_reasoning(text: str, result: Dict) -> Tuple[str, str]:
-    """3-layer reasoning with source label."""
+    """4-layer reasoning: Cache → ngrok → OpenRouter → HF Inference → Fallback."""
+    # Layer 1: XAI cache (instant, 266 entries)
     cached = find_xai_reasoning_cache(text)
     if cached:
-        return cached, "✅ Từ cache (Gold Test Set, 186 mẫu)"
+        return cached, "✅ Từ XAI Cache (Gold Test Set)"
 
+    # Layers 2a-2c: Live inference
     api_reasoning = query_gemma_api(text)
     if api_reasoning:
+        # Translate if response came back in English
         if is_mostly_english(api_reasoning):
             api_reasoning = translate_to_vietnamese(api_reasoning)
-        source_label = (
-            "✅ Từ Gemma-4 self-host (ngrok endpoint)"
-            if GEMMA_ENDPOINT_URL else
-            "✅ Từ Gemma-4 HF Inference API"
-        )
+        # Determine source label
+        if GEMMA_ENDPOINT_URL and api_reasoning:
+            source_label = "✅ Từ Gemma-4 self-host (ngrok)"
+        elif OPENROUTER_KEY:
+            source_label = "🤖 Từ Gemma-3 (OpenRouter API)"
+        else:
+            source_label = "🤖 Từ Gemma-4 HF Inference API"
         return api_reasoning, source_label
 
+    # Layer 4: Template fallback
     fallback = generate_smart_fallback(
         result["misinfo"]["pred"], result["stance"]["pred"], result["sentiment"]["pred"]
     )
-    return fallback, "⚠️ Fallback template (API không khả dụng)"
+    return fallback, "⚠️ Fallback template (Tất cả API không khả dụng)"
 
 
 # ============================================================================
