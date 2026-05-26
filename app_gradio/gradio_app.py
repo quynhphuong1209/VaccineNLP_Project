@@ -106,7 +106,7 @@ CONFIG = {
         },
     },
     "xai_models": [
-        "quynhphuong1209/gemma-4-E4B-unsloth-vaccine-xai",
+        "hung2903/gemma-4-E4B-vaccine-xai-merged",
         "google/gemma-2-2b-it",
     ],
     "cache_file": DATA_DIR / "xai_cache.json",
@@ -132,9 +132,56 @@ LABEL_COLORS = {
     "sentiment": {0: "#e8504a", 1: "#4a9eed", 2: "#3db882"},
 }
 
+
+# Load .env file if available (local development helper)
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 HF_TOKEN = os.environ.get("HF_TOKEN", "") or os.environ.get("VaccineNLP_TOKEN", "")
-APIFY_TOKENS = [os.environ.get(f"APIFY_TOKEN_{i}", "") for i in range(1, 6)]
-APIFY_TOKENS = [t for t in APIFY_TOKENS if t]
+
+# LM Studio local server configuration (configurable via env vars)
+LM_STUDIO_BASE_URL = os.environ.get("LM_STUDIO_URL", "http://localhost:1234/v1").strip()
+LM_STUDIO_MODEL    = os.environ.get("LM_STUDIO_MODEL", "local-model").strip()
+LM_API_TOKEN       = os.environ.get("LM_API_TOKEN", "lm-studio").strip()
+
+# Robust Apify tokens collection supporting different naming conventions
+APIFY_TOKENS = []
+possible_apify_keys = [
+    "APIFY_TOKEN", "APIFY_API_TOKEN", "APIFY_TOKEN_1", "APIFY_API_TOKEN_1",
+    "APIFY_TOKEN_2", "APIFY_API_TOKEN_2", "APIFY_TOKEN_3", "APIFY_API_TOKEN_3",
+    "APIFY_TOKEN_4", "APIFY_API_TOKEN_4", "APIFY_TOKEN_5", "APIFY_API_TOKEN_5",
+]
+for k in possible_apify_keys:
+    val = os.environ.get(k, "").strip()
+    if val and val not in APIFY_TOKENS:
+        APIFY_TOKENS.append(val)
+
+# Path B: External Gemma endpoint (Kaggle+ngrok)
+# QUAN TRỌNG: URL ngrok thay đổi mỗi session Kaggle.
+# Set Secret GEMMA_ENDPOINT_URL trong HF Spaces Settings mỗi khi restart Kaggle.
+# Nếu không set → bỏ qua Path B, fallback sang HF Inference API.
+_env_gemma_url = os.environ.get("GEMMA_ENDPOINT_URL", "").strip()
+GEMMA_ENDPOINT_URL = "https://pearle-staglike-nonsyntonically.ngrok-free.dev/predict"
+if _env_gemma_url and "ngrok-free.dev" in _env_gemma_url and "pearle-staglike-nonsyntonically" not in _env_gemma_url:
+    GEMMA_ENDPOINT_URL = _env_gemma_url
+if GEMMA_ENDPOINT_URL:
+    logger.info(f"🔗 Kaggle ngrok endpoint configured: {GEMMA_ENDPOINT_URL}")
+
+# Path C: OpenRouter fallback (public LLM inference)
+OPENROUTER_KEY = os.environ.get("OPENROUTER_KEY", "") or os.environ.get("OPENROUTER_API_KEY", "")
+
+# Gemini API keys: collect flexibly (GEMINI_API_KEY, GEMINI_API_KEY_2 ... GEMINI_API_KEY_5)
+_GEMINI_KEYS: list = []
+for _gi in range(1, 6):
+    _gname = "GEMINI_API_KEY" if _gi == 1 else f"GEMINI_API_KEY_{_gi}"
+    _gval = os.environ.get(_gname, "").strip()
+    if _gval and _gval not in _GEMINI_KEYS:
+        _GEMINI_KEYS.append(_gval)
+if _GEMINI_KEYS:
+    logger.info(f"🔑 Loaded {len(_GEMINI_KEYS)} Gemini API key(s)")
 
 # Thread-safe cache lock
 _CACHE_LOCK = threading.Lock()
