@@ -133,6 +133,11 @@ LABEL_COLORS = {
 }
 
 HF_TOKEN = os.environ.get("HF_TOKEN", "") or os.environ.get("VaccineNLP_TOKEN", "")
+
+# LM Studio local server configuration (configurable via env vars)
+LM_STUDIO_BASE_URL = os.environ.get("LM_STUDIO_URL", "http://localhost:1234/v1").strip()
+LM_STUDIO_MODEL    = os.environ.get("LM_STUDIO_MODEL", "local-model").strip()
+
 APIFY_TOKENS = [os.environ.get(f"APIFY_TOKEN_{i}", "") for i in range(1, 6)]
 APIFY_TOKENS = [t for t in APIFY_TOKENS if t]
 
@@ -373,24 +378,50 @@ def find_xai_reasoning_cache(text: str) -> Optional[str]:
 
 import openai
 
-def get_live_xai_reasoning(text: str) -> str:
-    """Gọi Gemma-4 qua LM Studio API đang chạy Local"""
-    client = openai.OpenAI(base_url="http://localhost:1234/v1", api_key="lm-studio")
+def get_live_xai_reasoning(text: str, result: Optional[Dict] = None) -> str:
+    """Gọi Gemma-4 GGUF qua LM Studio API (localhost).
+
+    Args:
+        text:   Văn bản cần phân tích.
+        result: Dict kết quả từ PhoBERT predict() — dùng để sinh fallback
+                thông minh khi LM Studio không khả dụng.
+    """
+    client = openai.OpenAI(base_url=LM_STUDIO_BASE_URL, api_key="lm-studio")
     try:
-        logger.info("⏳ Calling Local LM Studio API...")
+        logger.info(f"⏳ Calling LM Studio at {LM_STUDIO_BASE_URL} (model={LM_STUDIO_MODEL})...")
         response = client.chat.completions.create(
-            model="local-model", # LM Studio tự nhận diện model đang load
-            messages=[{"role": "user", "content": f"Văn bản: {text}"}],
-            max_tokens=1024,
+            model=LM_STUDIO_MODEL,
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "Bạn là chuyên gia AI phân tích y tế công cộng (Explainable AI — XAI). "
+                        "Hãy phân tích nội dung vaccine bằng TIẾNG VIỆT theo 3 chiều: "
+                        "(1) Tính xác thực, (2) Thái độ với vaccine, (3) Cảm xúc tổng thể. "
+                        "Trả lời có cấu trúc: === KẾT QUẢ === trước, === GIẢI THÍCH === sau."
+                    ),
+                },
+                {"role": "user", "content": _build_gemma_prompt(text)},
+            ],
+            max_tokens=2048,
             temperature=0.1,
-            timeout=120
+            timeout=120,
         )
         content = response.choices[0].message.content
-        if content:
+        if content and len(content.strip()) > 30:
             return clean_reasoning_output(content)
-        return "Lỗi XAI: Nhận phản hồi trống từ LM Studio."
+        logger.warning("⚠️ LM Studio returned empty/short response")
     except Exception as e:
-        return f"Lỗi XAI: Không thể kết nối LM Studio. Chi tiết: {str(e)}"
+        logger.warning(f"❌ LM Studio unreachable ({LM_STUDIO_BASE_URL}): {str(e)[:120]}")
+
+    # Smart fallback: dùng template khi LM Studio không khả dụng
+    if result:
+        return generate_smart_fallback(
+            result["misinfo"]["pred"],
+            result["stance"]["pred"],
+            result["sentiment"]["pred"],
+        )
+    return "⚠️ LM Studio chưa được khởi động. Hãy mở LM Studio và bật Local Server tại cổng 1234."
 
 
 def generate_smart_fallback(misinfo_pred: int, stance_pred: int, sentiment_pred: int) -> str:
@@ -485,17 +516,21 @@ def get_reasoning(text: str, result: Dict) -> Tuple[str, str]:
     """
     2-layer local reasoning logic:
     Layer 1: Cache (xai_cache.json) — instant
-    Layer 2: Local LM Studio (Gemma-4 GGUF) — ~10s
+    Layer 2: Local LM Studio (Gemma-4 GGUF) — ~10-30s, với smart fallback template
     """
-    # Layer 1: Cache (xai_cache.json) - instant
+    # Layer 1: Cache (xai_cache.json) — instant
     cached = find_xai_reasoning_cache(text)
     if cached:
         cleaned_cached = clean_reasoning_output(cached)
         return cleaned_cached, "✅ Từ cache (Gold Test Set, 186 mẫu)"
 
-    # Layer 2: Local LM Studio (Gemma-4 GGUF)
-    reasoning = get_live_xai_reasoning(text)
-    return reasoning, "🖥️ Từ Gemma-4 GGUF (LM Studio Local)"
+    # Layer 2: LM Studio (Gemma-4 GGUF) với smart fallback khi offline
+    reasoning = get_live_xai_reasoning(text, result=result)
+
+    # Phân biệt source label: LM Studio thật hay fallback template
+    if reasoning.startswith("⚠️") or "chưa được khởi động" in reasoning:
+        return reasoning, "⚠️ LM Studio không khả dụng — hiển thị phân tích mẫu"
+    return reasoning, f"🖥️ Từ Gemma-4 GGUF · {LM_STUDIO_MODEL} ({LM_STUDIO_BASE_URL})"
 
 
 # ============================================================================
