@@ -1573,9 +1573,11 @@ RESOURCES_MD = """## 📚 Tài liệu & Notebooks Nghiên cứu
 - [Model Benchmark Report](https://www.kaggle.com/code/kimmnhhng/vaccinenlp-model-benchmark-report)
 
 **🤗 HuggingFace:**
+- [Gradio Demo App Space](https://huggingface.co/spaces/hung2903/vaccinenlp-demo)
+- [Gemma GGUF Merged Model](https://huggingface.co/hung2903/gemma-4-E4B-vaccine-xai-merged)
 - [PhoBERT Multitask](https://huggingface.co/hung2903/phobert-vaccine-multitask)
 - [XLM-R Multitask](https://huggingface.co/hung2903/xlmr-vaccine-multitask)
-- [Gemma XAI Reasoning](https://huggingface.co/hung2903/gemma-4-E4B-unsloth-vaccine-xai)
+- [Gemma QLoRA Adapter](https://huggingface.co/hung2903/gemma-4-E4B-unsloth-vaccine-xai)
 
 **💻 GitHub:**
 - [VaccineNLP Thesis Repo](https://github.com/hwngkm/VaccineNLP-Thesis)
@@ -1591,9 +1593,10 @@ RESOURCES_MD = """## 📚 Tài liệu & Notebooks Nghiên cứu
 - [Gemma XAI Inference (03B)](https://www.kaggle.com/code/inhlqunhphng/vaccinenlp-gemma-4-inference)
 
 **🤗 HuggingFace:**
+- [Gradio Demo App Space](https://huggingface.co/spaces/quynhphuong1209/VaccineNLP_demo)
 - [PhoBERT Multitask](https://huggingface.co/quynhphuong1209/phobert-multitask)
 - [XLM-R Multitask](https://huggingface.co/quynhphuong1209/xlmr-multitask)
-- [Gemma XAI Reasoning](https://huggingface.co/quynhphuong1209/gemma-4-E4B-unsloth-vaccine-xai)
+- [Gemma QLoRA Adapter](https://huggingface.co/quynhphuong1209/gemma-4-E4B-unsloth-vaccine-xai)
 
 **💻 GitHub:**
 - [VaccineNLP Project Repo](https://github.com/quynhphuong1209/VaccineNLP_Project)
@@ -2516,9 +2519,11 @@ RESOURCES_HTML = """
       <div style="margin-top: 20px;">
         <h4 style="color: var(--accent-color); margin-bottom: 5px; font-size: 1.05rem; opacity: 0.95;">🤗 II. HUGGINGFACE:</h4>
         <ul style="list-style-type: none; padding-left: 0; line-height: 1.6;">
-          <li style="margin-bottom: 8px;">• <a href="https://huggingface.co/hung2903/phobert-vaccine-multitask" target="_blank" style="color: var(--accent-color); text-decoration: none;">PhoBERT Multitask</a></li>
-          <li style="margin-bottom: 8px;">• <a href="https://huggingface.co/hung2903/xlmr-vaccine-multitask" target="_blank" style="color: var(--accent-color); text-decoration: none;">XLM-R Multitask</a></li>
-          <li style="margin-bottom: 8px;">• <a href="https://huggingface.co/hung2903/gemma-4-E4B-unsloth-vaccine-xai" target="_blank" style="color: var(--accent-color); text-decoration: none;">Gemma XAI Reasoning</a></li>
+          <li style="margin-bottom: 8px;">• <a href="https://huggingface.co/spaces/hung2903/vaccinenlp-demo" target="_blank" style="color: var(--accent-color); text-decoration: none;"><b>Gradio Demo App Space</b></a></li>
+          <li style="margin-bottom: 8px;">• <a href="https://huggingface.co/hung2903/gemma-4-E4B-vaccine-xai-merged" target="_blank" style="color: var(--accent-color); text-decoration: none;"><b>Gemma GGUF Merged Model</b></a></li>
+          <li style="margin-bottom: 8px;">• <a href="https://huggingface.co/hung2903/phobert-vaccine-multitask" target="_blank" style="color: var(--accent-color); text-decoration: none;">PhoBERT Multitask Model</a></li>
+          <li style="margin-bottom: 8px;">• <a href="https://huggingface.co/hung2903/xlmr-vaccine-multitask" target="_blank" style="color: var(--accent-color); text-decoration: none;">XLM-R Multitask Model</a></li>
+          <li style="margin-bottom: 8px;">• <a href="https://huggingface.co/hung2903/gemma-4-E4B-unsloth-vaccine-xai" target="_blank" style="color: var(--accent-color); text-decoration: none;">Gemma QLoRA Adapter</a></li>
         </ul>
       </div>
       
@@ -2547,9 +2552,10 @@ RESOURCES_HTML = """
       <div style="margin-top: 20px;">
         <h4 style="color: var(--accent-color); margin-bottom: 5px; font-size: 1.05rem; opacity: 0.95;">🤗 II. HUGGINGFACE:</h4>
         <ul style="list-style-type: none; padding-left: 0; line-height: 1.6;">
-          <li style="margin-bottom: 8px;">• <a href="https://huggingface.co/quynhphuong1209/phobert-multitask" target="_blank" style="color: var(--accent-color); text-decoration: none;">PhoBERT Multitask</a></li>
-          <li style="margin-bottom: 8px;">• <a href="https://huggingface.co/quynhphuong1209/xlmr-multitask" target="_blank" style="color: var(--accent-color); text-decoration: none;">XLM-R Multitask</a></li>
-          <li style="margin-bottom: 8px;">• <a href="https://huggingface.co/quynhphuong1209/gemma-4-E4B-unsloth-vaccine-xai" target="_blank" style="color: var(--accent-color); text-decoration: none;">Gemma XAI Reasoning</a></li>
+          <li style="margin-bottom: 8px;">• <a href="https://huggingface.co/spaces/quynhphuong1209/VaccineNLP_demo" target="_blank" style="color: var(--accent-color); text-decoration: none;"><b>Gradio Demo App Space</b></a></li>
+          <li style="margin-bottom: 8px;">• <a href="https://huggingface.co/quynhphuong1209/phobert-multitask" target="_blank" style="color: var(--accent-color); text-decoration: none;">PhoBERT Multitask Model</a></li>
+          <li style="margin-bottom: 8px;">• <a href="https://huggingface.co/quynhphuong1209/xlmr-multitask" target="_blank" style="color: var(--accent-color); text-decoration: none;">XLM-R Multitask Model</a></li>
+          <li style="margin-bottom: 8px;">• <a href="https://huggingface.co/quynhphuong1209/gemma-4-E4B-unsloth-vaccine-xai" target="_blank" style="color: var(--accent-color); text-decoration: none;">Gemma QLoRA Adapter</a></li>
         </ul>
       </div>
       
