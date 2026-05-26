@@ -1,0 +1,84 @@
+# VaccineNLP - Git Exclusion Policy
+
+# Python & Environment
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+.env
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# Data Tier (Medallion Architecture)
+datasets/01_raw/
+datasets/02_interim/
+datasets/02_processed/
+datasets/04_silver_labels/
+datasets/temp/
+
+# Allow ONLY Gold Benchmarks & model ready
+!datasets/03_processed/
+!datasets/05_model_ready/
+
+# Models & Weights (CỰC KỲ QUAN TRỌNG - KHÔNG PUSH TRỌNG SỐ)
+experiments/models/
+*.pt
+*.bin
+*.safetensors
+*.pth
+*.ckpt
+*.h5
+
+# Analytics & Results (Cho phép push để minh bạch)
+!experiments/*.json
+!experiments/results/*.json
+!experiments/results/figures/
+
+# Application Cache
+!app/xai_cache.json
+
+# External Tools
+.kaggle/
+.kaggle-outputs/
+
+# OS & Logs
+.DS_Store
+Thumbs.db
+*.log
+*.html
+kaggle_out.txt
+
+# Streamlit & Local App Configs
+.streamlit/secrets.toml
+
+# IDE Workspaces & Settings
+*.code-workspace
+.vscode/
+
+# Local Backups & Large Archives
+*.rar
+*.zip
+*.7z
+*.tar.gz
+
+# Local Detailed Documentation & Private Structural Files (Giữ cấu trúc cục bộ an toàn)
+DIRECTORY_TREE_VISUAL.md
+FILE_INDEX_COMPLETE.md
+STRUCTURE_UPDATE_SUMMARY.md
+
+# Internal Agent Work
+.agent/
+scratch/
+_archive/
+UPDATES_*.md
+task64_streamlit_spec_approved.html
+Phase6 directive.html
+s c r i p t s / 
+scripts/
+
+# Gradio deployment exclusions
+app_gradio/.venv_gradio/
+app_gradio/data/

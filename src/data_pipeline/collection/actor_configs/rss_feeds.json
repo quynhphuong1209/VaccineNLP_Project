@@ -1,0 +1,14 @@
+{
+  "feeds": [
+    {
+      "name": "Thanh Nien - Sức khỏe",
+      "url": "https://thanhnien.vn/rss/suc-khoe.rss",
+      "source": "thanhnien"
+    },
+    {
+      "name": "Thanh Nien - Tin hay y tế",
+      "url": "https://thanhnien.vn/rss/suc-khoe/tin-hay-y-te.rss",
+      "source": "thanhnien"
+    }
+  ]
+}

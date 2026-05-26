@@ -1,0 +1,43 @@
+{
+  "tasks": {
+    "misinformation": {
+      "id": "misinfo",
+      "labels": ["Không tin giả", "Tin giả", "Không chắc chắn"],
+      "mapping": {
+        "NON_MISINFO": 0,
+        "MISINFO": 1,
+        "UNCERTAIN": 2
+      }
+    },
+    "stance": {
+      "id": "stance",
+      "labels": ["Trung lập", "Ủng hộ", "Phản đối", "Không rõ"],
+      "mapping": {
+        "NEUTRAL": 0,
+        "PRO": 1,
+        "ANTI": 2,
+        "UNKNOWN": 3
+      }
+    },
+    "sentiment": {
+      "id": "sentiment",
+      "labels": ["Trung lập", "Tích cực", "Tiêu cực"],
+      "mapping": {
+        "NEUTRAL": 0,
+        "POS": 1,
+        "NEG": 2
+      }
+    },
+    "relevance": {
+      "id": "relevance",
+      "labels": ["Liên quan", "Rác/Lạc đề"],
+      "mapping": {
+        "RELATED": 0,
+        "OOD": 1
+      }
+    }
+  },
+  "inference": {
+    "default_threshold": 0.85
+  }
+}

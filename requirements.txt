@@ -1,0 +1,52 @@
+# =============================================================================
+# VaccineNLP Project Requirements
+# =============================================================================
+
+# --- Core Frameworks ---
+torch>=2.0.0
+torchvision
+torchaudio
+transformers
+datasets
+evaluate
+accelerate
+
+# --- Optimization & Finetuning ---
+bitsandbytes
+peft
+trl
+# unsloth # Unsloth is better installed via its specific git link for Kaggle
+
+# --- Vietnamese NLP Tools ---
+pyvi
+underthesea
+langdetect
+
+# --- Data Science & Analysis ---
+pandas
+numpy
+scikit-learn
+matplotlib
+seaborn
+tqdm
+openpyxl
+
+# --- Utilities ---
+requests
+python-dotenv
+mlflow
+kagglehub
+huggingface_hub
+flask
+fastapi
+uvicorn
+streamlit
+plotly
+gTTS
+beautifulsoup4
+requests
+wordcloud
+captum>=0.7.0
+trafilatura>=1.12.0
+yt-dlp>=2024.10.7
+apify-client>=1.7.0

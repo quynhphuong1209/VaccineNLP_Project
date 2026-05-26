@@ -1,0 +1,43 @@
+{
+  "model": "gemma-4-4b-xai",
+  "timestamp": "2026-05-21T08:35:46.207228",
+  "total_samples": 186,
+  "parse_failure_rate": 0.2796,
+  "misinfo": {
+    "macro_f1": 0.6377,
+    "per_class": [
+      0.4444,
+      0.8309
+    ],
+    "support": [
+      22,
+      113
+    ]
+  },
+  "stance": {
+    "macro_f1": 0.6264,
+    "per_class": [
+      0.4528,
+      0.6905,
+      0.736
+    ],
+    "support": [
+      32,
+      40,
+      59
+    ]
+  },
+  "sentiment": {
+    "macro_f1": 0.77,
+    "per_class": [
+      0.8039,
+      0.8034,
+      0.7027
+    ],
+    "support": [
+      56,
+      52,
+      20
+    ]
+  }
+}
