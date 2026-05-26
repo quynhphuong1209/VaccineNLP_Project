@@ -82,3 +82,10 @@ scripts/
 # Gradio deployment exclusions
 app_gradio/.venv_gradio/
 app_gradio/data/
+
+# Excluded per user request
+Gemma_4_E4B_Self_Host_via_ngrok_colab.ipynb
+PROMPT_IDE_deploy_gradio.md
+engagement_check_utf8.txt
+deploy_to_hf.py
+tests/
