@@ -1,6 +1,6 @@
-# 📊 Thư Mục Dữ Liệu (datasets/) - v1.2
+# 📊 VaccineNLP Dataset Structure - v1.3
 
-**Cập nhật:** May 21, 2026 | Trạng thái: ✅ Complete
+**Updated:** May 26, 2026 | Status: ✅ Complete & Optimized
 
 ## 🎯 Mục Đích
 

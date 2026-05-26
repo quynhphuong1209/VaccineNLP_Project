@@ -89,3 +89,4 @@ PROMPT_IDE_deploy_gradio.md
 engagement_check_utf8.txt
 deploy_to_hf.py
 tests/
+dataset_facebook-groups-scraper_*.json
