@@ -95,18 +95,18 @@ DATA_DIR = APP_DIR / "data" if (APP_DIR / "data").exists() else APP_DIR
 CONFIG = {
     "models": {
         "PhoBERT-v2": {
-            "repo_id": "hung2903/phobert-vaccine-multitask",
+            "repo_id": "quynhphuong1209/phobert-multitask",
             "base_repo": "vinai/phobert-base-v2",
             "type": "phobert",
         },
         "XLM-R-v1": {
-            "repo_id": "hung2903/xlmr-vaccine-multitask",
+            "repo_id": "quynhphuong1209/xlmr-multitask",
             "base_repo": "xlm-roberta-base",
             "type": "xlm-roberta",
         },
     },
     "xai_models": [
-        "hung2903/gemma-4-E4B-unsloth-vaccine-xai",
+        "quynhphuong1209/gemma-4-E4B-unsloth-vaccine-xai",
         "google/gemma-2-2b-it",
     ],
     "cache_file": DATA_DIR / "xai_cache.json",
