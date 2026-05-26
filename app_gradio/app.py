@@ -481,270 +481,26 @@ def clean_reasoning_output(raw: str) -> str:
     return reasoning
 
 
-def query_gemma_external_endpoint(text: str) -> Optional[Tuple[str, str]]:
-    """
-    Path B: Gọi Kaggle ngrok server.
-    Server trả về JSON đầy đủ gồm reasoning + nhãn đã parse.
-    Trả về: (reasoning_text, source_label) hoặc None nếu lỗi.
-    """
-    if not GEMMA_ENDPOINT_URL:
-        logger.info("⏭️ Skipping ngrok Path B: GEMMA_ENDPOINT_URL not configured.")
-        return None
+import openai
 
-    import requests
-
-    # Bước 1: Health check nhanh (timeout=5s) để fail fast nếu server down
-    base_url = GEMMA_ENDPOINT_URL.rsplit("/predict", 1)[0]
+def get_live_xai_reasoning(text: str) -> str:
+    """Gọi Gemma-4 qua LM Studio API đang chạy Local"""
+    client = openai.OpenAI(base_url="http://localhost:1234/v1", api_key="lm-studio")
     try:
-        health_resp = requests.get(f"{base_url}/health", timeout=5)
-        if health_resp.status_code != 200:
-            logger.warning(f"❌ Ngrok health check failed (status={health_resp.status_code}). Skipping.")
-            return None
-        logger.info(f"✅ Ngrok health check OK: {health_resp.json()}")
-    except Exception as e:
-        err_str = str(e)
-        logger.warning(f"❌ Ngrok health check unreachable: {err_str[:80]}. Skipping Path B.")
-        return None
-
-    # Bước 2: Gọi /predict (1 lần, timeout=60s)
-    try:
-        logger.info(f"⏳ Calling ngrok /predict: {GEMMA_ENDPOINT_URL}")
-        response = requests.post(
-            GEMMA_ENDPOINT_URL,
-            json={"text": text[:1000], "max_tokens": 500},
-            timeout=60,
+        logger.info("⏳ Calling Local LM Studio API...")
+        response = client.chat.completions.create(
+            model="local-model", # LM Studio tự nhận diện model đang load
+            messages=[{"role": "user", "content": f"Văn bản: {text}"}],
+            max_tokens=1024,
+            temperature=0.1,
+            timeout=120
         )
-        if response.status_code == 200:
-            data = response.json()
-            if data.get("status") == "error":
-                logger.warning(f"⚠️ Ngrok server returned error: {data.get('error', '')}")
-                return None
-            reasoning = data.get("reasoning", "")
-            if reasoning and len(reasoning.strip()) > 10:
-                cleaned_reasoning = clean_reasoning_output(reasoning)
-                logger.info(
-                    f"✅ Ngrok OK — misinfo={data.get('misinfo')}, "
-                    f"stance={data.get('stance')}, sentiment={data.get('sentiment')}, "
-                    f"parsed={data.get('parsed')}"
-                )
-                return cleaned_reasoning, "✅ Từ Gemma-4 E4B (Kaggle GPU server)"
-            else:
-                logger.warning("⚠️ Ngrok returned empty reasoning.")
-        elif response.status_code == 404:
-            logger.warning("❌ Ngrok 404 — endpoint path wrong or server stopped.")
-        else:
-            logger.warning(f"⚠️ Ngrok returned status {response.status_code}: {response.text[:100]}")
-    except requests.exceptions.Timeout:
-        logger.warning("⚠️ Ngrok /predict timeout (60s). Skipping.")
+        content = response.choices[0].message.content
+        if content:
+            return clean_reasoning_output(content)
+        return "Lỗi XAI: Nhận phản hồi trống từ LM Studio."
     except Exception as e:
-        logger.warning(f"⚠️ Ngrok /predict failed: {str(e)[:100]}")
-    return None
-
-
-def _build_xai_prompt(text: str) -> str:
-    """Build structured Vietnamese XAI prompt."""
-    return (
-        "Bạn là chuyên gia AI có khả năng giải thích (Explainable AI) trong lĩnh vực Y tế Công cộng Việt Nam. "
-        "Hãy phân tích văn bản sau theo cấu trúc 3 bước bằng TIẾNG VIỆT:\n"
-        "1. **Tính xác thực (Misinformation):** Văn bản có chứa thông tin sai lệch không? Dấu hiệu nào?\n"
-        "2. **Thái độ (Stance):** Người viết ủng hộ, phản đối hay trung lập với vaccine?\n"
-        "3. **Cảm xúc (Sentiment):** Sắc thái cảm xúc là tiêu cực, trung tính hay tích cực?\n"
-        f"\nVăn bản cần phân tích:\n{text.strip()[:800]}"
-    )
-
-
-def _try_openrouter(text: str) -> Optional[Tuple[str, str]]:
-    """Layer 2c: OpenRouter public inference API (Gemma models)."""
-    if not OPENROUTER_KEY:
-        return None
-    import urllib.request
-    prompt = _build_xai_prompt(text)
-    
-    # Thứ tự dựa trên kết quả thực tế từ log 26/05/2026:
-    # google/gemini-flash-1.5 → 404 (bỏ)
-    # google/gemini-2.0-flash-001 → ✅ OK (3465 chars)
-    or_models = [
-        "google/gemini-2.0-flash-001",           # ✅ đã xác nhận OK
-        "meta-llama/llama-3.3-70b-instruct",     # fallback mạnh
-        "google/gemini-flash-1.5-8b",            # nhẹ hơn
-        "mistralai/mistral-small-3.1-24b-instruct:free",  # free tier
-    ]
-    for or_model in or_models:
-        try:
-            logger.info(f"⏳ OpenRouter trying model={or_model}...")
-            body = json.dumps({
-                "model": or_model,
-                "messages": [{"role": "user", "content": prompt}],
-                "max_tokens": 1000,
-                "temperature": 0.7,
-            }).encode()
-            req = urllib.request.Request(
-                "https://openrouter.ai/api/v1/chat/completions",
-                data=body,
-                headers={
-                    "Authorization": f"Bearer {OPENROUTER_KEY}",
-                    "Content-Type": "application/json",
-                    "HTTP-Referer": "https://huggingface.co/spaces/hung2903/vaccinenlp-demo",
-                    "X-Title": "VaccineNLP XAI Demo",
-                },
-                method="POST",
-            )
-            with urllib.request.urlopen(req, timeout=30) as resp:
-                data = json.loads(resp.read().decode())
-            content = data["choices"][0]["message"]["content"].strip()
-            if content and len(content) > 30:
-                logger.info(f"✅ OpenRouter ({or_model}) reasoning OK ({len(content)} chars)")
-                return content, f"🤖 Từ {or_model} (OpenRouter)"
-        except Exception as e:
-            logger.warning(f"⚠️ OpenRouter {or_model} failed: {str(e)[:80]}")
-            continue
-    return None
-
-
-def _try_hf_inference(text: str) -> Optional[Tuple[str, str]]:
-    """
-    Path A: HF Inference API với model hung2903/gemma-4-E4B-vaccine-xai-merged.
-    Dùng `stop` thay `stop_sequences` (deprecated từ huggingface_hub>=0.25).
-    """
-    try:
-        from huggingface_hub import InferenceClient
-    except ImportError:
-        return None
-    token = HF_TOKEN.strip() if (HF_TOKEN and HF_TOKEN.strip()) else None
-    if not token:
-        logger.warning("⚠️ HF_TOKEN not set — skipping HF Inference API.")
-        return None
-    model_id = "hung2903/gemma-4-E4B-vaccine-xai-merged"
-    prompt = _build_gemma_prompt(text)
-
-    max_hf_retries = 2
-    for hf_attempt in range(max_hf_retries):
-        try:
-            logger.info(f"⏳ HF Inference attempt {hf_attempt + 1}/{max_hf_retries} for {model_id}...")
-            client = InferenceClient(model=model_id, token=token, timeout=120)
-
-            # Dùng stop (mới) thay stop_sequences (deprecated)
-            gen_kwargs = dict(
-                max_new_tokens=500,
-                temperature=0.7,
-                repetition_penalty=1.2,
-                return_full_text=False,
-            )
-            # Thử stop trước (SDK mới), fallback stop_sequences (SDK cũ)
-            try:
-                content = client.text_generation(prompt, stop=["<end_of_turn>"], **gen_kwargs)
-            except TypeError:
-                content = client.text_generation(prompt, stop_sequences=["<end_of_turn>"], **gen_kwargs)
-
-            if content and content.strip() and len(content.strip()) > 30:
-                cleaned_reasoning = clean_reasoning_output(content)
-                logger.info(f"✅ HF Inference OK — {len(content)} chars")
-                return cleaned_reasoning, "🤖 Từ Gemma-4 E4B (HF Inference API)"
-            else:
-                logger.warning(f"⚠️ HF Inference returned empty/short content: '{str(content)[:80]}'")
-        except Exception as e:
-            err_str = str(e)
-            if not err_str:
-                err_str = repr(e)
-            if "loading" in err_str.lower() or "unavailable" in err_str.lower() or "503" in err_str:
-                logger.warning(f"⚠️ HF Inference: model loading ({hf_attempt + 1}/{max_hf_retries}): {err_str[:120]}")
-                time.sleep(10)
-                continue
-            elif "401" in err_str or "403" in err_str:
-                logger.warning(f"❌ HF Inference auth error (check HF_TOKEN): {err_str[:120]}")
-                break
-            else:
-                logger.warning(f"❌ HF Inference failed: {err_str[:200]}")
-                break
-    return None
-
-
-def _try_gemini_api(text: str) -> Optional[Tuple[str, str]]:
-    """
-    Layer 2c: Google Gemini Developer API — xoay vòng thông minh theo cặp (model, key).
-    Bug #1 Fix: lazy-load keys mỗi lần gọi, chỉ dùng keys bắt đầu bằng 'AIza' (REST API keys).
-    Bug #4 Fix: chỉ dùng model IDs đã xác nhận hoạt động.
-    """
-    # Lazy load: đọc lại từ env mỗi lần để không bị stale từ module init
-    # Bug #1: Keys AQ.xxx là OAuth tokens, không phải REST API keys — bỏ qua
-    keys = []
-    for i in range(1, 6):
-        key_name = "GEMINI_API_KEY" if i == 1 else f"GEMINI_API_KEY_{i}"
-        val = os.environ.get(key_name, "").strip()
-        if val and val.startswith("AIza") and val not in keys:
-            keys.append(val)
-    if not keys:
-        logger.warning("⚠️ No valid Gemini API keys (AIza...) available — skipping Gemini fallback.")
-        return None
-    logger.info(f"🔑 Gemini: using {len(keys)} valid API key(s) for this request.")
-
-    import urllib.request
-
-    # Chỉ dùng models đã xác nhận KHÔNG trả 404 (gemini-1.5-flash-002 và
-    # gemini-1.5-flash-latest đều 404 từ log thực tế ngày 26/05/2026).
-    model_priority = [
-        "gemini-2.0-flash",
-        "gemini-2.5-flash",
-        "gemini-2.0-flash-lite",
-    ]
-
-    prompt = _build_xai_prompt(text)
-    system_instruction = (
-        "Bạn là chuyên gia AI phân tích y tế công cộng tại Việt Nam. "
-        "Hãy luôn trả lời bằng TIẾNG VIỆT với lập luận có cấu trúc rõ ràng theo 3 bước: "
-        "(1) Tính xác thực, (2) Thái độ với vaccine, (3) Cảm xúc tổng thể."
-    )
-
-    base_payload = {
-        "system_instruction": {"parts": [{"text": system_instruction}]},
-        "contents": [{"role": "user", "parts": [{"text": prompt}]}],
-        "generationConfig": {
-            "temperature": 0.7,
-            "maxOutputTokens": 1500,
-            "topP": 0.95,
-        },
-    }
-
-    # Xoay vòng: với mỗi model, thử từng key → không bị block do rate-limit 1 key.
-    for model in model_priority:
-        for key in keys:
-            try:
-                logger.info(f"⏳ Gemini API trying model={model} key={key[:10]}...")
-                url = (
-                    f"https://generativelanguage.googleapis.com/v1beta/"
-                    f"models/{model}:generateContent?key={key}"
-                )
-                payload = json.dumps(base_payload).encode("utf-8")
-                req = urllib.request.Request(
-                    url,
-                    data=payload,
-                    headers={"Content-Type": "application/json"},
-                    method="POST",
-                )
-                with urllib.request.urlopen(req, timeout=30) as resp:
-                    res_data = json.loads(resp.read().decode("utf-8"))
-
-                if "candidates" in res_data and len(res_data["candidates"]) > 0:
-                    parts = res_data["candidates"][0].get("content", {}).get("parts", [])
-                    if parts and "text" in parts[0]:
-                        content = parts[0]["text"].strip()
-                        if content and len(content) > 30:
-                            logger.info(f"✅ Gemini API ({model}) reasoning OK ({len(content)} chars)")
-                            return content, f"🤖 Từ {model} (Google Gemini API)"
-            except Exception as e:
-                err_str = str(e)
-                if "429" in err_str or "quota" in err_str.lower() or "rateLimitExceeded" in err_str:
-                    logger.warning(f"⚠️ Gemini rate limit key={key[:10]} model={model} — rotating key.")
-                    continue  # Try next key for same model
-                else:
-                    logger.warning(f"⚠️ Gemini API ({model}) failed: {err_str[:120]}")
-                    break  # This model not available, try next model
-    return None
-
-
-def query_gemma_api(text: str) -> Tuple[Optional[str], Optional[str]]:
-    """Backward compatibility wrapper."""
-    return None, None
+        return f"Lỗi XAI: Không thể kết nối LM Studio. Chi tiết: {str(e)}"
 
 
 def generate_smart_fallback(misinfo_pred: int, stance_pred: int, sentiment_pred: int) -> str:
@@ -837,13 +593,9 @@ def predict(text: str, model_key: str = "PhoBERT-v2") -> Optional[Dict]:
 
 def get_reasoning(text: str, result: Dict) -> Tuple[str, str]:
     """
-    4-layer fallback đúng thứ tự:
+    2-layer local reasoning logic:
     Layer 1: Cache (xai_cache.json) — instant
-    Layer 2a: Ngrok Kaggle server (Path B) — ~45s, best quality
-    Layer 2b: HF Inference API merged model (Path A) — ~60s
-    Layer 2c: Gemini API (nếu có key)
-    Layer 2d: OpenRouter (nếu có key)
-    Layer 3: Template fallback — instant
+    Layer 2: Local LM Studio (Gemma-4 GGUF) — ~10s
     """
     # Layer 1: Cache (xai_cache.json) - instant
     cached = find_xai_reasoning_cache(text)
@@ -851,41 +603,9 @@ def get_reasoning(text: str, result: Dict) -> Tuple[str, str]:
         cleaned_cached = clean_reasoning_output(cached)
         return cleaned_cached, "✅ Từ cache (Gold Test Set, 186 mẫu)"
 
-    # Layer 2a: Ngrok Kaggle server (Path B) - best quality, max 2 retries (45s each)
-    res = query_gemma_external_endpoint(text)
-    if res:
-        reasoning, source_label = res
-        if reasoning:
-            return reasoning, source_label
-
-    # Layer 2b: HF Inference API merged model (Path A) - merged model, max 120s wait_for_model
-    res = _try_hf_inference(text)
-    if res:
-        reasoning, source_label = res
-        if reasoning:
-            return reasoning, source_label
-
-    # Layer 2c: Gemini API (nếu có key)
-    res = _try_gemini_api(text)
-    if res:
-        reasoning, source_label = res
-        if reasoning:
-            cleaned_reasoning = clean_reasoning_output(reasoning)
-            return cleaned_reasoning, source_label
-
-    # Layer 2d: OpenRouter (nếu có key)
-    res = _try_openrouter(text)
-    if res:
-        reasoning, source_label = res
-        if reasoning:
-            cleaned_reasoning = clean_reasoning_output(reasoning)
-            return cleaned_reasoning, source_label
-
-    # Layer 3: Template fallback - instant
-    fallback = generate_smart_fallback(
-        result["misinfo"]["pred"], result["stance"]["pred"], result["sentiment"]["pred"]
-    )
-    return fallback, "⚠️ Fallback template (API không khả dụng)"
+    # Layer 2: Local LM Studio (Gemma-4 GGUF)
+    reasoning = get_live_xai_reasoning(text)
+    return reasoning, "🖥️ Từ Gemma-4 GGUF (LM Studio Local)"
 
 
 # ============================================================================

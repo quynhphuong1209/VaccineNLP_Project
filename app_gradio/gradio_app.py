@@ -371,49 +371,26 @@ def find_xai_reasoning_cache(text: str) -> Optional[str]:
     return None
 
 
-def query_gemma_api(text: str) -> Optional[str]:
-    """Layer 2: HF Inference API with multi-model fallback."""
-    if not HF_TOKEN:
-        return None
+import openai
 
+def get_live_xai_reasoning(text: str) -> str:
+    """Gọi Gemma-4 qua LM Studio API đang chạy Local"""
+    client = openai.OpenAI(base_url="http://localhost:1234/v1", api_key="lm-studio")
     try:
-        from huggingface_hub import InferenceClient
-    except ImportError:
-        return None
-
-    short_text = text.strip()[:1000]
-
-    for model_id in CONFIG["xai_models"]:
-        try:
-            if "gemma-4-E4B" in model_id:
-                prompt = (
-                    f"Bạn là Trí tuệ Nhân tạo có khả năng giải thích (Explainable AI) trong lĩnh vực Y tế Công cộng. "
-                    f"Hãy phân tích văn bản sau đây về chủ đề vắc-xin, đưa ra lý luận chi tiết HOÀN TOÀN bằng tiếng Việt "
-                    f"về tính xác thực, thái độ và cảm xúc. Tuyệt đối không dùng tiếng Anh.\n\nVăn bản: {short_text}"
-                )
-                formatted = f"<|turn>user\n{prompt}\n<|turn>model\nLý luận: "
-                stop_seqs = ["<|turn>", "<end_of_turn>"]
-            else:
-                prompt = f"Hãy phân tích nội dung sau về vắc-xin và giải thích tại sao bằng tiếng Việt: '{short_text}'"
-                formatted = f"<start_of_turn>user\n{prompt}<end_of_turn>\n<start_of_turn>model\n"
-                stop_seqs = ["<end_of_turn>"]
-
-            client = InferenceClient(model=model_id, token=HF_TOKEN)
-            response = client.text_generation(
-                formatted, max_new_tokens=350, temperature=0.7,
-                repetition_penalty=1.2, stop_sequences=stop_seqs,
-            )
-            if response and len(response.strip()) > 10:
-                clean = response.replace("<end_of_turn>", "").replace("<|turn>", "").strip()
-                if "gemma-4-E4B" in model_id and not clean.startswith("Lý luận"):
-                    clean = "Lý luận: " + clean
-                elif "gemma-4-E4B" not in model_id:
-                    clean = f"{clean}\n\n*(Giải thích từ Gemma-Engine fallback)*"
-                return clean
-        except Exception as e:
-            logger.debug(f"Model {model_id} failed: {e}")
-            continue
-    return None
+        logger.info("⏳ Calling Local LM Studio API...")
+        response = client.chat.completions.create(
+            model="local-model", # LM Studio tự nhận diện model đang load
+            messages=[{"role": "user", "content": f"Văn bản: {text}"}],
+            max_tokens=1024,
+            temperature=0.1,
+            timeout=120
+        )
+        content = response.choices[0].message.content
+        if content:
+            return clean_reasoning_output(content)
+        return "Lỗi XAI: Nhận phản hồi trống từ LM Studio."
+    except Exception as e:
+        return f"Lỗi XAI: Không thể kết nối LM Studio. Chi tiết: {str(e)}"
 
 
 def generate_smart_fallback(misinfo_pred: int, stance_pred: int, sentiment_pred: int) -> str:
@@ -505,21 +482,20 @@ def predict(text: str, model_key: str = "PhoBERT-v2") -> Optional[Dict]:
 
 
 def get_reasoning(text: str, result: Dict) -> Tuple[str, str]:
-    """3-layer reasoning with source label."""
+    """
+    2-layer local reasoning logic:
+    Layer 1: Cache (xai_cache.json) — instant
+    Layer 2: Local LM Studio (Gemma-4 GGUF) — ~10s
+    """
+    # Layer 1: Cache (xai_cache.json) - instant
     cached = find_xai_reasoning_cache(text)
     if cached:
-        return cached, "✅ Từ cache (Gold Test Set, 186 mẫu)"
+        cleaned_cached = clean_reasoning_output(cached)
+        return cleaned_cached, "✅ Từ cache (Gold Test Set, 186 mẫu)"
 
-    api_reasoning = query_gemma_api(text)
-    if api_reasoning:
-        if is_mostly_english(api_reasoning):
-            api_reasoning = translate_to_vietnamese(api_reasoning)
-        return api_reasoning, "✅ Từ Gemma-4 HF Inference API"
-
-    fallback = generate_smart_fallback(
-        result["misinfo"]["pred"], result["stance"]["pred"], result["sentiment"]["pred"]
-    )
-    return fallback, "⚠️ Fallback template (API không khả dụng)"
+    # Layer 2: Local LM Studio (Gemma-4 GGUF)
+    reasoning = get_live_xai_reasoning(text)
+    return reasoning, "🖥️ Từ Gemma-4 GGUF (LM Studio Local)"
 
 
 # ============================================================================
