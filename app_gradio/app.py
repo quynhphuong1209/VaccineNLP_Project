@@ -1160,11 +1160,19 @@ def make_benchmark_chart() -> go.Figure:
 
 
 def make_confusion_matrix_chart() -> go.Figure:
-    """Confusion Matrix Heatmap for PhoBERT-v2 Sentiment (from thesis Ch4)."""
+    """Confusion Matrix Heatmap for PhoBERT-v2 Sentiment (from phobert_v2_results.json).
+    
+    Actual values computed from probs + true_labels arrays in results JSON.
+    Confusion matrix: rows = Thực tế, columns = Dự đoán
+    - Tiêu cực (n=71):  TP=64, FP=3 → Trung tính, FP=4 → Tích cực
+    - Trung tính (n=75): FP=14 → Tiêu cực, TP=57, FP=4 → Tích cực
+    - Tích cực (n=40):  FP=11 → Tiêu cực, FP=9 → Trung tính, TP=20
+    Macro F1: 0.7266 (matches phobert_v2_results.json)
+    """
     z_data = [
-        [54, 12, 5],
-        [10, 56, 9],
-        [3, 11, 26]
+        [64, 3, 4],
+        [14, 57, 4],
+        [11, 9, 20]
     ]
     labels = ["Tiêu cực", "Trung tính", "Tích cực"]
     fig = px.imshow(
@@ -1223,11 +1231,21 @@ def make_per_class_chart(task: str = "misinfo") -> go.Figure:
 
 
 def make_sankey_chart() -> go.Figure:
-    """Sentiment to Stance flow."""
+    """Sentiment to Stance co-occurrence flow (Gold Test Set, n=186).
+    
+    Data source: phobert_v2_results.json true_labels (sentiment & stance).
+    Node indices: 0=Tiêu cực, 1=Trung tính, 2=Tích cực
+                  3=Phản đối, 4=Trung lập, 5=Ủng hộ
+    Co-occurrence matrix (actual):
+      Tiêu cực → Phản đối=45, Trung lập=17, Ủng hộ=9
+      Trung tính → Phản đối=3,  Trung lập=65, Ủng hộ=7
+      Tích cực → Trung lập=2,  Ủng hộ=38  (Phản đối=0, omitted)
+    """
     nodes = ["Tiêu cực", "Trung tính", "Tích cực", "Phản đối", "Trung lập", "Ủng hộ"]
+    # Zero-value link (Tích cực→Phản đối=0) removed for clean visualisation
     sources = [0, 0, 0, 1, 1, 1, 2, 2]
     targets = [3, 4, 5, 3, 4, 5, 4, 5]
-    values  = [38, 28, 5, 10, 49, 16, 7, 33]
+    values  = [45, 17, 9, 3, 65, 7, 2, 38]
     fig = go.Figure(data=[go.Sankey(
         node=dict(pad=18, thickness=22, label=nodes,
                   color=["#ff4b4b", "#4a9eed", "#3db882", "#ff4b4b", "#007bff", "#64ffda"]),
