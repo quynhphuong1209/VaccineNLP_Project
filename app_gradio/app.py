@@ -106,7 +106,7 @@ CONFIG = {
         },
     },
     "xai_models": [
-        "quynhphuong1209/gemma-4-E4B-unsloth-vaccine-xai",
+        "hung2903/gemma-4-E4B-vaccine-xai-merged",
         "google/gemma-2-2b-it",
     ],
     "cache_file": DATA_DIR / "xai_cache.json",
