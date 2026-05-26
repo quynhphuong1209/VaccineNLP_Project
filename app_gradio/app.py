@@ -1942,10 +1942,9 @@ CSS_STYLE = """
 }
 
 .model-color-phobert { color: var(--custom-text-neon) !important; }
-.model-color-xlmr { color: #007bff !important; }
+.model-color-xlmr { color: #3b82f6 !important; }
 .model-color-gemma { color: #FFA500 !important; }
 .dark .model-color-gemma { color: #FFA500 !important; }
-
 
 body, html {
     background-color: var(--bg-color) !important;
@@ -1962,7 +1961,6 @@ body, html {
     margin: 0 auto !important;
     padding: 0 !important;
     overflow: visible !important;
-    /* NOTE: Do NOT add backdrop-filter here — it creates a containing block for position:fixed (dropdown lists) */
 }
 
 .gradio-container .contain {
@@ -1997,7 +1995,6 @@ body, html {
 .gradio-container .dropdown-menu .option,
 .gradio-container .dropdown-menu .item {
     color: var(--text-color) !important;
-    font-family: 'Times New Roman', Times, Georgia, serif !important;
     padding: 8px 12px !important;
 }
 
@@ -2023,71 +2020,30 @@ body, html {
     text-shadow: 0 1px 1px rgba(0,0,0,0.01);
 }
 
-/* Scrollbar styling */
+/* Modern Thin Scrollbar (No buttons, elegant) */
 ::-webkit-scrollbar {
-    width: 12px;
-    height: 12px;
+    width: 6px;
+    height: 6px;
 }
 ::-webkit-scrollbar-track {
-    background: rgba(10, 25, 47, 0.1);
-}
-.dark ::-webkit-scrollbar-track {
-    background: rgba(10, 25, 47, 0.5);
+    background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-    background: var(--accent-color);
-    border-radius: 10px;
-    border: 2px solid transparent;
-    background-clip: padding-box;
+    background: rgba(0, 212, 170, 0.25);
+    border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-    background: #4cd9b9;
-    border: 2px solid transparent;
-    background-clip: padding-box;
+    background: rgba(0, 212, 170, 0.5);
+}
+::-webkit-scrollbar-button {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
 }
 
-/* Global scrollbar buttons (up/down arrows) */
-::-webkit-scrollbar-button:vertical:start:decrement {
-    display: block !important;
-    height: 16px !important;
-    background-color: var(--input-bg) !important;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%232563eb'%3E%3Cpath d='M12 8l-6 6h12z'/%3E%3C/svg%3E") !important;
-    background-size: 10px 10px !important;
-    background-repeat: no-repeat !important;
-    background-position: center !important;
-    border: 1px solid var(--input-border) !important;
-    border-radius: 4px !important;
-}
-.dark ::-webkit-scrollbar-button:vertical:start:decrement {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2364ffda'%3E%3Cpath d='M12 8l-6 6h12z'/%3E%3C/svg%3E") !important;
-}
-::-webkit-scrollbar-button:vertical:start:decrement:hover {
-    background-color: var(--accent-bg) !important;
-    border-color: var(--accent-color) !important;
-}
-
-::-webkit-scrollbar-button:vertical:end:increment {
-    display: block !important;
-    height: 16px !important;
-    background-color: var(--input-bg) !important;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%232563eb'%3E%3Cpath d='M12 16l6-6H6z'/%3E%3C/svg%3E") !important;
-    background-size: 10px 10px !important;
-    background-repeat: no-repeat !important;
-    background-position: center !important;
-    border: 1px solid var(--input-border) !important;
-    border-radius: 4px !important;
-}
-.dark ::-webkit-scrollbar-button:vertical:end:increment {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2364ffda'%3E%3Cpath d='M12 16l6-6H6z'/%3E%3C/svg%3E") !important;
-}
-::-webkit-scrollbar-button:vertical:end:increment:hover {
-    background-color: var(--accent-bg) !important;
-    border-color: var(--accent-color) !important;
-}
-
-/* Tabs Navigation Styling */
+/* Tabs Navigation Styling - flat & clean like Streamlit */
 .tabs {
-    border-bottom: 1px solid rgba(100, 255, 218, 0.15) !important;
+    border-bottom: 1px solid rgba(0, 212, 170, 0.1) !important;
     background: transparent !important;
 }
 
@@ -2096,58 +2052,53 @@ body, html {
     flex-wrap: nowrap !important;
     overflow-x: auto !important;
     overflow-y: visible !important;
-    gap: 8px !important;
+    gap: 16px !important;
     background: transparent !important;
-    border-bottom: none !important;
-    padding: 10px 0 !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+    padding: 0 0 10px 0 !important;
     -webkit-overflow-scrolling: touch !important;
-    scrollbar-width: none !important;  /* Firefox */
-    -ms-overflow-style: none !important; /* IE/Edge */
 }
-
-/* Hide scrollbar on the tab nav but allow scrolling */
-.tab-nav::-webkit-scrollbar {
-    display: none !important;
+.dark .tab-nav {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
 
 .tab-nav button {
-    background-color: var(--tab-button-bg) !important;
+    background: transparent !important;
     color: var(--tab-button-text) !important;
-    border: 1px solid var(--input-border) !important;
-    border-radius: 8px !important;
-    padding: 12px 28px !important;
-    font-weight: 500 !important;
-    font-size: 0.9rem !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.05em !important;
+    border: none !important;
+    border-bottom: 2px solid transparent !important;
+    border-radius: 0 !important;
+    padding: 8px 16px !important;
+    font-weight: 600 !important;
+    font-size: 0.95rem !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
     white-space: nowrap !important;
     flex-shrink: 0 !important;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    transition: all 0.2s ease !important;
 }
 
 .tab-nav button:hover {
     color: var(--accent-color) !important;
-    border-color: var(--accent-color) !important;
-    background-color: var(--accent-bg) !important;
+    border-bottom: 2px solid rgba(0, 212, 170, 0.3) !important;
+    background: transparent !important;
 }
 
 .tab-nav button.selected {
-    color: var(--text-color) !important;
-    background-color: rgba(30, 41, 59, 0.15) !important;
-    border: 1.5px solid #007bff !important;
-    border-bottom: 3.5px solid var(--accent-color) !important;
-    border-radius: 8px 8px 0 0 !important;
-    border-bottom-left-radius: 0 !important;
-    border-bottom-right-radius: 0 !important;
+    color: var(--accent-color) !important;
+    background-color: transparent !important;
+    border: none !important;
+    border-bottom: 3px solid var(--accent-color) !important;
+    border-radius: 0 !important;
     font-weight: 700 !important;
     box-shadow: none !important;
     transform: none !important;
 }
 .dark .tab-nav button.selected {
-    color: var(--header-text) !important;
-    background-color: rgba(10, 25, 47, 0.3) !important;
-    border: 1.5px solid #007bff !important;
-    border-bottom: 3.5px solid var(--accent-color) !important;
+    color: var(--accent-color) !important;
+    background-color: transparent !important;
+    border: none !important;
+    border-bottom: 3px solid var(--accent-color) !important;
 }
 
 /* Mobile-specific tab overrides */
@@ -2159,32 +2110,35 @@ body, html {
     .tab-nav button {
         padding: 10px 16px !important;
         font-size: 0.8rem !important;
-        letter-spacing: 0.03em !important;
-        border-radius: 6px !important;
-    }
-    .tab-scroll-btn {
-        top: 26px !important;
+        border-radius: 0 !important;
     }
 }
 
-/* Button style */
+/* Button style - Primary with green gradient (Streamlit style) */
 button.primary, button.gr-button-primary {
-    background: linear-gradient(135deg, var(--accent-color) 0%, #3b82f6 100%) !important;
-    color: #020617 !important;
+    background: linear-gradient(135deg, #00d4aa 0%, #00b894 100%) !important;
+    color: #0a1628 !important;
     font-weight: 700 !important;
+    font-size: 0.95rem !important;
+    letter-spacing: 0.03em !important;
     border: none !important;
     border-radius: 8px !important;
-    box-shadow: 0 4px 15px var(--glow-color) !important;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    box-shadow: 0 4px 15px rgba(0, 212, 170, 0.25) !important;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    text-transform: uppercase !important;
+    padding: 12px 24px !important;
 }
 .dark button.primary, .dark button.gr-button-primary {
-    color: #020617 !important;
+    color: #0a1628 !important;
 }
 
 button.primary:hover, button.gr-button-primary:hover {
-    transform: translateY(-2px) scale(1.01) !important;
-    box-shadow: 0 6px 22px var(--glow-color) !important;
-    opacity: 0.95 !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 20px rgba(0, 212, 170, 0.4) !important;
+    filter: brightness(1.05) !important;
+}
+button.primary:active, button.gr-button-primary:active {
+    transform: translateY(0) !important;
 }
 
 button.secondary, button.gr-button-secondary {
@@ -2221,8 +2175,6 @@ button.secondary:hover, button.gr-button-secondary:hover {
 }
 
 /* Gradio Containers and Panels */
-/* NOTE: backdrop-filter is intentionally removed from .block — having it would create a new containing block
-   for position:fixed elements (like Gradio dropdown option lists), trapping them inside and making them invisible. */
 .gr-box, .gr-panel, .block {
     background-color: var(--card-bg) !important;
     border: 1px solid var(--card-border) !important;
@@ -2230,11 +2182,21 @@ button.secondary:hover, button.gr-button-secondary:hover {
     box-shadow: 0 8px 30px var(--shadow-color) !important;
 }
 
-/* NUCLEAR FIX: Force ALL elements inside sidebar to have overflow:visible so dropdown options list
-   can escape parent clipping. Gradio Soft theme sets overflow:hidden on .block, .wrap, etc.
-   We override ALL sidebar child elements except when sidebar is collapsed, excluding the options list itself. */
-#sidebar-col:not(.collapsed) *:not(.options):not(.select-options):not([class*="options"]) {
+/* FIX: Gradio Soft theme sets overflow:hidden on .block and .wrap which collapses sidebar content. */
+#sidebar-col .block,
+#sidebar-col .wrap,
+#sidebar-col .gap,
+#sidebar-col .form > .block,
+#sidebar-col fieldset {
     overflow: visible !important;
+}
+
+/* Reset sidebar block card styling so it doesn't show grey rounded borders around text elements */
+#sidebar-col .block, #sidebar-col .gr-block {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
 }
 
 /* Accordion styling */
@@ -2259,12 +2221,6 @@ button.secondary:hover, button.gr-button-secondary:hover {
         opacity: 1;
         transform: translateY(0);
     }
-}
-
-@keyframes pulseGlow {
-    0% { box-shadow: 0 0 5px var(--accent-color)80; }
-    50% { box-shadow: 0 0 15px var(--accent-color)e0; }
-    100% { box-shadow: 0 0 5px var(--accent-color)80; }
 }
 
 .result-card-hover {
@@ -2301,7 +2257,7 @@ button.secondary:hover, button.gr-button-secondary:hover {
 }
 
 body.dark .theme-dark-btn {
-    background: linear-gradient(135deg, var(--accent-color) 0%, #3b82f6 100%) !important;
+    background: linear-gradient(135deg, var(--accent-color) 0%, #00b894 100%) !important;
     color: #020617 !important;
     font-weight: bold !important;
     border-color: var(--accent-color) !important;
@@ -2312,7 +2268,7 @@ body.dark .theme-light-btn {
 }
 
 body:not(.dark) .theme-light-btn {
-    background: linear-gradient(135deg, var(--accent-color) 0%, #3b82f6 100%) !important;
+    background: linear-gradient(135deg, var(--accent-color) 0%, #00b894 100%) !important;
     color: #ffffff !important;
     font-weight: bold !important;
     border-color: var(--accent-color) !important;
@@ -2324,15 +2280,16 @@ body:not(.dark) .theme-dark-btn {
 
 #sidebar-col {
     position: sticky !important;
-    top: 12px !important;
-    background-color: var(--card-bg) !important;
+    top: 0 !important;
+    background-color: #ffffff !important;
     border-right: 1px solid var(--input-border) !important;
     padding: 20px !important;
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease !important;
+    display: block !important;
     overflow-y: auto !important;
     overflow-x: hidden !important;
-    height: calc(100vh - 24px) !important;
-    max-height: calc(100vh - 24px) !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
     box-sizing: border-box !important;
     width: 290px !important;
     min-width: 290px !important;
@@ -2341,25 +2298,33 @@ body:not(.dark) .theme-dark-btn {
     z-index: 9999 !important;
     transform: translateX(0) !important;
 }
+.dark #sidebar-col, body.dark #sidebar-col {
+    background-color: #050b14 !important;
+    border-right: 1px solid rgba(0, 212, 170, 0.1) !important;
+}
 
 #sidebar-col::-webkit-scrollbar {
-    width: 12px !important;
+    width: 4px !important;
     display: block !important;
 }
 
 #sidebar-col::-webkit-scrollbar-track {
-    background: var(--input-bg) !important;
-    border-left: 1px solid var(--input-border) !important;
+    background: transparent !important;
 }
 
 #sidebar-col::-webkit-scrollbar-thumb {
-    background-color: var(--tab-button-text) !important;
-    border: 2px solid var(--input-bg) !important;
-    border-radius: 6px !important;
+    background-color: rgba(0, 212, 170, 0.2) !important;
+    border-radius: 4px !important;
 }
 
 #sidebar-col::-webkit-scrollbar-thumb:hover {
-    background-color: var(--accent-color) !important;
+    background-color: rgba(0, 212, 170, 0.4) !important;
+}
+
+#sidebar-col::-webkit-scrollbar-button {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
 }
 
 #main-layout-row {
@@ -2415,7 +2380,7 @@ body:not(.dark) .theme-dark-btn {
     font-weight: bold !important;
     background-color: rgba(15, 23, 42, 0.9) !important;
     color: var(--accent-color) !important;
-    border: 1px solid rgba(100, 255, 218, 0.35) !important;
+    border: 1px solid rgba(0, 212, 170, 0.35) !important;
     cursor: pointer !important;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18) !important;
     transition: all 0.25s ease !important;
@@ -2454,18 +2419,11 @@ body:not(.dark) .theme-dark-btn {
 }
 
 #sidebar-toggle-btn:hover {
-    background-color: rgba(100, 255, 218, 0.15) !important;
-    border-color: rgba(100, 255, 218, 0.4) !important;
-    box-shadow: 0 4px 12px rgba(100, 255, 218, 0.2) !important;
+    background-color: rgba(0, 212, 170, 0.15) !important;
+    border-color: rgba(0, 212, 170, 0.4) !important;
+    box-shadow: 0 4px 12px rgba(0, 212, 170, 0.2) !important;
     transform: scale(1.08) !important;
 }
-
-/* When sidebar is collapsed - button moves to left */
-#sidebar-toggle-btn.sidebar-is-collapsed {
-    left: 16px !important;
-}
-
-/* Sidebar scrolling styles consolidated above */
 
 @media (max-width: 768px) {
     .gradio-container {
@@ -2521,13 +2479,6 @@ body:not(.dark) .theme-dark-btn {
     }
 }
 
-#sidebar-toggle-btn:hover {
-    border-color: var(--accent-color) !important;
-    color: var(--accent-color) !important;
-    background-color: var(--accent-bg) !important;
-    transform: scale(1.02) !important;
-}
-
 /* Custom Plotly adaptations for Dark/Light Mode */
 .js-plotly-plot {
     background-color: transparent !important;
@@ -2546,7 +2497,6 @@ body:not(.dark) .theme-dark-btn {
 .js-plotly-plot .ytitle,
 .js-plotly-plot .legendtext {
     fill: var(--text-color) !important;
-    font-family: 'Times New Roman', Times, Georgia, serif !important;
 }
 .js-plotly-plot .gridlayer path,
 .js-plotly-plot .zerolinelayer path,
@@ -2567,143 +2517,134 @@ body:not(.dark) .theme-dark-btn {
     text-shadow: 0 1px 2px rgba(0,0,0,0.5) !important;
 }
 
-/* Sidebar scrollbar buttons (up/down arrows) */
-#sidebar-col::-webkit-scrollbar-button:vertical:start:decrement {
-    display: block !important;
-    height: 16px !important;
-    background-color: var(--input-bg) !important;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%232563eb'%3E%3Cpath d='M12 8l-6 6h12z'/%3E%3C/svg%3E") !important;
-    background-size: 10px 10px !important;
-    background-repeat: no-repeat !important;
-    background-position: center !important;
-    border: 1px solid var(--input-border) !important;
-    border-radius: 4px !important;
-}
-.dark #sidebar-col::-webkit-scrollbar-button:vertical:start:decrement {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2364ffda'%3E%3Cpath d='M12 8l-6 6h12z'/%3E%3C/svg%3E") !important;
-}
-#sidebar-col::-webkit-scrollbar-button:vertical:start:decrement:hover {
-    background-color: var(--accent-bg) !important;
-    border-color: var(--accent-color) !important;
+/* Hide default scroll buttons but keep styles active for compatibility */
+.sidebar-scroll-btn {
+    display: none !important;
 }
 
-#sidebar-col::-webkit-scrollbar-button:vertical:end:increment {
-    display: block !important;
-    height: 16px !important;
-    background-color: var(--input-bg) !important;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%232563eb'%3E%3Cpath d='M12 16l6-6H6z'/%3E%3C/svg%3E") !important;
-    background-size: 10px 10px !important;
-    background-repeat: no-repeat !important;
-    background-position: center !important;
-    border: 1px solid var(--input-border) !important;
-    border-radius: 4px !important;
+/* ===== gr.Plot full-width expand ===== */
+.gr-plot, .gradio-plot, .plot-container, [data-testid="plot"], .js-plotly-plot, .plotly, .svg-container, .main-svg {
+    width: 100% !important;
+    max-width: 100% !important;
 }
-.dark #sidebar-col::-webkit-scrollbar-button:vertical:end:increment {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2364ffda'%3E%3Cpath d='M12 16l6-6H6z'/%3E%3C/svg%3E") !important;
-}
-#sidebar-col::-webkit-scrollbar-button:vertical:end:increment:hover {
-    background-color: var(--accent-bg) !important;
-    border-color: var(--accent-color) !important;
+.gr-plot > div, .plot-container > div, .js-plotly-plot > div {
+    width: 100% !important;
+    max-width: 100% !important;
 }
 
-/* Hide default Gradio footer and remove bottom spacing past custom footer */
-footer {
+/* ===== Reset button styling ===== */
+.reset-btn-layout {
+    background: transparent !important;
+    border: 1.5px solid var(--input-border) !important;
+    color: var(--text-color) !important;
+    transition: all 0.2s ease !important;
+}
+.reset-btn-layout:hover {
+    border-color: var(--accent-color) !important;
+    color: var(--accent-color) !important;
+    background-color: var(--accent-bg) !important;
+}
+
+/* ===== Sidebar content layout ===== */
+#sidebar-col .form {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: var(--layout-gap) !important;
+    height: auto !important;
+    overflow: visible !important;
+}
+
+#sidebar-col .form > * {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    flex-shrink: 0 !important;
+}
+
+/* Premium Sidebar Divider */
+.sidebar-divider {
+    height: 1px;
+    background: linear-gradient(90deg, rgba(0, 212, 170, 0) 0%, rgba(0, 212, 170, 0.25) 50%, rgba(0, 212, 170, 0) 100%) !important;
+    margin: 20px 0 15px 0 !important;
+    border: none !important;
+}
+
+/* Hide default Gradio footer and eliminate extra bottom scrolling */
+footer, .gradio-container > footer {
     display: none !important;
 }
 
 .gradio-container {
-    margin-bottom: 0 !important;
     padding-bottom: 0 !important;
+    margin-bottom: 0 !important;
 }
 
-/* Tab Scroll Buttons styling */
-.tabs {
-    position: relative !important;
-}
-.tab-scroll-btn {
-    position: absolute !important;
-    top: 32px !important;
-    transform: translateY(-50%) !important;
-    width: 32px !important;
-    height: 38px !important;
-    border-radius: 8px !important;
+
+/* Hero Banner Theme-Aware Styles */
+#hero-banner {
+    background: #ffffff !important;
     border: 1px solid var(--input-border) !important;
-    color: var(--accent-color) !important;
-    cursor: pointer !important;
-    z-index: 10 !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    font-size: 14px !important;
-    font-weight: bold !important;
-    transition: all 0.3s ease !important;
-    opacity: 0;
-    pointer-events: none;
+    border-radius: 16px !important;
+    padding: 35px 20px !important;
+    text-align: center !important;
+    margin-bottom: 25px !important;
+    box-shadow: 0 10px 30px var(--shadow-color) !important;
+    position: relative !important;
+    overflow: hidden !important;
 }
-.tab-scroll-btn-left {
-    left: 4px !important;
-    background: var(--bg-color) !important;
-}
-.dark .tab-scroll-btn-left {
-    background: rgba(3, 7, 18, 0.95) !important;
-}
-.tab-scroll-btn-right {
-    right: 4px !important;
-    background: var(--bg-color) !important;
-}
-.dark .tab-scroll-btn-right {
-    background: rgba(3, 7, 18, 0.95) !important;
-}
-.tab-scroll-btn.visible {
-    opacity: 0.9 !important;
-    pointer-events: auto !important;
-}
-.tab-scroll-btn:hover {
-    background-color: var(--accent-color) !important;
-    color: #030712 !important;
-    box-shadow: 0 0 8px var(--accent-color) !important;
-}
-
-/* Sidebar scroll buttons */
-.sidebar-scroll-btn {
-    position: sticky !important;
+.hero-accent-line {
+    position: absolute !important;
+    top: 0 !important;
     left: 0 !important;
     right: 0 !important;
-    height: 0 !important;
-    overflow: hidden !important;
-    background: var(--input-bg) !important;
-    border: 1px solid var(--input-border) !important;
-    color: var(--accent-color) !important;
-    text-align: center !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    cursor: pointer !important;
-    z-index: 9999 !important;
-    transition: all 0.3s ease !important;
-    opacity: 0;
-    pointer-events: none;
-    margin: 0 !important;
-    padding: 0 !important;
+    height: 4px !important;
+    background: linear-gradient(90deg, #00d4aa 0%, #00b894 100%) !important;
 }
-.sidebar-scroll-btn.visible {
-    opacity: 0.95 !important;
-    pointer-events: auto !important;
-    height: 32px !important;
-    margin: 4px 10px !important;
-    border-radius: 8px !important;
-    box-shadow: 0 4px 12px var(--shadow-color) !important;
+.hero-emojis {
+    font-size: 2.2rem !important;
+    margin-bottom: 8px !important;
+    filter: drop-shadow(0 0 10px rgba(0, 184, 148, 0.2)) !important;
 }
-.sidebar-scroll-btn-up {
-    top: 5px !important;
+.hero-title {
+    margin: 5px 0 12px 0 !important;
+    font-size: clamp(1.6rem, 3.5vw, 2.6rem) !important;
+    font-weight: 800 !important;
+    color: #0f172a !important;
+    line-height: 1.3 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.03em !important;
 }
-.sidebar-scroll-btn-down {
-    bottom: 5px !important;
+.hero-divider {
+    width: 100px !important;
+    height: 3px !important;
+    background: #00b894 !important;
+    margin: 12px auto !important;
+    border-radius: 2px !important;
 }
-.sidebar-scroll-btn:hover {
-    background-color: var(--accent-color) !important;
-    color: #030712 !important;
-    box-shadow: 0 0 10px var(--accent-color) !important;
+.hero-subtitle {
+    margin: 0 auto !important;
+    font-size: clamp(0.9rem, 1.8vw, 1.15rem) !important;
+    color: #475569 !important;
+    font-weight: 500 !important;
+    max-width: 800px !important;
+    line-height: 1.4 !important;
+}
+
+.dark #hero-banner, body.dark #hero-banner {
+    background: linear-gradient(135deg, rgba(13, 27, 47, 0.85) 0%, rgba(10, 22, 40, 0.95) 100%) !important;
+    border: 1px solid rgba(0, 212, 170, 0.15) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
+}
+.dark .hero-emojis {
+    filter: drop-shadow(0 0 10px rgba(0, 212, 170, 0.3)) !important;
+}
+.dark .hero-title {
+    color: #ffffff !important;
+}
+.dark .hero-divider {
+    background: #00d4aa !important;
+}
+.dark .hero-subtitle {
+    color: #88a4c0 !important;
 }
 """
 
@@ -3375,6 +3316,91 @@ def handle_detail_change(category, detail):
 def build_app():
     """Build the Gradio Blocks app with 6 tabs."""
     init_theme_js = """function() {
+        /* Force Plotly charts to stretch to 100% width on tab clicks/nav changes */
+        document.addEventListener('click', function(e) {
+            const isTabOrButton = e.target.closest('button') || e.target.closest('[role="tab"]') || e.target.closest('.tab-nav') || e.target.closest('.tab-item');
+            if (isTabOrButton) {
+                setTimeout(function() { window.dispatchEvent(new Event('resize')); }, 50);
+                setTimeout(function() { window.dispatchEvent(new Event('resize')); }, 150);
+                setTimeout(function() { window.dispatchEvent(new Event('resize')); }, 400);
+                setTimeout(function() { window.dispatchEvent(new Event('resize')); }, 800);
+            }
+        });
+        
+        /* Trigger resize on initial load */
+        setTimeout(function() { window.dispatchEvent(new Event('resize')); }, 1000);
+        setTimeout(function() { window.dispatchEvent(new Event('resize')); }, 2500);
+        /* Force Plotly charts to stretch to 100% width on tab clicks/nav changes */
+        document.addEventListener('click', function(e) {
+            const isTabOrButton = e.target.closest('button') || e.target.closest('[role="tab"]') || e.target.closest('.tab-nav') || e.target.closest('.tab-item');
+            if (isTabOrButton) {
+                setTimeout(function() { window.dispatchEvent(new Event('resize')); }, 50);
+                setTimeout(function() { window.dispatchEvent(new Event('resize')); }, 150);
+                setTimeout(function() { window.dispatchEvent(new Event('resize')); }, 400);
+                setTimeout(function() { window.dispatchEvent(new Event('resize')); }, 800);
+            }
+        });
+        
+        /* Trigger resize on initial load */
+        setTimeout(function() { window.dispatchEvent(new Event('resize')); }, 1000);
+        setTimeout(function() { window.dispatchEvent(new Event('resize')); }, 2500);
+        /* Delegated document event listener for TTS button click (highly secure & sanitizer-proof) */
+        document.addEventListener('click', function(e) {
+            const btn = e.target.closest('.tts-speak-btn');
+            if (!btn) return;
+            
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const wrapper = btn.parentElement;
+            if (!wrapper) return;
+            
+            const audio = wrapper.querySelector('audio');
+            if (!audio) return;
+            
+            if (audio.paused) {
+                // Pause all other audio players on page
+                document.querySelectorAll('audio').forEach(a => {
+                    if (a !== audio) {
+                        a.pause();
+                        a.currentTime = 0;
+                        const otherBtn = a.parentElement.querySelector('.tts-speak-btn');
+                        if (otherBtn) {
+                            otherBtn.innerHTML = '<span style="font-size: 1.2rem;">🔊</span> Nghe AI Giải Thích';
+                            otherBtn.style.background = 'linear-gradient(135deg, #00c853 0%, #b2ff59 100%)';
+                            otherBtn.style.boxShadow = '0 4px 15px rgba(0, 200, 83, 0.3)';
+                            otherBtn.style.color = '#0a192f';
+                        }
+                    }
+                });
+                
+                audio.play().then(() => {
+                    btn.innerHTML = '<span class="tts-playing-icon" style="font-size: 1.2rem;">⏹️</span> Đang đọc giải thích...';
+                    btn.style.background = 'linear-gradient(135deg, #ff4b4b 0%, #ff8f8f 100%)';
+                    btn.style.boxShadow = '0 4px 15px rgba(255, 75, 75, 0.3)';
+                    btn.style.color = '#ffffff';
+                }).catch(err => {
+                    console.error("Lỗi phát audio:", err);
+                    // Fallback: If programmatic playback is blocked by browser gesture policies, reveal the native controls!
+                    audio.style.display = 'block';
+                });
+            } else {
+                audio.pause();
+                audio.currentTime = 0;
+                btn.innerHTML = '<span style="font-size: 1.2rem;">🔊</span> Nghe AI Giải Thích';
+                btn.style.background = 'linear-gradient(135deg, #00c853 0%, #b2ff59 100%)';
+                btn.style.boxShadow = '0 4px 15px rgba(0, 200, 83, 0.3)';
+                btn.style.color = '#0a192f';
+            }
+            
+            audio.onended = () => {
+                btn.innerHTML = '<span style="font-size: 1.2rem;">🔊</span> Nghe Lại';
+                btn.style.background = 'linear-gradient(135deg, #00c853 0%, #b2ff59 100%)';
+                btn.style.boxShadow = '0 4px 15px rgba(0, 200, 83, 0.3)';
+                btn.style.color = '#0a192f';
+            };
+        });
+
         const savedTheme = localStorage.getItem('theme');
         if (savedTheme === 'light') {
             document.documentElement.classList.remove('dark');
