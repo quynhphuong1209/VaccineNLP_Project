@@ -137,6 +137,7 @@ HF_TOKEN = os.environ.get("HF_TOKEN", "") or os.environ.get("VaccineNLP_TOKEN", 
 # LM Studio local server configuration (configurable via env vars)
 LM_STUDIO_BASE_URL = os.environ.get("LM_STUDIO_URL", "http://localhost:1234/v1").strip()
 LM_STUDIO_MODEL    = os.environ.get("LM_STUDIO_MODEL", "local-model").strip()
+LM_API_TOKEN       = os.environ.get("LM_API_TOKEN", "lm-studio").strip()
 
 APIFY_TOKENS = [os.environ.get(f"APIFY_TOKEN_{i}", "") for i in range(1, 6)]
 APIFY_TOKENS = [t for t in APIFY_TOKENS if t]
@@ -386,7 +387,7 @@ def get_live_xai_reasoning(text: str, result: Optional[Dict] = None) -> str:
         result: Dict kết quả từ PhoBERT predict() — dùng để sinh fallback
                 thông minh khi LM Studio không khả dụng.
     """
-    client = openai.OpenAI(base_url=LM_STUDIO_BASE_URL, api_key="lm-studio")
+    client = openai.OpenAI(base_url=LM_STUDIO_BASE_URL, api_key=LM_API_TOKEN)
     try:
         logger.info(f"⏳ Calling LM Studio at {LM_STUDIO_BASE_URL} (model={LM_STUDIO_MODEL})...")
         response = client.chat.completions.create(
