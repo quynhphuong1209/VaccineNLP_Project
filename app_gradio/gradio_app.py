@@ -728,7 +728,7 @@ def render_saliency_html(tokens: List[str], attr_norm: List[float], pred_class: 
     # 2) Render
     html = ('<div style="line-height:2.1; padding:20px; border-radius:15px; '
             'background:var(--custom-card-bg); border:1px dashed var(--custom-card-border); '
-            'font-family:\'Plus Jakarta Sans\', \'Be Vietnam Pro\', sans-serif; font-size:1.05rem;">')
+            'font-family:\'Outfit\', \'Montserrat\', sans-serif; font-size:1.05rem;">')
     for word, score in zip(words, scores):
         abs_score = abs(score)
         if abs_score < 0.15:
@@ -741,7 +741,7 @@ def render_saliency_html(tokens: List[str], attr_norm: List[float], pred_class: 
                      f'font-weight:bold;">{word}</span> ')
     html += "</div>"
     label = LABEL_MAPS["misinfo"].get(pred_class, "?")
-    html += (f'<p style="font-size:11px; color: var(--custom-text-muted); margin-top:10px; font-family:\'Plus Jakarta Sans\', \'Be Vietnam Pro\', sans-serif;">'
+    html += (f'<p style="font-size:11px; color: var(--custom-text-muted); margin-top:10px; font-family:\'Outfit\', \'Montserrat\', sans-serif;">'
              f'💡 Trục Tính xác thực dự đoán: <b>{label}</b> · từ đậm hơn = đóng góp lớn hơn '
              f'(Level 1 bổ trợ — giải thích chính do Gemma đảm nhiệm). '
              f'Đây là attribution ở cấp TỪ đã gộp từ subword.</p>')
@@ -786,7 +786,7 @@ def text_to_speech(text: str) -> str:
                 gap: 8px;
                 box-shadow: 0 4px 15px rgba(0, 200, 83, 0.3);
                 transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                font-family: 'Plus Jakarta Sans', 'Be Vietnam Pro', sans-serif;
+                font-family: 'Outfit', 'Montserrat', sans-serif;
                 font-size: 1rem;
             " onclick="togglePlay(this)">
                 <span style="font-size: 1.2rem;">🔊</span> Nghe AI Giải Thích
@@ -1183,7 +1183,7 @@ def make_radar_chart(result: Dict) -> go.Figure:
     fig.update_layout(
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
-        font=dict(family="Plus Jakarta Sans, Be Vietnam Pro, sans-serif", color="#8899aa"),
+        font=dict(family="Outfit, Montserrat, sans-serif", color="#8899aa"),
         polar=dict(radialaxis=dict(
             visible=True, range=[0, 100], showticklabels=True,
             ticksuffix="%", tickvals=[20, 40, 60, 80, 100],
@@ -1191,7 +1191,7 @@ def make_radar_chart(result: Dict) -> go.Figure:
         showlegend=False, height=370,
         margin=dict(l=60, r=60, t=40, b=40),
         title=dict(text="Độ tin cậy (đã hiệu chuẩn) của nhãn dự đoán — đọc theo từng trục",
-                   font=dict(family="Plus Jakarta Sans, Be Vietnam Pro, sans-serif", size=11, color="#8899aa"), x=0.5, xanchor="center"),
+                   font=dict(family="Outfit, Montserrat, sans-serif", size=11, color="#8899aa"), x=0.5, xanchor="center"),
     )
     return fig
 
@@ -1226,7 +1226,7 @@ def make_probability_distribution_chart(result: Dict) -> go.Figure:
     fig.update_layout(
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
         height=520, margin=dict(l=90, r=40, t=46, b=30),
-        font=dict(family="Plus Jakarta Sans, Be Vietnam Pro, sans-serif", size=12, color="#8899aa"),
+        font=dict(family="Outfit, Montserrat, sans-serif", size=12, color="#8899aa"),
         title=dict(text="Phân phối xác suất đã hiệu chuẩn (lớp đậm = dự đoán)",
                    font=dict(size=11), x=0.5, xanchor="center"),
     )
@@ -1410,7 +1410,7 @@ def get_huph_logo_base64():
 
 def render_result_cards_html(result: Dict, elapsed: float, model_choice: str) -> str:
     """Render beautiful HTML cards with progress bars for multi-task predictions."""
-    html = '<div style="display: flex; flex-wrap: wrap; gap: 20px; width: 100%; font-family: \'Plus Jakarta Sans\', \'Be Vietnam Pro\', sans-serif; margin-bottom: 10px;">'
+    html = '<div style="display: flex; flex-wrap: wrap; gap: 20px; width: 100%; font-family: \'Outfit\', \'Montserrat\', sans-serif; margin-bottom: 10px;">'
     for axis, axis_name in [("misinfo", "Tin giả / Xác thực"), ("stance", "Quan điểm"), ("sentiment", "Cảm xúc")]:
         r = result[axis]
         pred_id = r["pred"]
@@ -1425,16 +1425,16 @@ def render_result_cards_html(result: Dict, elapsed: float, model_choice: str) ->
         
         if has_cal:
             conf_html = f"""
-            <div style="font-size: 0.85rem; color: var(--card-text-muted); margin-top: 5px; font-family: 'Plus Jakarta Sans', 'Be Vietnam Pro', sans-serif;">
+            <div style="font-size: 0.85rem; color: var(--card-text-muted); margin-top: 5px; font-family: 'Outfit', 'Montserrat', sans-serif;">
                 Thô: <span style="text-decoration: line-through;">{conf_raw:.1f}%</span>
             </div>
-            <div style="font-size: 1.05rem; color: {color}; font-weight: bold; margin-top: 2px; font-family: 'Plus Jakarta Sans', 'Be Vietnam Pro', sans-serif;">
+            <div style="font-size: 1.05rem; color: {color}; font-weight: bold; margin-top: 2px; font-family: 'Outfit', 'Montserrat', sans-serif;">
                 Đã hiệu chuẩn (T={T:.2f}): {conf_cal:.1f}%
             </div>
             """
         else:
             conf_html = f"""
-            <div style="font-size: 0.95rem; color: var(--card-text-muted); margin-top: 5px; font-family: 'Plus Jakarta Sans', 'Be Vietnam Pro', sans-serif;">
+            <div style="font-size: 0.95rem; color: var(--card-text-muted); margin-top: 5px; font-family: 'Outfit', 'Montserrat', sans-serif;">
                 Độ tin cậy: <strong style="color: {color};">{conf_raw:.1f}%</strong>
             </div>
             """
@@ -1451,7 +1451,7 @@ def render_result_cards_html(result: Dict, elapsed: float, model_choice: str) ->
             if has_cal:
                 breakdown_items += f"""
                 <div style="margin-top: 8px;">
-                    <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--card-text-secondary); font-family: 'Plus Jakarta Sans', 'Be Vietnam Pro', sans-serif;">
+                    <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--card-text-secondary); font-family: 'Outfit', 'Montserrat', sans-serif;">
                         <span>{class_label}</span>
                         <span style="font-size: 10px; color: var(--card-text-muted);">Thô: {pct_raw:.1f}% → <strong style="color: {class_color};">{pct_cal:.1f}%</strong></span>
                     </div>
@@ -1463,7 +1463,7 @@ def render_result_cards_html(result: Dict, elapsed: float, model_choice: str) ->
             else:
                 breakdown_items += f"""
                 <div style="margin-top: 8px;">
-                    <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--card-text-secondary); font-family: 'Plus Jakarta Sans', 'Be Vietnam Pro', sans-serif;">
+                    <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--card-text-secondary); font-family: 'Outfit', 'Montserrat', sans-serif;">
                         <span>{class_label}</span>
                         <span style="color: {class_color}; font-weight: bold;">{pct_raw:.1f}%</span>
                     </div>
@@ -1476,18 +1476,18 @@ def render_result_cards_html(result: Dict, elapsed: float, model_choice: str) ->
         html += f"""
         <div class="result-card-hover" style="flex: 1; min-width: 240px; background: var(--card-bg); border: 1px solid {color}60; border-radius: 16px; padding: 22px; text-align: center; box-shadow: 0 8px 24px var(--shadow-color), 0 0 15px {color}10; backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border-bottom: 4px solid {color};">
             <div style="font-size: 40px; margin-bottom: 5px;">{icon}</div>
-            <div style="font-size: 0.8rem; color: var(--card-text-muted); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 5px; font-family: 'Plus Jakarta Sans', 'Be Vietnam Pro', sans-serif; font-weight: 600;">{axis_name}</div>
-            <div style="font-size: 1.6rem; font-weight: bold; color: {color}; margin-bottom: 8px; font-family: 'Plus Jakarta Sans', 'Be Vietnam Pro', sans-serif;">{label}</div>
+            <div style="font-size: 0.8rem; color: var(--card-text-muted); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 5px; font-family: 'Outfit', 'Montserrat', sans-serif; font-weight: 600;">{axis_name}</div>
+            <div style="font-size: 1.6rem; font-weight: bold; color: {color}; margin-bottom: 8px; font-family: 'Outfit', 'Montserrat', sans-serif;">{label}</div>
             {conf_html}
             
             <div style="margin-top: 15px; border-top: 1px dashed var(--input-border); padding-top: 10px; text-align: left;">
-                <div style="font-size: 0.8rem; font-weight: bold; color: var(--accent-color); text-transform: uppercase; margin-bottom: 5px; font-family: 'Plus Jakarta Sans', 'Be Vietnam Pro', sans-serif; letter-spacing: 0.05em;">Chi tiết nhãn:</div>
+                <div style="font-size: 0.8rem; font-weight: bold; color: var(--accent-color); text-transform: uppercase; margin-bottom: 5px; font-family: 'Outfit', 'Montserrat', sans-serif; letter-spacing: 0.05em;">Chi tiết nhãn:</div>
                 {breakdown_items}
             </div>
         </div>
         """
     html += '</div>'
-    html += f"<div style='margin-top: 15px; font-style: italic; color: var(--card-text-muted); font-family: \"Plus Jakarta Sans\", \"Be Vietnam Pro\", sans-serif; font-size: 0.9rem; text-align: right;'>⏱️ Thời gian xử lý: {elapsed:.2f}s · Mô hình: {model_choice}</div>"
+    html += f"<div style='margin-top: 15px; font-style: italic; color: var(--card-text-muted); font-family: \"Outfit\", \"Montserrat\", sans-serif; font-size: 0.9rem; text-align: right;'>⏱️ Thời gian xử lý: {elapsed:.2f}s · Mô hình: {model_choice}</div>"
     return html
 
 
@@ -1504,7 +1504,7 @@ def make_speed_chart() -> go.Figure:
     fig.update_layout(
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
-        font=dict(family='Plus Jakarta Sans, Be Vietnam Pro, sans-serif', color='#ccd6f6', size=13),
+        font=dict(family='Outfit, Montserrat, sans-serif', color='#ccd6f6', size=13),
         yaxis=dict(title='Số mẫu xử lý/giây', range=[0, 140]),
         height=420,
         margin=dict(l=20, r=20, t=30, b=20),
@@ -1572,7 +1572,7 @@ def update_calculator(selected_class: str):
     f1 = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0.0
     
     metrics_html = f"""
-    <div style="display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px; font-family: 'Plus Jakarta Sans', 'Be Vietnam Pro', sans-serif;">
+    <div style="display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px; font-family: 'Outfit', 'Montserrat', sans-serif;">
         <div style="flex: 1; min-width: 130px; border: 1px solid var(--custom-card-border); border-radius: 8px; padding: 10px; text-align: center; background: var(--custom-card-bg);">
             <p style="margin: 0; font-size: 0.85rem; color: var(--custom-text-muted);">Support (Tổng mẫu)</p>
             <h3 style="margin: 5px 0; color: var(--custom-text-neon); font-size: 1.5rem;">{support}</h3>
@@ -1626,7 +1626,7 @@ def handle_analyze(
 ) -> Tuple:
     """Main analysis handler with progress indicator."""
     if not text or not text.strip():
-        error_html = '<div style="color: #ff4b4b; font-weight: bold; font-size: 1.1rem; padding: 15px; border: 1px solid #ff4b4b; border-radius: 8px; background: rgba(255,75,75,0.1); font-family: \'Plus Jakarta Sans\', \'Be Vietnam Pro\', sans-serif;">⚠️ Vui lòng nhập văn bản hoặc chọn mẫu thử!</div>'
+        error_html = '<div style="color: #ff4b4b; font-weight: bold; font-size: 1.1rem; padding: 15px; border: 1px solid #ff4b4b; border-radius: 8px; background: rgba(255,75,75,0.1); font-family: \'Outfit\', \'Montserrat\', sans-serif;">⚠️ Vui lòng nhập văn bản hoặc chọn mẫu thử!</div>'
         return (error_html, None, None, "", "", "", history,
                 session_history_to_markdown(history), "", "")
 
@@ -1638,7 +1638,7 @@ def handle_analyze(
     result = predict(text, model_choice)
     t_predict = time.time() - t0
     if not result:
-        error_html = f'<div style="color: #ff4b4b; font-weight: bold; font-size: 1.1rem; padding: 15px; border: 1px solid #ff4b4b; border-radius: 8px; background: rgba(255,75,75,0.1); font-family: \'Plus Jakarta Sans\', \'Be Vietnam Pro\', sans-serif;">❌ Không thể load mô hình {model_choice} — kiểm tra HF_TOKEN</div>'
+        error_html = f'<div style="color: #ff4b4b; font-weight: bold; font-size: 1.1rem; padding: 15px; border: 1px solid #ff4b4b; border-radius: 8px; background: rgba(255,75,75,0.1); font-family: \'Outfit\', \'Montserrat\', sans-serif;">❌ Không thể load mô hình {model_choice} — kiểm tra HF_TOKEN</div>'
         return (error_html, None, None, "", "", "", history,
                 session_history_to_markdown(history), "", "")
 
@@ -2271,11 +2271,11 @@ body, html {
     color: #030712 !important;
 }
 
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Montserrat:wght@400;500;600;700&display=swap');
 
-/* Base typography - Modern premium Plus Jakarta Sans & Be Vietnam Pro fonts */
+/* Base typography - Modern premium Outfit & Montserrat fonts */
 * {
-    font-family: 'Plus Jakarta Sans', 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+    font-family: 'Outfit', 'Montserrat', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
     text-shadow: 0 1px 1px rgba(0,0,0,0.005);
 }
 
