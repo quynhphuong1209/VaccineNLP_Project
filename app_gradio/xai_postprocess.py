@@ -241,7 +241,7 @@ def render_disagreement_badge(cmp: Dict[str, Any]) -> str:
         return (
             '<div style="margin:10px 0;padding:12px 16px;border-radius:8px;'
             'background:rgba(56,239,125,0.12);border:1px solid #38ef7d;'
-            'font-family:\'Inter\',sans-serif;font-size:1.05rem;">'
+            'font-family:\'Plus Jakarta Sans\',\'Inter\',sans-serif;font-size:1.08rem;">'
             '✅ <b>Hai động cơ THỐNG NHẤT</b> trên '
             f'{cmp["n_comparable"]}/3 trục so sánh được '
             '(PhoBERT phân loại · Gemma giải thích).</div>'
@@ -258,7 +258,7 @@ def render_disagreement_badge(cmp: Dict[str, Any]) -> str:
     return (
         '<div style="margin:10px 0;padding:12px 16px;border-radius:8px;'
         'background:rgba(255,170,0,0.12);border:1px solid #ffaa00;'
-        'font-family:\'Inter\',sans-serif;font-size:1.05rem;">'
+        'font-family:\'Plus Jakarta Sans\',\'Inter\',sans-serif;font-size:1.05rem;">'
         f'⚠️ <b>Hai động cơ BẤT ĐỒNG</b> ở {cmp["n_disagree"]}/{cmp["n_comparable"]} '
         'trục so sánh được — mẫu này được gắn cờ chuyển <b>chuyên gia rà soát '
         '(Human-in-the-Loop)</b>:'

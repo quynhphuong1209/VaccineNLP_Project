@@ -2270,16 +2270,48 @@ body, html {
     color: #030712 !important;
 }
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&display=swap');
 
-/* Base typography - Modern premium Inter font */
+/* Base typography - Modern premium Plus Jakarta Sans font */
 * {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+    font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
     text-shadow: 0 1px 1px rgba(0,0,0,0.01);
 }
 
 body, html, p, span, li, button, input, select, textarea, table, tr, td, th {
-    font-size: 1.04rem !important; /* Larger font size for premium readability */
+    font-size: 1.08rem !important; /* Larger font size for premium readability */
+    line-height: 1.65 !important;
+}
+
+/* Heading hierarchy - larger, bolder, more impact */
+h1 {
+    font-size: 2.2rem !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.02em !important;
+    line-height: 1.2 !important;
+}
+h2 {
+    font-size: 1.7rem !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.01em !important;
+    line-height: 1.3 !important;
+}
+h3 {
+    font-size: 1.35rem !important;
+    font-weight: 700 !important;
+    line-height: 1.35 !important;
+}
+h4 {
+    font-size: 1.15rem !important;
+    font-weight: 600 !important;
+}
+h5, h6 {
+    font-size: 1.05rem !important;
+    font-weight: 600 !important;
+}
+label {
+    font-size: 1.0rem !important;
+    font-weight: 500 !important;
 }
 
 
