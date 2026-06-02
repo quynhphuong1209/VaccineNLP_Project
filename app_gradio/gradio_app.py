@@ -56,9 +56,9 @@ try:
         return _orig_template_response(self, name, context, status_code, headers, media_type, background)
 
     starlette.templating.Jinja2Templates.TemplateResponse = patched_template_response
-    print("✅ Starlette TemplateResponse monkey patch successfully applied!")
+    print("[OK] Starlette TemplateResponse monkey patch successfully applied!")
 except Exception as e:
-    print(f"⚠️ Failed to apply TemplateResponse patch: {e}")
+    print(f"[WARN] Failed to apply TemplateResponse patch: {e}")
 
 
 from io import BytesIO
@@ -70,8 +70,16 @@ import gradio as gr
 # Compatibility Fallback: If running on an older Gradio version (e.g., Gradio 3.x),
 # map gr.Sidebar to gr.Column to prevent AttributeError: module 'gradio' has no attribute 'Sidebar'
 if not hasattr(gr, "Sidebar"):
-    print("⚠️ Warning: gr.Sidebar not found. Falling back to gr.Column layout.")
+    print("[WARN] gr.Sidebar not found. Falling back to gr.Column layout.")
     gr.Sidebar = gr.Column
+
+from xai_postprocess import (
+    clean_reasoning_output as _clean_v2,
+    strip_markdown_for_tts,
+    parse_gemma_labels,
+    compare_engines,
+    render_disagreement_badge,
+)
 
 import numpy as np
 import pandas as pd
@@ -80,6 +88,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import plotly.graph_objects as go
 import plotly.express as px
+from plotly.subplots import make_subplots
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
 logger = logging.getLogger(__name__)
@@ -95,19 +104,19 @@ DATA_DIR = APP_DIR / "data" if (APP_DIR / "data").exists() else APP_DIR
 CONFIG = {
     "models": {
         "PhoBERT-v2": {
-            "repo_id": "quynhphuong1209/phobert-multitask",
+            "repo_id": "hung2903/phobert-vaccine-multitask",
             "base_repo": "vinai/phobert-base-v2",
             "type": "phobert",
         },
         "XLM-R-v1": {
-            "repo_id": "quynhphuong1209/xlmr-multitask",
+            "repo_id": "hung2903/xlmr-vaccine-multitask",
             "base_repo": "xlm-roberta-base",
             "type": "xlm-roberta",
         },
     },
     "xai_models": [
         "hung2903/gemma-4-E4B-vaccine-xai-merged",
-        "google/gemma-2-2b-it",
+        "google/gemma-4-e4b-it",
     ],
     "cache_file": DATA_DIR / "xai_cache.json",
     "benchmark_file": DATA_DIR / "benchmark_results.json",
@@ -131,7 +140,6 @@ LABEL_COLORS = {
     "stance":    {0: "#3db882", 1: "#e8504a", 2: "#4a9eed"},
     "sentiment": {0: "#e8504a", 1: "#4a9eed", 2: "#3db882"},
 }
-
 
 # Load .env file if available (local development helper)
 try:
@@ -418,49 +426,106 @@ def find_xai_reasoning_cache(text: str) -> Optional[str]:
     return None
 
 
-def query_gemma_api(text: str) -> Optional[str]:
-    """Layer 2: HF Inference API with multi-model fallback."""
-    if not HF_TOKEN:
-        return None
+def _build_gemma_prompt(text: str) -> str:
+    """Build standardized prompt format for the fine-tuned Gemma-4 MoE/merged model."""
+    prompt = (
+        "<start_of_turn>user\n"
+        "Phân tích nội dung sau về vaccine:\n\n"
+        f'"{text.strip()}"\n\n'
+        "QUY TẮC PHÂN LOẠI (bắt buộc tuân thủ):\n"
+        "- Misinformation CHỈ được chọn 1 trong 2: \"Tin gia\" hoặc \"Chinh xac\". \n"
+        "  TUYỆT ĐỐI KHÔNG dùng từ khác. Nội dung không liên quan vaccine \n"
+        "  hoặc không có thông tin sai = \"Chinh xac\".\n"
+        "- Stance CHỈ: \"Ung ho\" / \"Phan doi\" / \"Trung lap\".\n"
+        "- Sentiment CHỈ: \"Tieu cuc\" / \"Trung tinh\" / \"Tich cuc\".\n\n"
+        "Trả lời theo ĐÚNG cấu trúc: KẾT QUẢ trước, GIẢI THÍCH sau.\n"
+        "=== KẾT QUẢ ===\n"
+        "- Misinformation: <Tin gia HOẶC Chinh xac>\n"
+        "- Stance: <Ung ho HOẶC Phan doi HOẶC Trung lap>\n"
+        "- Sentiment: <Tieu cuc HOẶC Trung tinh HOẶC Tich cuc>\n"
+        "=== GIẢI THÍCH ===\n"
+        "<lý luận chi tiết bằng tiếng Việt>\n"
+        "<end_of_turn>\n"
+        "<start_of_turn>model\n"
+    )
+    return prompt
 
+
+def clean_reasoning_output(raw: str, max_chars: int = 4000) -> str:
+    """Compatibility wrapper for the centralized XAI post-process module."""
+    return _clean_v2(raw, max_chars=max_chars)
+
+import openai
+
+def get_live_xai_reasoning(text: str, result: Optional[Dict] = None,
+                           context_text: Optional[str] = None) -> Tuple[str, Dict]:
+    """Gọi Gemma-4 GGUF qua LM Studio API (localhost).
+
+    Args:
+        text:   Văn bản cần phân tích.
+        result: Dict kết quả từ PhoBERT predict() — dùng để sinh fallback
+                thông minh khi LM Studio không khả dụng.
+        context_text: Ngữ cảnh bài viết/bình luận cha bổ sung cho prompt.
+    """
+    client = openai.OpenAI(base_url=LM_STUDIO_BASE_URL, api_key=LM_API_TOKEN)
+    prompt_input = context_text if (context_text and context_text.strip()) else text
     try:
-        from huggingface_hub import InferenceClient
-    except ImportError:
-        return None
-
-    short_text = text.strip()[:1000]
-
-    for model_id in CONFIG["xai_models"]:
+        logger.info(f"⏳ Calling LM Studio at {LM_STUDIO_BASE_URL} (model={LM_STUDIO_MODEL})...")
+        common_kwargs = dict(
+            model=LM_STUDIO_MODEL,
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "Bạn là chuyên gia AI phân tích y tế công cộng (Explainable AI — XAI). "
+                        "Hãy phân tích nội dung vaccine bằng TIẾNG VIỆT theo 3 chiều: "
+                        "(1) Tính xác thực, (2) Thái độ với vaccine, (3) Cảm xúc tổng thể. "
+                        "Trả lời có cấu trúc: === KẾT QUẢ === trước, === GIẢI THÍCH === sau. "
+                        "Chỉ trả lời MỘT LẦN, KHÔNG lặp lại cấu trúc."
+                    ),
+                },
+                {"role": "user", "content": _build_gemma_prompt(prompt_input)},
+            ],
+            max_tokens=819,   # một block GIẢI THÍCH hoàn chỉnh ~410 token là đủ.
+                              # Hạ từ 1024 → cắt phần model lặp block thừa (log
+                              # 01/06 sinh 718 token, ~300 thừa) → nhanh hơn ~6-10s.
+                              # clean_reasoning_output vẫn giữ trọn block đầu tiên.
+            temperature=0.1,
+            stop=["<end_of_turn>", "<eos>"],
+            timeout=120,
+        )
+        # repeat_penalty=1.1 (mức an toàn chuẩn của llama.cpp). KHÔNG dùng
+        # frequency_penalty — chồng với repeat_penalty trên prompt dài tiếng Việt
+        # sẽ phạt mọi âm tiết đã có trong ngữ cảnh → sinh chữ rác ("Tich dungert")
+        # rồi dừng sớm. Đây là nguyên nhân lỗi suy luận 01/06 (prompt 2684 token).
         try:
-            if "gemma-4-E4B" in model_id:
-                prompt = (
-                    f"Bạn là Trí tuệ Nhân tạo có khả năng giải thích (Explainable AI) trong lĩnh vực Y tế Công cộng. "
-                    f"Hãy phân tích văn bản sau đây về chủ đề vắc-xin, đưa ra lý luận chi tiết HOÀN TOÀN bằng tiếng Việt "
-                    f"về tính xác thực, thái độ và cảm xúc. Tuyệt đối không dùng tiếng Anh.\n\nVăn bản: {short_text}"
-                )
-                formatted = f"<|turn>user\n{prompt}\n<|turn>model\nLý luận: "
-                stop_seqs = ["<|turn>", "<end_of_turn>"]
-            else:
-                prompt = f"Hãy phân tích nội dung sau về vắc-xin và giải thích tại sao bằng tiếng Việt: '{short_text}'"
-                formatted = f"<start_of_turn>user\n{prompt}<end_of_turn>\n<start_of_turn>model\n"
-                stop_seqs = ["<end_of_turn>"]
+            response = client.chat.completions.create(
+                **common_kwargs, extra_body={"repeat_penalty": 1.1})
+        except Exception as param_err:
+            logger.warning(f"⚠️ extra_body không hỗ trợ, gọi lại bản tối giản: {str(param_err)[:120]}")
+            response = client.chat.completions.create(**common_kwargs)
 
-            client = InferenceClient(model=model_id, token=HF_TOKEN)
-            response = client.text_generation(
-                formatted, max_new_tokens=350, temperature=0.7,
-                repetition_penalty=1.2, stop_sequences=stop_seqs,
-            )
-            if response and len(response.strip()) > 10:
-                clean = response.replace("<end_of_turn>", "").replace("<|turn>", "").strip()
-                if "gemma-4-E4B" in model_id and not clean.startswith("Lý luận"):
-                    clean = "Lý luận: " + clean
-                elif "gemma-4-E4B" not in model_id:
-                    clean = f"{clean}\n\n*(Giải thích từ Gemma-Engine fallback)*"
-                return clean
-        except Exception as e:
-            logger.debug(f"Model {model_id} failed: {e}")
-            continue
-    return None
+        content = response.choices[0].message.content or ""
+        # CHỐNG OUTPUT RÁC/CỤT: phải có '=== GIẢI THÍCH ===' kèm nội dung thực
+        # (≥50 ký tự). Bắt đúng ca "Tich dungert</end_of_turn>" — chỉ có KẾT QUẢ,
+        # phần giải thích rỗng → coi là hỏng → dùng smart fallback theo PhoBERT.
+        eidx = content.find("GIẢI THÍCH")
+        has_explanation = eidx != -1 and len(content[eidx + len("GIẢI THÍCH"):].strip(":= \n\r")) >= 50
+        if content.strip() and len(content.strip()) > 30 and has_explanation:
+            return _clean_v2(content), parse_gemma_labels(content)
+        logger.warning(f"⚠️ Gemma trả output thiếu/cụt phần giải thích "
+                       f"(len={len(content)}, completion có vẻ bị cắt) → dùng fallback PhoBERT")
+    except Exception as e:
+        logger.warning(f"❌ LM Studio unreachable ({LM_STUDIO_BASE_URL}): {str(e)[:120]}")
+
+    # Smart fallback: dùng template khi LM Studio không khả dụng
+    if result:
+        return generate_smart_fallback(
+            result["misinfo"]["pred"],
+            result["stance"]["pred"],
+            result["sentiment"]["pred"],
+        ), {}
+    return "⚠️ LM Studio chưa được khởi động. Hãy mở LM Studio và bật Local Server tại cổng 1234.", {}
 
 
 def generate_smart_fallback(misinfo_pred: int, stance_pred: int, sentiment_pred: int) -> str:
@@ -551,22 +616,27 @@ def predict(text: str, model_key: str = "PhoBERT-v2") -> Optional[Dict]:
     }
 
 
-def get_reasoning(text: str, result: Dict) -> Tuple[str, str]:
-    """3-layer reasoning with source label."""
+def get_reasoning(text: str, result: Dict,
+                  context_text: Optional[str] = None) -> Tuple[str, str, Dict]:
+    """
+    2-layer local reasoning logic:
+    Layer 1: Cache (xai_cache.json) ? instant
+    Layer 2: Local LM Studio (Gemma-4 GGUF) — ~10-30s, với smart fallback template
+    """
+    # Layer 1: Cache (xai_cache.json) ? instant
     cached = find_xai_reasoning_cache(text)
     if cached:
-        return cached, "✅ Từ cache (Gold Test Set, 186 mẫu)"
+        cleaned_cached = _clean_v2(cached)
+        labels = parse_gemma_labels(cached)
+        return cleaned_cached, "✅ Từ cache (Gold Test Set, 186 mẫu)", labels
 
-    api_reasoning = query_gemma_api(text)
-    if api_reasoning:
-        if is_mostly_english(api_reasoning):
-            api_reasoning = translate_to_vietnamese(api_reasoning)
-        return api_reasoning, "✅ Từ Gemma-4 HF Inference API"
+    # Layer 2: LM Studio (Gemma-4 GGUF) với smart fallback khi offline
+    reasoning, glabels = get_live_xai_reasoning(text, result=result, context_text=context_text)
 
-    fallback = generate_smart_fallback(
-        result["misinfo"]["pred"], result["stance"]["pred"], result["sentiment"]["pred"]
-    )
-    return fallback, "⚠️ Fallback template (API không khả dụng)"
+    # Phân biệt source label: LM Studio thật hay fallback template
+    if reasoning.startswith("⚠️") or "chưa được khởi động" in reasoning:
+        return reasoning, "⚠️ LM Studio không khả dụng — hiển thị phân tích mẫu", glabels
+    return reasoning, f"🖥️ Từ Gemma-4 GGUF · {LM_STUDIO_MODEL} ({LM_STUDIO_BASE_URL})", glabels
 
 
 # ============================================================================
@@ -619,28 +689,62 @@ def compute_captum_saliency(text: str, model_key: str) -> Tuple[List[str], List[
 
 
 def render_saliency_html(tokens: List[str], attr_norm: List[float], pred_class: int) -> str:
-    """Render saliency as HTML heatmap."""
-    if not tokens:
-        return "<p><em>⚠️ Captum IG đã bị tắt hoặc lỗi load model</em></p>"
+    """Render saliency heatmap — GỘP subword PhoBERT (@@) thành TỪ hoàn chỉnh.
 
-    html = '<div style="line-height:1.9; padding:20px; border-radius:15px; background:var(--custom-card-bg); border:1px dashed var(--custom-card-border); font-family:Times New Roman, serif;">'
-    for tok, score in zip(tokens, attr_norm):
-        if tok in ["<s>", "</s>", "<pad>", "[CLS]", "[SEP]", "<unk>"]:
+    PhoBERT dùng BPE: token kết thúc bằng '@@' nghĩa là CÒN nối với token sau.
+    Bản cũ hiển thị từng mảnh subword rời (vd 'ngụ@@', 'y@@', 'biện') khiến
+    attribution khó đọc. Bản này gộp lại thành 'ngụy biện' và lấy điểm TRUNG BÌNH
+    của các mảnh → attribution ở cấp TỪ, trực quan hơn nhiều.
+    """
+    if not tokens:
+        return ("<p><em>⚠️ Token Attribution chưa chạy hoặc lỗi load model. "
+                "Đây là giải thích bổ trợ ở cấp token (Level 1); giải thích chính "
+                "bằng ngôn ngữ tự nhiên do Gemma đảm nhiệm (Level 2).</em></p>")
+
+    SPECIALS = {"<s>", "</s>", "<pad>", "[CLS]", "[SEP]", "<unk>", "<mask>"}
+    # 1) GỘP subword thành từ: tích luỹ tới khi gặp token KHÔNG có '@@'
+    words, scores = [], []
+    buf, buf_scores = "", []
+    for tok, sc in zip(tokens, attr_norm):
+        if tok in SPECIALS:
             continue
-        tok_clean = tok.replace("▁", " ").replace("@@", "").replace("Ġ", " ")
+        piece = tok
+        cont = piece.endswith("@@")          # còn nối sang token kế
+        piece = piece[:-2] if cont else piece
+        piece = piece.replace("▁", "").replace("Ġ", "")  # phòng tokenizer khác
+        buf += piece
+        buf_scores.append(sc)
+        if not cont:                          # kết thúc 1 từ
+            # '_' là ranh giới từ ghép do underthesea → hiện thành dấu cách
+            word = buf.replace("_", " ").strip()
+            if word:
+                words.append(word)
+                scores.append(sum(buf_scores) / len(buf_scores))  # điểm TB của từ
+            buf, buf_scores = "", []
+    if buf.strip():
+        words.append(buf.replace("_", " ").strip())
+        scores.append(sum(buf_scores) / len(buf_scores) if buf_scores else 0.0)
+
+    # 2) Render
+    html = ('<div style="line-height:2.1; padding:20px; border-radius:15px; '
+            'background:var(--custom-card-bg); border:1px dashed var(--custom-card-border); '
+            'font-family:Times New Roman, serif; font-size:1.05rem;">')
+    for word, score in zip(words, scores):
         abs_score = abs(score)
         if abs_score < 0.15:
-            html += f'<span style="color: var(--custom-text-muted); opacity:0.65;">{tok_clean}</span> '
+            html += f'<span style="color: var(--custom-text-muted); opacity:0.6;">{word}</span> '
         else:
             intensity = min(abs_score, 0.7)
-            if pred_class == 0:
-                bg = f"rgba(255,75,75,{intensity})"
-            else:
-                bg = f"rgba(var(--saliency-pos-color),{intensity})"
-            html += f'<span style="background:{bg}; padding:2px 6px; border-radius:4px; font-weight:bold;">{tok_clean}</span> '
+            bg = (f"rgba(255,75,75,{intensity})" if pred_class == 0
+                  else f"rgba(var(--saliency-pos-color),{intensity})")
+            html += (f'<span style="background:{bg}; padding:2px 7px; border-radius:5px; '
+                     f'font-weight:bold;">{word}</span> ')
     html += "</div>"
     label = LABEL_MAPS["misinfo"].get(pred_class, "?")
-    html += f'<p style="font-size:11px; color: var(--custom-text-muted); margin-top:10px;">💡 Dự đoán: <b>{label}</b> · Token có màu đậm hơn = đóng góp lớn hơn vào quyết định model</p>'
+    html += (f'<p style="font-size:11px; color: var(--custom-text-muted); margin-top:10px;">'
+             f'💡 Trục Tính xác thực dự đoán: <b>{label}</b> · từ đậm hơn = đóng góp lớn hơn '
+             f'(Level 1 bổ trợ — giải thích chính do Gemma đảm nhiệm). '
+             f'Đây là attribution ở cấp TỪ đã gộp từ subword.</p>')
     return html
 
 
@@ -668,7 +772,7 @@ def text_to_speech(text: str) -> str:
         
         return f"""
         <div style="margin-top: 15px; margin-bottom: 10px;">
-            <audio src="data:audio/mp3;base64,{audio_b64}" controls style="display: none; width: 100%; max-width: 400px; margin-bottom: 10px;"></audio>
+            <audio src="data:audio/mp3;base64,{audio_b64}" oncanplay="this.playbackRate=1.4"></audio>
             <button class="tts-speak-btn" style="
                 background: linear-gradient(135deg, #00c853 0%, #b2ff59 100%);
                 color: #0a192f;
@@ -684,7 +788,7 @@ def text_to_speech(text: str) -> str:
                 transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                 font-family: 'Times New Roman', serif;
                 font-size: 1rem;
-            " >
+            " onclick="togglePlay(this)">
                 <span style="font-size: 1.2rem;">🔊</span> Nghe AI Giải Thích
             </button>
         </div>
@@ -730,6 +834,7 @@ def text_to_speech(text: str) -> str:
                         }});
                         
                         audio.play().then(() => {{
+                            audio.playbackRate = 1.4;
                             btn.innerHTML = '<span class="tts-playing-icon" style="font-size: 1.2rem;">⏹️</span> Đang đọc giải thích...';
                             btn.style.background = 'linear-gradient(135deg, #ff4b4b 0%, #ff8f8f 100%)';
                             btn.style.boxShadow = '0 4px 15px rgba(255, 75, 75, 0.3)';
@@ -837,28 +942,199 @@ def fetch_apify(url: str) -> str:
         return f"❌ Apify error: {e}"
 
 
-def fetch_url(url: str, max_comments: int = 30) -> Tuple[str, str]:
-    """Main fetcher dispatcher."""
+def _is_valid_comment(txt: str) -> bool:
+    """Màng lọc thông minh đầu vào cho comments/posts mạng xã hội."""
+    if not txt:
+        return False
+    txt_strip = txt.strip()
+    
+    # 1. Lọc theo độ dài (loại bỏ "chấm", "hóng", "inbox", icon đơn lẻ)
+    if len(txt_strip) < 15 or len(txt_strip.split()) < 4:
+        return False
+        
+    # 2. Lọc spam bán hàng, tuyển dụng, quảng cáo (từ khóa rác)
+    spam_keywords = [
+        "inbox", "ib shop", "giá bao nhiêu", "mua ở đâu", "ship", "freeship", 
+        "liên hệ zalo", "sđt", "tuyển dụng", "tuyển ctv", "sỉ lẻ", "giá rẻ", 
+        "thanh lý", "chốt đơn", "nhận hàng", "uy tín", "đặt hàng", "zalo sđt",
+        "cam kết", "hiệu quả", "giá sỉ", "giá lẻ", "chuyên sỉ", "tuyển đại lý"
+    ]
+    txt_lower = txt_strip.lower()
+    if any(kw in txt_lower for kw in spam_keywords):
+        return False
+        
+    # 3. Lọc OOD (thú y, showbiz, không liên quan đến vaccine)
+    try:
+        from src.preprocessing.text_cleaner_v2 import is_human_vaccine_context
+        if not is_human_vaccine_context(txt_strip):
+            return False
+    except Exception:
+        # Fallback keyword filter if text_cleaner_v2 is unavailable
+        core_kws = ["vaccine", "vắc xin", "tiêm", "mũi", "bác sĩ", "bệnh", "y tế", "thuốc", "phòng dịch", "dịch bệnh", "cúm", "sởi", "hpv"]
+        if not any(kw in txt_lower for kw in core_kws):
+            return False
+            
+    return True
+
+
+def fetch_url_as_list(url: str, max_comments: int = 30) -> Tuple[List[str], str]:
+    """Fetch content from URL and return as a list of individual text segments (posts/comments) along with source info."""
     if not url or not url.strip():
-        return "", "Vui lòng nhập URL"
+        return [], "❌ Vui lòng nhập URL"
     url = url.strip()
     if not url.startswith(("http://", "https://")):
-        return "", "❌ URL không hợp lệ"
+        return [], "❌ URL không hợp lệ"
 
     kind = detect_source(url)
+    texts = []
+    info = ""
+
     if kind == "news":
         content = fetch_news(url)
-        info = "📰 Báo điện tử (Tier 1, ~2s)"
-    elif kind == "youtube":
-        content = fetch_youtube(url, max_comments)
-        info = "🎬 YouTube (Tier 2, ~10s)"
-    else:
-        content = fetch_apify(url)
-        info = "📱 Mạng xã hội (Tier 3, ~60s)"
+        if content and not content.startswith("❌"):
+            texts = [content]
+            info = "📰 Báo điện tử (Tier 1, ~2s)"
+        else:
+            return [], content
 
-    if content.startswith("❌"):
-        return "", content
-    return content, f"**Nguồn:** {info}"
+    elif kind == "youtube":
+        try:
+            import yt_dlp
+            opts = {"quiet": True, "skip_download": True, "getcomments": True}
+            with yt_dlp.YoutubeDL(opts) as ydl:
+                info_dict = ydl.extract_info(url, download=False)
+                title = info_dict.get("title", "")
+                desc = info_dict.get("description", "") or ""
+                comments = info_dict.get("comments") or []
+                
+                if title:
+                    texts.append(f"[TIÊU ĐỀ VIDEO] {title}")
+                if desc.strip():
+                    texts.append(f"[MÔ TẢ VIDEO] {desc.strip()[:500]}")
+                for c in comments:
+                    c_text = c.get("text", "").strip()
+                    if c_text and _is_valid_comment(c_text):
+                        texts.append(c_text)
+                    if len(texts) >= max_comments + 2:  # +2 cho tiêu đề & mô tả
+                        break
+                info = "🎬 YouTube (Tier 2, ~10s)"
+        except Exception as e:
+            logger.warning(f"yt_dlp failed, trying Apify fallback: {e}")
+            kind = "youtube_apify"
+
+    if kind in ("apify", "youtube_apify"):
+        if not APIFY_TOKENS:
+            return [], "❌ APIFY_TOKEN chưa được setup trong HF Spaces Secrets"
+        last_err = ""
+        actor_id = ""
+        try:
+            from apify_client import ApifyClient
+            for token in APIFY_TOKENS:
+                try:
+                    client = ApifyClient(token)
+                    client.user().get()
+                    
+                    # Khống chế cứng max_comments cho Apify để tránh đốt API token và chạy vô hạn
+                    apify_max_cmt = min(max_comments, 100)
+
+                    # Phân loại thông minh URL để đưa ra actor thu thập phù hợp
+                    if kind == "youtube_apify" or "youtube.com" in url.lower() or "youtu.be" in url.lower():
+                        actor_id = "streamers/youtube-comments-scraper"
+                        run_input = {"startUrls": [{"url": url}], "maxComments": apify_max_cmt}
+                        source_display = "🎬 YouTube (Apify Fallback Scraper - Tier 3)"
+                    elif "facebook.com" in url.lower():
+                        if "/groups/" in url.lower():
+                            actor_id = "apify/facebook-groups-scraper"
+                            run_input = {
+                                "startUrls": [{"url": url}],
+                                "maxPosts": 3,
+                                "maxComments": apify_max_cmt,
+                                "maxCommentsPerPost": 5,
+                                "maxPostsPerGroup": 3,
+                                "resultsLimit": 15
+                            }
+                            source_display = "👥 Facebook Group (Apify Scraper - Tier 3)"
+                        elif "/posts/" in url.lower() or "/permalink/" in url.lower() or "comment_id=" in url.lower() or "/pfbid" in url.lower():
+                            actor_id = "apify/facebook-comments-scraper"
+                            run_input = {
+                                "startUrls": [{"url": url}],
+                                "maxComments": apify_max_cmt,
+                                "resultsLimit": apify_max_cmt
+                            }
+                            source_display = "💬 Facebook Post/Comments (Apify Scraper - Tier 3)"
+                        else:
+                            actor_id = "apify/facebook-posts-scraper"
+                            run_input = {
+                                "startUrls": [{"url": url}],
+                                "maxPosts": 3,
+                                "maxComments": apify_max_cmt,
+                                "maxCommentsPerPost": 5
+                            }
+                            source_display = "📱 Facebook Page/Profile (Apify Scraper - Tier 3)"
+                    elif "tiktok.com" in url.lower():
+                        actor_id = "clockworks/tiktok-comments-scraper"
+                        run_input = {
+                            "postURLs": [url],
+                            "maxComments": apify_max_cmt
+                        }
+                        source_display = "🎵 TikTok Comments (Apify Scraper - Tier 3)"
+                    elif "threads.net" in url.lower():
+                        actor_id = "thenetaji/threads-scraper"
+                        run_input = {
+                            "startUrls": [{"url": url}],
+                            "maxItems": apify_max_cmt
+                        }
+                        source_display = "🧵 Threads (Apify Scraper - Tier 3)"
+                    else:
+                        return [], "❌ URL không được hỗ trợ"
+                    
+                    logger.info(f"🚀 Running Apify Actor: {actor_id} for URL: {url}")
+                    run = client.actor(actor_id).call(run_input=run_input)
+                    items = list(client.dataset(run["defaultDatasetId"]).iterate_items())
+                    
+                    if items:
+                        for item in items:
+                            # Capture a wide variety of text fields from different actors
+                            txt = (
+                                item.get("text", "") or 
+                                item.get("message", "") or 
+                                item.get("caption", "") or 
+                                item.get("comment", "") or 
+                                item.get("fullText", "") or 
+                                item.get("description", "") or 
+                                item.get("messageText", "") or
+                                item.get("title", "") or
+                                item.get("commentText", "") or
+                                item.get("body", "")
+                            )
+                            if txt and txt.strip():
+                                clean_txt = txt.strip()
+                                if _is_valid_comment(clean_txt):
+                                    texts.append(clean_txt)
+                            if len(texts) >= apify_max_cmt:
+                                break
+                        if texts:
+                            info = source_display
+                            break
+                except Exception as ex:
+                    last_err = str(ex)
+                    logger.warning(f"Apify token failed for actor {actor_id}: {ex}")
+                    continue
+            if not texts:
+                err_detail = f" (Chi tiết lỗi: {last_err})" if last_err else ""
+                return [], f"❌ Không thu thập được bài viết/bình luận nào từ Apify{err_detail}"
+        except Exception as e:
+            return [], f"❌ Apify error: {e}"
+
+    return texts, info
+
+
+def fetch_url(url: str, max_comments: int = 30) -> Tuple[str, str]:
+    """Main fetcher dispatcher (backward compatibility)."""
+    texts, info = fetch_url_as_list(url, max_comments)
+    if not texts:
+        return "", info
+    return "\n\n".join(texts), f"**Nguồn:** {info}"
 
 
 # ============================================================================
@@ -866,28 +1142,95 @@ def fetch_url(url: str, max_comments: int = 30) -> Tuple[str, str]:
 # ============================================================================
 
 def make_radar_chart(result: Dict) -> go.Figure:
-    """3-axis radar chart."""
-    misinfo_score = result["misinfo"]["conf_raw"][0]
-    stance_score = result["stance"]["conf_raw"][1]
-    sentiment_score = result["sentiment"]["conf_raw"][0]
-    categories = ["Tin giả", "Phản đối", "Tiêu cực"]
-    values = [misinfo_score, stance_score, sentiment_score]
+    """Radar: ĐỘ TIN CẬY ĐÃ HIỆU CHUẨN của NHÃN ĐƯỢC DỰ ĐOÁN trên 3 tác vụ.
+
+    Sửa 2 lỗi khoa học của bản cũ:
+      (1) Bản cũ HARDCODE lớp "rủi ro" (Tin giả idx0 / Phản đối idx1 / Tiêu cực
+          idx0) BẤT KỂ model dự đoán gì. Ví dụ ca 01/06: stance dự đoán "Trung
+          lập" nhưng radar cũ vẽ P(Phản đối) → SAI nhãn, gây hiểu lầm.
+      (2) Bản cũ dùng conf_raw (chưa hiệu chuẩn) → overconfident, mâu thuẫn với
+          đóng góp Temperature Scaling của luận văn.
+    Bản mới: mỗi trục = nhãn THỰC SỰ dự đoán, giá trị = conf ĐÃ HIỆU CHUẨN, hiện
+    số % trực tiếp. Lưu ý khoa học: 3 trục là 3 tác vụ độc lập (không cùng đơn vị)
+    → DIỆN TÍCH tam giác KHÔNG mang ý nghĩa tổng hợp; chỉ đọc theo TỪNG trục.
+    """
+    axes = ["misinfo", "stance", "sentiment"]
+    axis_names = ["Tính xác thực", "Lập trường", "Cảm xúc"]
+    labels, values, hover = [], [], []
+    for ax, name in zip(axes, axis_names):
+        pred = result[ax]["pred"]
+        cal = float(result[ax]["conf_cal"][pred]) * 100.0
+        lab = LABEL_MAPS[ax][pred]
+        labels.append(f"{name}<br><b>{lab}</b>")
+        values.append(cal)
+        hover.append(f"{name}: {lab}<br>Tin cậy (hiệu chuẩn): {cal:.1f}%"
+                     f"<br>T={result[ax]['T']:.2f}")
 
     fig = go.Figure()
     fig.add_trace(go.Scatterpolar(
         r=values + [values[0]],
-        theta=categories + [categories[0]],
+        theta=labels + [labels[0]],
         fill="toself", line_color="#64ffda",
-        fillcolor="rgba(100, 255, 218, 0.3)", name="Mức độ rủi ro"
+        fillcolor="rgba(100, 255, 218, 0.18)",   # mờ — không nhấn mạnh diện tích
+        mode="lines+markers+text",
+        marker=dict(size=8, color="#64ffda"),
+        text=[f"{v:.0f}%" for v in values] + [f"{values[0]:.0f}%"],
+        textposition="top center",
+        textfont=dict(size=13, color="#0a192f"),
+        hovertext=hover + [hover[0]], hoverinfo="text",
+        name="Độ tin cậy (hiệu chuẩn)",
     ))
     fig.update_layout(
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
-        polar=dict(radialaxis=dict(visible=True, range=[0, 1], showticklabels=False)),
-        showlegend=False, height=350,
-        margin=dict(l=40, r=40, t=20, b=20),
-        autosize=True,
+        polar=dict(radialaxis=dict(
+            visible=True, range=[0, 100], showticklabels=True,
+            ticksuffix="%", tickvals=[20, 40, 60, 80, 100],
+            tickfont=dict(size=9, color="#8899aa"), gridcolor="rgba(136,153,170,0.25)")),
+        showlegend=False, height=370,
+        margin=dict(l=60, r=60, t=40, b=40),
+        title=dict(text="Độ tin cậy (đã hiệu chuẩn) của nhãn dự đoán — đọc theo từng trục",
+                   font=dict(size=11, color="#8899aa"), x=0.5, xanchor="center"),
     )
+    return fig
+
+
+def make_probability_distribution_chart(result: Dict) -> go.Figure:
+    """Biểu đồ cột PHÂN PHỐI XÁC SUẤT đầy đủ (đã hiệu chuẩn) cho 3 tác vụ.
+
+    Khác radar (chỉ 1 điểm/trục): hiện XÁC SUẤT MỌI LỚP của từng tác vụ → thấy rõ
+    ĐỘ BẤT ĐỊNH (vd stance 49/30/21 lộ sự phân vân mà radar giấu). Đây là cách
+    trình bày chuẩn cho output phân loại đa lớp. Lớp dự đoán (argmax) tô đậm.
+    """
+    axes = ["misinfo", "stance", "sentiment"]
+    titles = ["Tính xác thực", "Lập trường", "Cảm xúc"]
+    fig = make_subplots(rows=3, cols=1, subplot_titles=titles,
+                        vertical_spacing=0.16, row_heights=[0.5, 0.75, 0.75])
+    PRED_COLOR = "#64ffda"
+    OTHER_COLOR = "rgba(136,153,170,0.45)"
+    for i, ax in enumerate(axes, start=1):
+        pred = result[ax]["pred"]
+        probs = result[ax]["conf_cal"]           # xác suất ĐÃ HIỆU CHUẨN
+        classes = [LABEL_MAPS[ax][j] for j in range(len(probs))]
+        colors = [PRED_COLOR if j == pred else OTHER_COLOR for j in range(len(probs))]
+        fig.add_trace(go.Bar(
+            x=[p * 100 for p in probs], y=classes, orientation="h",
+            marker_color=colors,
+            text=[f"{p*100:.1f}%" for p in probs], textposition="auto",
+            textfont=dict(size=12), showlegend=False,
+            hovertemplate="%{y}: %{x:.1f}%<extra></extra>",
+        ), row=i, col=1)
+        fig.update_xaxes(range=[0, 100], ticksuffix="%", row=i, col=1,
+                         showgrid=True, gridcolor="rgba(136,153,170,0.2)")
+    fig.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+        height=520, margin=dict(l=90, r=40, t=46, b=30),
+        font=dict(family="Times New Roman, serif", size=12, color="#8899aa"),
+        title=dict(text="Phân phối xác suất đã hiệu chuẩn (lớp đậm = dự đoán)",
+                   font=dict(size=11), x=0.5, xanchor="center"),
+    )
+    for ann in fig.layout.annotations:
+        ann.font.update(size=13, color="#64ffda")
     return fig
 
 
@@ -911,17 +1254,24 @@ def make_benchmark_chart() -> go.Figure:
         barmode="group", height=500,
         yaxis=dict(title="Macro F1", range=[0, 1]),
         legend=dict(orientation="h", yanchor="bottom", y=1.02),
-        autosize=True,
     )
     return fig
 
 
 def make_confusion_matrix_chart() -> go.Figure:
-    """Confusion Matrix Heatmap for PhoBERT-v2 Sentiment (from thesis Ch4)."""
+    """Confusion Matrix Heatmap for PhoBERT-v2 Sentiment (from phobert_v2_results.json).
+    
+    Actual values computed from probs + true_labels arrays in results JSON.
+    Confusion matrix: rows = Thực tế, columns = Dự đoán
+    - Tiêu cực (n=71):  TP=64, FP=3 → Trung tính, FP=4 → Tích cực
+    - Trung tính (n=75): FP=14 → Tiêu cực, TP=57, FP=4 → Tích cực
+    - Tích cực (n=40):  FP=11 → Tiêu cực, FP=9 → Trung tính, TP=20
+    Macro F1: 0.7266 (matches phobert_v2_results.json)
+    """
     z_data = [
-        [54, 12, 5],
-        [10, 56, 9],
-        [3, 11, 26]
+        [64, 3, 4],
+        [14, 57, 4],
+        [11, 9, 20]
     ]
     labels = ["Tiêu cực", "Trung tính", "Tích cực"]
     fig = px.imshow(
@@ -933,8 +1283,7 @@ def make_confusion_matrix_chart() -> go.Figure:
     fig.update_layout(
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
-        height=500, margin=dict(l=20, r=20, t=50, b=20),
-        autosize=True,
+        height=500, margin=dict(l=20, r=20, t=50, b=20)
     )
     return fig
 
@@ -975,18 +1324,27 @@ def make_per_class_chart(task: str = "misinfo") -> go.Figure:
         barmode="group", height=480,
         yaxis=dict(title="F1 Score", range=[0, 1.05]),
         legend=dict(orientation="h", yanchor="bottom", y=1.02),
-        title=f"Per-class F1 — {task.upper()}",
-        autosize=True,
+        title=f"Per-class F1 — {task.upper()}"
     )
     return fig
 
 
 def make_sankey_chart() -> go.Figure:
-    """Sentiment to Stance flow."""
+    """Sentiment to Stance co-occurrence flow (Gold Test Set, n=186).
+    
+    Data source: phobert_v2_results.json true_labels (sentiment & stance).
+    Node indices: 0=Tiêu cực, 1=Trung tính, 2=Tích cực
+                  3=Phản đối, 4=Trung lập, 5=Ủng hộ
+    Co-occurrence matrix (actual):
+      Tiêu cực → Phản đối=45, Trung lập=17, Ủng hộ=9
+      Trung tính → Phản đối=3,  Trung lập=65, Ủng hộ=7
+      Tích cực → Trung lập=2,  Ủng hộ=38  (Phản đối=0, omitted)
+    """
     nodes = ["Tiêu cực", "Trung tính", "Tích cực", "Phản đối", "Trung lập", "Ủng hộ"]
+    # Zero-value link (Tích cực→Phản đối=0) removed for clean visualisation
     sources = [0, 0, 0, 1, 1, 1, 2, 2]
     targets = [3, 4, 5, 3, 4, 5, 4, 5]
-    values  = [38, 28, 5, 10, 49, 16, 7, 33]
+    values  = [45, 17, 9, 3, 65, 7, 2, 38]
     fig = go.Figure(data=[go.Sankey(
         node=dict(pad=18, thickness=22, label=nodes,
                   color=["#ff4b4b", "#4a9eed", "#3db882", "#ff4b4b", "#007bff", "#64ffda"]),
@@ -996,8 +1354,7 @@ def make_sankey_chart() -> go.Figure:
     fig.update_layout(
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
-        height=500, margin=dict(l=15, r=15, t=15, b=15),
-        autosize=True,
+        height=500, margin=dict(l=15, r=15, t=15, b=15)
     )
     return fig
 
@@ -1007,140 +1364,17 @@ def make_sankey_chart() -> go.Figure:
 # ============================================================================
 
 def session_history_to_markdown(history: List) -> str:
-    """Render session history as premium HTML table (kept for backward compat)."""
-    return session_history_to_html(history)
-
-
-def session_history_to_html(history: List) -> str:
-    """Render session history as a premium styled HTML table."""
+    """Render session history as markdown table."""
     if not history:
-        return """
-        <div style="text-align:center; padding: 30px; color: var(--card-text-muted);
-                    font-family:'Times New Roman', serif; font-style:italic; font-size:1rem;">
-            💭 Chưa có lượt phân tích nào trong phiên này
-        </div>"""
-
-    MISINFO_COLORS  = {"Tin giả": "#ff4b4b",  "Chính xác": "#3db882"}
-    STANCE_COLORS   = {"Ủng hộ":  "#3db882",  "Phản đối":  "#ff4b4b", "Trung lập": "#4a9eed"}
-    SENTIMENT_COLORS= {"Tiêu cực":"#ff4b4b",  "Trung tính":"#4a9eed", "Tích cực":  "#3db882"}
-
-    def badge(label, color_map):
-        c = color_map.get(label, "#888")
-        return (f'<span style="display:inline-block; background:{c}22; color:{c}; '
-                f'border:1px solid {c}66; border-radius:20px; padding:2px 10px; '
-                f'font-size:0.78rem; font-weight:700; white-space:nowrap;">{label}</span>')
-
-    rows = ""
-    for i, h in enumerate(history):
-        bg = "rgba(255,255,255,0.03)" if i % 2 == 0 else "rgba(255,255,255,0.07)"
-        short = h["text"][:70] + ("…" if len(h["text"]) > 70 else "")
-        rows += f"""
-        <tr style="background:{bg}; transition: background 0.2s;">
-            <td style="padding:10px 14px; white-space:nowrap; font-size:0.85rem;
-                       color:var(--card-text-muted);">&#x23F1; {h['timestamp']}</td>
-            <td style="padding:10px 14px; font-size:0.88rem; max-width:320px;
-                       overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"
-                title="{h['text']}">{short}</td>
-            <td style="padding:10px 14px; text-align:center;">{badge(h['misinfo'], MISINFO_COLORS)}</td>
-            <td style="padding:10px 14px; text-align:center;">{badge(h['stance'],  STANCE_COLORS)}</td>
-            <td style="padding:10px 14px; text-align:center;">{badge(h['sentiment'], SENTIMENT_COLORS)}</td>
-        </tr>"""
-
-    return f"""
-    <div style="margin-top:24px; font-family:'Times New Roman', serif;">
-        <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
-            <span style="font-size:1.15rem; font-weight:800;
-                         color:var(--header-text);">&#x1F4DC; 10 Lượt phân tích gần nhất</span>
-            <span style="background:var(--accent-color); color:#0a192f; border-radius:20px;
-                         padding:1px 10px; font-size:0.75rem; font-weight:700;">{len(history)}</span>
-        </div>
-        <div style="border-radius:12px; overflow:hidden; border:1px solid var(--input-border);
-                    box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
-            <table style="width:100%; border-collapse:collapse; font-size:0.9rem;
-                          color:var(--text-color);">
-                <thead>
-                    <tr style="background:linear-gradient(135deg,
-                        rgba(100,255,218,0.15) 0%, rgba(74,158,237,0.15) 100%);
-                        border-bottom:2px solid var(--accent-color);">
-                        <th style="padding:12px 14px; text-align:left; font-size:0.8rem;
-                                   font-weight:700; color:var(--accent-color); white-space:nowrap;">
-                            &#x23F1; Thời gian</th>
-                        <th style="padding:12px 14px; text-align:left; font-size:0.8rem;
-                                   font-weight:700; color:var(--accent-color);">
-                            &#x1F4DD; Văn bản</th>
-                        <th style="padding:12px 14px; text-align:center; font-size:0.8rem;
-                                   font-weight:700; color:var(--accent-color);">
-                            &#x1F9A0; Misinfo</th>
-                        <th style="padding:12px 14px; text-align:center; font-size:0.8rem;
-                                   font-weight:700; color:var(--accent-color);">
-                            &#x1F3AF; Stance</th>
-                        <th style="padding:12px 14px; text-align:center; font-size:0.8rem;
-                                   font-weight:700; color:var(--accent-color);">
-                            &#x1F4AD; Sentiment</th>
-                    </tr>
-                </thead>
-                <tbody>{rows}</tbody>
-            </table>
-        </div>
-    </div>"""
-
-
-def make_wordcloud_html(text: str) -> str:
-    """Generate a pure HTML/CSS keyword cloud from Vietnamese text."""
-    import re
-    from collections import Counter
-
-    if not text or not text.strip():
-        return ""
-
-    STOPWORDS = {
-        "và","của","cho","là","trong","với","các","có","được","không","này","đã",
-        "tôi","bạn","mình","em","con","bé","mũi","tiêm","đi","ở","một","thì","nên",
-        "cũng","rất","khi","từ","về","để","theo","lại","ra","vào","hay","hoặc",
-        "như","thế","vẫn","cần","đây","đó","sẽ","họ","những","nhiều","đều","bị",
-        "mà","nhưng","nếu","vì","do","nên","thôi","nhé","ạ","ơi","à","ừ","uh",
-        "thì","nhất","hơn","hết","cả","mọi","ai","gì","đâu","sao","khi","lúc",
-        "sau","trước","trên","dưới","qua","chỉ","tại","tuy","dù","thật","quá",
-    }
-
-    words = re.findall(r"[a-zA-ZÀ-ỹ]{3,}", text.lower())
-    words = [w for w in words if w not in STOPWORDS]
-    if not words:
-        return ""
-
-    freq = Counter(words)
-    top = freq.most_common(40)
-    max_freq = top[0][1] if top else 1
-
-    COLORS = ["#64ffda","#4a9eed","#ff6b6b","#ffd700","#b2ff59","#ff4b9e","#a78bfa","#fb923c"]
-    import hashlib
-
-    spans = ""
-    for word, count in top:
-        size  = 0.75 + (count / max_freq) * 1.85
-        weight= 500 + int((count / max_freq) * 300)
-        color_idx = int(hashlib.md5(word.encode()).hexdigest(), 16) % len(COLORS)
-        color = COLORS[color_idx]
-        opacity = 0.65 + (count / max_freq) * 0.35
-        rotate = (int(hashlib.md5((word+"r").encode()).hexdigest(), 16) % 3 - 1) * 8
-        spans += (
-            f'<span style="font-size:{size:.2f}rem; font-weight:{weight}; color:{color}; '
-            f'opacity:{opacity:.2f}; display:inline-block; margin:4px 6px; '
-            f'transform:rotate({rotate}deg); transition:all 0.2s; cursor:default; '
-            f'text-shadow:0 0 8px {color}55;" title="{count} lần">{word}</span>'
-        )
-
-    return f"""
-    <div style="border:1px solid var(--input-border); border-radius:14px;
-                padding:18px 20px; background:var(--custom-card-bg);
-                font-family:'Times New Roman', serif; min-height:160px;">
-        <div style="font-size:0.85rem; font-weight:700; color:var(--accent-color);
-                    margin-bottom:12px; letter-spacing:0.05em;">&#x2601;&#xFE0F; TỪ KHÓA NỔI BẬT</div>
-        <div style="display:flex; flex-wrap:wrap; align-items:center;
-                    justify-content:center; line-height:2.2;">
-            {spans}
-        </div>
-    </div>"""
+        return "*Chưa có lượt phân tích nào trong phiên này*"
+    md = "### 📜 10 Lượt phân tích gần nhất\n\n"
+    md += "| ⏱️ Thời gian | 📝 Văn bản | 🦠 Misinfo | 🎯 Stance | 💭 Sentiment |\n"
+    md += "|---|---|---|---|---|\n"
+    for h in history:
+        # Sanitize newlines and pipe characters which break markdown tables
+        text_clean = h['text'].replace('\n', ' ').replace('\r', ' ').replace('|', '&#124;')
+        md += f"| {h['timestamp']} | {text_clean} | {h['misinfo']} | {h['stance']} | {h['sentiment']} |\n"
+    return md
 
 
 # ============================================================================
@@ -1273,7 +1507,6 @@ def make_speed_chart() -> go.Figure:
         yaxis=dict(title='Số mẫu xử lý/giây', range=[0, 140]),
         height=420,
         margin=dict(l=20, r=20, t=30, b=20),
-        autosize=True,
     )
     return fig
 
@@ -1292,8 +1525,7 @@ def make_sunburst_chart() -> go.Figure:
     fig_sun.update_layout(
         margin=dict(l=10, r=10, t=10, b=10),
         paper_bgcolor='rgba(0,0,0,0)',
-        height=480,
-        autosize=True,
+        height=480
     )
     return fig_sun
 
@@ -1389,47 +1621,62 @@ $$F_1 = 2 \\times \\frac{{{precision:.4f} \\times {recall:.4f}}}{{{precision:.4f
 
 def handle_analyze(
     text: str, model_choice: str, use_captum: bool, history: List,
-    progress=gr.Progress()
+    thread_ctx: str = "", progress=gr.Progress()
 ) -> Tuple:
     """Main analysis handler with progress indicator."""
     if not text or not text.strip():
         error_html = '<div style="color: #ff4b4b; font-weight: bold; font-size: 1.1rem; padding: 15px; border: 1px solid #ff4b4b; border-radius: 8px; background: rgba(255,75,75,0.1); font-family: \'Times New Roman\', serif;">⚠️ Vui lòng nhập văn bản hoặc chọn mẫu thử!</div>'
-        return (error_html, None, "", "", "", "", history,
-                session_history_to_html(history), "")
+        return (error_html, None, None, "", "", "", history,
+                session_history_to_markdown(history), "", "")
 
     progress(0.1, desc="🔬 Đang tải mô hình...")
     start = time.time()
     
     progress(0.3, desc=f"🧠 {model_choice} đang phân tích...")
+    t0 = time.time()
     result = predict(text, model_choice)
+    t_predict = time.time() - t0
     if not result:
         error_html = f'<div style="color: #ff4b4b; font-weight: bold; font-size: 1.1rem; padding: 15px; border: 1px solid #ff4b4b; border-radius: 8px; background: rgba(255,75,75,0.1); font-family: \'Times New Roman\', serif;">❌ Không thể load mô hình {model_choice} — kiểm tra HF_TOKEN</div>'
-        return (error_html, None, "", "", "", "", history,
-                session_history_to_html(history), "")
-    
-    progress(0.5, desc="📊 Đang tính radar chart + từ khóa...")
+        return (error_html, None, None, "", "", "", history,
+                session_history_to_markdown(history), "", "")
+
+    progress(0.5, desc="📊 Đang tính radar chart...")
     radar = make_radar_chart(result)
-    wordcloud_html = make_wordcloud_html(text)
-    
+    prob_dist = make_probability_distribution_chart(result)
+
     progress(0.6, desc="💭 Đang sinh giải thích (XAI 3-layer)...")
-    reasoning, source = get_reasoning(text, result)
+    t1 = time.time()
+    reasoning, source, gemma_labels = get_reasoning(text, result, context_text=thread_ctx)
+    t_reason = time.time() - t1
     reasoning_md = f"**{source}**\n\n{reasoning}"
 
     if use_captum:
-        progress(0.8, desc="🎯 Đang tính Captum Integrated Gradients...")
+        progress(0.8, desc="🎯 Đang tính Token Attribution...")
+        t_cap = time.time()
         tokens, attr_norm, pred_class = compute_captum_saliency(text, model_choice)
         saliency_html = render_saliency_html(tokens, attr_norm, pred_class)
+        logger.info(f"⏱️ Captum IG: {time.time()-t_cap:.1f}s")
     else:
-        saliency_html = "<p style='color:#888;'><em>💡 Bật checkbox <b>Captum IG</b> để xem token attribution (chậm hơn 5-10s)</em></p>"
+        saliency_html = ("<p style='color:#888;'><em>💡 Bật checkbox <b>Token Attribution</b> "
+                         "để xem đóng góp cấp từ (Level 1 bổ trợ — chậm hơn vài giây trên CPU)</em></p>")
 
-    progress(0.9, desc="🔊 Đang tạo AI Voice...")
-    voice_text = reasoning if reasoning and not reasoning.startswith("⚠️") else ""
-    audio_html = text_to_speech(voice_text) if voice_text else ""
+    # gTTS bị TÁCH khỏi luồng chính (trước đây chặn ~40s). Văn bản đọc được lưu
+    # vào state; người dùng bấm nút "Nghe" để tạo audio theo yêu cầu (lazy).
+    voice_text = strip_markdown_for_tts(reasoning) if reasoning and not reasoning.startswith("⚠️") else ""
+    audio_html = ("<p style='color:#888; font-size:0.9rem;'><em>🔊 Bấm nút "
+                  "<b>“Tạo &amp; Nghe giọng đọc”</b> bên dưới để nghe phần giải thích "
+                  "(tách riêng để kết quả hiển thị nhanh hơn).</em></p>") if voice_text else ""
 
     elapsed = time.time() - start
+    logger.info(f"⏱️ Tổng handle_analyze (chưa tính TTS): {elapsed:.1f}s "
+                f"| predict={t_predict:.1f}s · reasoning={t_reason:.1f}s")
 
     # Generate custom HTML result cards
     summary_html = render_result_cards_html(result, elapsed, model_choice)
+    cmp = compare_engines(result, gemma_labels)
+    badge = render_disagreement_badge(cmp)
+    summary_html = badge + summary_html
 
     # Build export report markdown
     report_md = build_report_markdown(text, model_choice, result, reasoning, elapsed)
@@ -1443,11 +1690,11 @@ def handle_analyze(
         "sentiment": LABEL_MAPS["sentiment"][result["sentiment"]["pred"]],
     }
     history = ([entry] + (history or []))[:CONFIG["session_history_limit"]]
-    history_html = session_history_to_html(history)
+    history_md = session_history_to_markdown(history)
 
     progress(1.0, desc="✅ Hoàn tất!")
-    return (summary_html, radar, wordcloud_html, reasoning_md, saliency_html,
-            audio_html, history, history_html, report_md)
+    return (summary_html, radar, prob_dist, reasoning_md, saliency_html, audio_html, history,
+            history_md, report_md, voice_text)
 
 
 def build_report_markdown(text: str, model: str, result: Dict, reasoning: str, elapsed: float) -> str:
@@ -1515,17 +1762,197 @@ def handle_export_report(report_md: str):
     return gr.update(visible=False)
 
 
-def handle_fetch(url: str, max_comments: int) -> Tuple[str, str]:
-    """Multi-source URL fetcher."""
-    content, info = fetch_url(url, max_comments)
-    return content, info
+
+
+def handle_cell_select(evt: gr.SelectData, ctx_map_safe: dict):
+    """Click 1 hàng → gửi VĂN BẢN THÔ cho PhoBERT + dựng ngữ cảnh cho Gemma."""
+    from thread_parser import build_thread_context
+    row = evt.index[0] if isinstance(evt.index, (list, tuple)) else evt.index
+    entry = (ctx_map_safe or {}).get(str(row))
+    if not entry:
+        return "", ""
+
+    if entry["kind"] == "post":
+        post = entry["post"]
+        return post["post_text"], build_thread_context(post, None)
+
+    cmt = entry["comment"]
+    if not entry["analyzable"]:
+        try: gr.Info("🏷️ Dòng này là tag tên/emoji — không có nội dung để phân tích.")
+        except Exception: pass
+        return "", ""
+    # PhoBERT ⟵ text THÔ ; Gemma ⟵ ngữ cảnh (bài + cmt cha nếu có)
+    return cmt["text"], build_thread_context(entry["post"], cmt)
+
+
+def handle_export_fetched(fetched_raw_state: str) -> gr.update:
+    """Export fetched texts as Excel file for download."""
+    if not fetched_raw_state:
+        return gr.update(visible=False)
+    try:
+        # Tach cac comment bang dau phan cach '---'
+        texts = [t.strip() for t in fetched_raw_state.split("---") if t.strip()]
+        df = pd.DataFrame({
+            "STT": range(1, len(texts) + 1),
+            "Nội dung thu thập": texts
+        })
+        # Luu ra file Excel tam thoi
+        temp_dir = Path(tempfile.gettempdir())
+        file_path = temp_dir / f"crawled_vaccine_data_{int(time.time())}.xlsx"
+        df.to_excel(file_path, index=False)
+        return gr.update(value=str(file_path), visible=True)
+    except Exception as e:
+        logger.error(f"Failed to export fetched data: {e}")
+        return gr.update(visible=False)
+
+
+def handle_fetch_url(url: str, max_comments: int) -> Tuple[str, gr.update, gr.update, gr.update, gr.update, str, dict]:
+    """Trả: (preview, fetched_table, send_btn, export_btn, status, batch_str, thread_ctx_map)."""
+    from thread_parser import parse_apify, thread_to_rows, attach_parent_text
+    from fetchers import detect_source, fetch_apify_raw, fetch_url_as_list
+
+    # ── FB → đường có cấu trúc ──────────────────────────────────────────────
+    if detect_source(url) == "apify" and "facebook.com" in url.lower():
+        items, info, err = fetch_apify_raw(url, max_comments)
+        if err or not items:
+            msg = err or "❌ Không có dữ liệu"
+            return ("", gr.update(visible=False), gr.update(visible=False),
+                    gr.update(visible=False),
+                    gr.update(value=f"<p style='color:#ff4b4b;'>{msg}</p>"), "", {})
+        posts, schema = parse_apify(items)
+        attach_parent_text(posts)              # nối _parent_text cho đường group
+        rows, ctx_map = thread_to_rows(posts)
+        df = pd.DataFrame(rows, columns=["STT", "Loại", "Nội dung"])
+
+        # batch_str: chỉ gồm các mục ĐÁNG phân tích (bỏ tên-tag/emoji)
+        analyzable = [v["comment"]["text"] for v in ctx_map.values()
+                      if v["kind"] == "comment" and v["analyzable"]]
+        if posts and posts[0]["post_text"]:
+            analyzable = [posts[0]["post_text"]] + analyzable
+        batch_str = "\n\n---\n\n".join(analyzable)
+
+        n_cmt = sum(len(p["comments"]) for p in posts)
+        n_ok = len(analyzable) - (1 if (posts and posts[0]["post_text"]) else 0)
+        preview = posts[0]["post_text"][:500] if posts else ""
+        status = (f"<p style='color:#3db882;font-weight:bold;'>✅ {info}: "
+                  f"{len(posts)} bài · {n_cmt} bình luận "
+                  f"({n_ok} đáng phân tích, đã lọc {n_cmt - n_ok} tag tên/emoji)</p>")
+        # ctx_map key là int (row index) → JSON-safe hoá để vào gr.State
+        ctx_map_safe = {str(k): v for k, v in ctx_map.items()}
+        return (preview, gr.update(value=df, visible=True), gr.update(visible=True),
+                gr.update(visible=True), gr.update(value=status), batch_str, ctx_map_safe)
+
+    # ── Báo / YouTube → đường cũ (giữ nguyên) ───────────────────────────────
+    texts, info = fetch_url_as_list(url, max_comments)
+    if not texts:
+        msg = info if info.startswith("❌") else f"❌ {info}"
+        return ("", gr.update(visible=False), gr.update(visible=False),
+                gr.update(visible=False),
+                gr.update(value=f"<p style='color:#ff4b4b;'>{msg}</p>"), "", {})
+    df = pd.DataFrame([[i + 1, "📄 Nội dung", t] for i, t in enumerate(texts)],
+                      columns=["STT", "Loại", "Nội dung"])
+    batch_str = "\n\n---\n\n".join(texts)
+    status = f"<p style='color:#3db882;font-weight:bold;'>✅ {len(texts)} mục từ {info}</p>"
+    return (texts[0], gr.update(value=df, visible=True), gr.update(visible=True),
+            gr.update(visible=True), gr.update(value=status), batch_str, {})
+
+
+def handle_send_to_batch(batch_text_str: str) -> Tuple[str, gr.update]:
+    """Send fetched texts to batch textbox and open accordion."""
+    try:
+        gr.Info("🚀 Đã sao chép toàn bộ bài viết/comments vào ô Phân tích Batch! Vui lòng cuộn xuống dưới để thực hiện phân tích hàng loạt.")
+    except:
+        pass
+    return batch_text_str, gr.update(open=True)
+
+
+def handle_upload_data(file) -> Tuple[str, gr.update]:
+    """Đọc .xlsx/.csv đã cào, LÀM SẠCH LOSSLESS, nạp vào ô Batch.
+
+    Nguyên tắc làm sạch (bảo toàn dữ liệu — tránh loại trừ sai sót):
+      - strip khoảng trắng thừa (đầu/cuối, gộp xuống dòng kép)
+      - bỏ ô RỖNG / 'nan' (không phải nội dung)
+      - khử trùng lặp CHÍNH XÁC (cùng một câu lặp lại nhiều lần)
+      - GIỮ NGUYÊN mọi nội dung khác (không cắt chữ, không lọc theo từ khoá)
+    Báo cáo rõ: nạp X · bỏ Y rỗng · gộp Z trùng, để người dùng kiểm soát.
+    """
+    if file is None:
+        return "", gr.update()
+    try:
+        path = getattr(file, "name", None) or str(file)
+        df = pd.read_csv(path) if path.lower().endswith(".csv") else pd.read_excel(path)
+        # chọn cột nội dung (ưu tiên theo tên, fallback cột cuối)
+        col = next((c for c in df.columns
+                    if any(k in str(c).lower()
+                           for k in ("nội dung", "noi dung", "content", "text", "comment"))),
+                   df.columns[-1])
+
+        raw = df[col].tolist()
+        n_total = len(raw)
+        cleaned, seen, n_empty, n_dup = [], set(), 0, 0
+        for x in raw:
+            s = "" if x is None else str(x)
+            # strip + gộp khoảng trắng/xuống dòng thừa (lossless về nội dung)
+            s = re.sub(r"[ \t]+", " ", s).strip()
+            s = re.sub(r"\n{3,}", "\n\n", s)
+            if not s or s.lower() in ("nan", "none", "null"):
+                n_empty += 1
+                continue
+            key = s.lower()
+            if key in seen:          # trùng lặp chính xác (không phân biệt hoa/thường)
+                n_dup += 1
+                continue
+            seen.add(key)
+            cleaned.append(s)
+
+        if not cleaned:
+            try:
+                gr.Warning(f"⚠️ File có {n_total} dòng nhưng không còn nội dung "
+                           f"sau khi bỏ rỗng/trùng.")
+            except Exception:
+                pass
+            return "", gr.update()
+
+        try:
+            gr.Info(f"📤 Đã nạp {len(cleaned)} mẫu sạch "
+                    f"(từ {n_total} dòng · bỏ {n_empty} rỗng · gộp {n_dup} trùng lặp).")
+        except Exception:
+            pass
+        return "\n\n---\n\n".join(cleaned), gr.update(open=True)
+    except Exception as e:
+        logger.error(f"Upload data failed: {e}")
+        try:
+            gr.Warning(f"❌ Lỗi đọc file: {str(e)[:80]}")
+        except Exception:
+            pass
+        return "", gr.update()
+
+
+def handle_generate_voice(tts_text: str) -> str:
+    """Tạo audio gTTS THEO YÊU CẦU (lazy) — tách khỏi luồng phân tích chính
+    để kết quả hiển thị nhanh. Trả HTML player (đã tăng tốc đọc 1.4x)."""
+    if not tts_text or not tts_text.strip():
+        return ("<p style='color:#888;'><em>⚠️ Chưa có nội dung để đọc. "
+                "Hãy bấm “Phân tích” trước.</em></p>")
+    t0 = time.time()
+    html = text_to_speech(tts_text)
+    logger.info(f"⏱️ gTTS (lazy): {time.time()-t0:.1f}s")
+    return html or ("<p style='color:#888;'><em>⚠️ Không tạo được giọng đọc "
+                    "(gTTS lỗi mạng). Thử lại sau.</em></p>")
 
 
 def handle_batch(text: str, model_choice: str, progress=gr.Progress()) -> str:
     """Batch mode analysis with progress."""
     if not text or not text.strip():
         return "⚠️ Vui lòng nhập văn bản"
-    lines = [l.strip() for l in text.strip().split("\n") if l.strip()]
+    # CHỈ tách mẫu theo dấu phân cách "---". KHÔNG tách theo "\n" nữa — để GIỮ
+    # NGUYÊN cấu trúc bài viết/bình luận thu thập từ Apify (một đoạn văn nhiều
+    # dòng = MỘT mẫu, không bị xé thành nhiều câu nhỏ). Dữ liệu fetch sẵn dùng
+    # "\n\n---\n\n" làm ranh giới nên mỗi bài/comment vẫn là 1 mẫu trọn vẹn.
+    if "---" in text:
+        lines = [l.strip() for l in text.split("---") if l.strip()]
+    else:
+        lines = [text.strip()]   # không có "---" ⇒ TOÀN BỘ input là 1 mẫu duy nhất
     if len(lines) > 50:
         lines = lines[:50]
 
@@ -1534,9 +1961,10 @@ def handle_batch(text: str, model_choice: str, progress=gr.Progress()) -> str:
         progress((i + 1) / len(lines), desc=f"🔬 Đang phân tích {i+1}/{len(lines)}...")
         r = predict(line, model_choice)
         if r:
+            line_clean = line.replace("\n", " ").strip()
             rows.append({
                 "STT": i + 1,
-                "Văn bản": line[:80] + ("..." if len(line) > 80 else ""),
+                "Văn bản": line_clean[:80] + ("..." if len(line_clean) > 80 else ""),
                 "Tin giả": LABEL_MAPS["misinfo"][r["misinfo"]["pred"]],
                 "Conf": f"{max(r['misinfo']['conf_raw']):.2%}",
                 "Quan điểm": LABEL_MAPS["stance"][r["stance"]["pred"]],
@@ -1608,9 +2036,11 @@ RESOURCES_MD = """## 📚 Tài liệu & Notebooks Nghiên cứu
 - [Model Benchmark Report](https://www.kaggle.com/code/kimmnhhng/vaccinenlp-model-benchmark-report)
 
 **🤗 HuggingFace:**
+- [Gradio Demo App Space](https://huggingface.co/spaces/hung2903/vaccinenlp-demo)
+- [Gemma GGUF Merged Model](https://huggingface.co/hung2903/gemma-4-E4B-vaccine-xai-merged)
 - [PhoBERT Multitask](https://huggingface.co/hung2903/phobert-vaccine-multitask)
 - [XLM-R Multitask](https://huggingface.co/hung2903/xlmr-vaccine-multitask)
-- [Gemma XAI Reasoning](https://huggingface.co/hung2903/gemma-4-E4B-unsloth-vaccine-xai)
+- [Gemma QLoRA Adapter](https://huggingface.co/hung2903/gemma-4-E4B-unsloth-vaccine-xai)
 
 **💻 GitHub:**
 - [VaccineNLP Thesis Repo](https://github.com/hwngkm/VaccineNLP-Thesis)
@@ -1626,9 +2056,10 @@ RESOURCES_MD = """## 📚 Tài liệu & Notebooks Nghiên cứu
 - [Gemma XAI Inference (03B)](https://www.kaggle.com/code/inhlqunhphng/vaccinenlp-gemma-4-inference)
 
 **🤗 HuggingFace:**
+- [Gradio Demo App Space](https://huggingface.co/spaces/quynhphuong1209/VaccineNLP_demo)
 - [PhoBERT Multitask](https://huggingface.co/quynhphuong1209/phobert-multitask)
 - [XLM-R Multitask](https://huggingface.co/quynhphuong1209/xlmr-multitask)
-- [Gemma XAI Reasoning](https://huggingface.co/quynhphuong1209/gemma-4-E4B-unsloth-vaccine-xai)
+- [Gemma QLoRA Adapter](https://huggingface.co/quynhphuong1209/gemma-4-E4B-unsloth-vaccine-xai)
 
 **💻 GitHub:**
 - [VaccineNLP Project Repo](https://github.com/quynhphuong1209/VaccineNLP_Project)
@@ -1684,8 +2115,6 @@ Dự án xây dựng hệ thống **Ensemble** tận dụng ưu điểm của ha
 
 CSS_STYLE = """
 /* Theme styles via CSS variables */
-
-
 :root {
     --bg-color: #f8fafc;
     --bg-gradient: linear-gradient(180deg, #f8fafc 0%, #edf2f7 100%);
@@ -1795,12 +2224,14 @@ body, html {
     width: 100% !important;
 }
 
+/* Prevent global input styling from breaking Gradio's custom dropdown inputs */
 .gradio-container .border-none {
     background-color: transparent !important;
     border: none !important;
     box-shadow: none !important;
 }
 
+/* Force Gradio dropdown options list to be visible and correctly styled */
 .gradio-container .options,
 .gradio-container .select-options,
 .gradio-container .dropdown-menu {
@@ -2016,6 +2447,14 @@ button.secondary:hover, button.gr-button-secondary:hover {
     overflow: visible !important;
 }
 
+/* Reset sidebar block card styling so it doesn't show grey rounded borders around text elements */
+#sidebar-col .block, #sidebar-col .gr-block {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+}
+
 /* Accordion styling */
 .gr-accordion {
     background-color: var(--accordion-bg) !important;
@@ -2058,11 +2497,13 @@ button.secondary:hover, button.gr-button-secondary:hover {
     transform: translateY(-4px) !important;
 }
 
+/* Dropdown list customization */
 .dropdown-menu {
     background-color: var(--input-bg) !important;
     border: 1px solid var(--input-border) !important;
 }
 
+/* Theme toggle buttons in sidebar styling */
 .theme-dark-btn, .theme-light-btn {
     border: 1px solid var(--input-border) !important;
     border-radius: 8px !important;
@@ -2332,56 +2773,9 @@ body:not(.dark) .theme-dark-btn {
     text-shadow: 0 1px 2px rgba(0,0,0,0.5) !important;
 }
 
-.tab-scroll-btn.visible {
-    opacity: 0.9 !important;
-    pointer-events: auto !important;
-}
-.tab-scroll-btn:hover {
-    background-color: var(--accent-color) !important;
-    color: #030712 !important;
-    box-shadow: 0 0 8px var(--accent-color) !important;
-}
-
-/* Sidebar scroll buttons */
+/* Hide default scroll buttons but keep styles active for compatibility */
 .sidebar-scroll-btn {
-    position: sticky !important;
-    left: 0 !important;
-    right: 0 !important;
-    height: 0 !important;
-    overflow: hidden !important;
-    background: var(--input-bg) !important;
-    border: 1px solid var(--input-border) !important;
-    color: var(--accent-color) !important;
-    text-align: center !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    cursor: pointer !important;
-    z-index: 9999 !important;
-    transition: all 0.3s ease !important;
-    opacity: 0;
-    pointer-events: none;
-    margin: 0 !important;
-    padding: 0 !important;
-}
-.sidebar-scroll-btn.visible {
-    opacity: 0.95 !important;
-    pointer-events: auto !important;
-    height: 32px !important;
-    margin: 4px 10px !important;
-    border-radius: 8px !important;
-    box-shadow: 0 4px 12px var(--shadow-color) !important;
-}
-.sidebar-scroll-btn-up {
-    top: 5px !important;
-}
-.sidebar-scroll-btn-down {
-    bottom: 5px !important;
-}
-.sidebar-scroll-btn:hover {
-    background-color: var(--accent-color) !important;
-    color: #030712 !important;
-    box-shadow: 0 0 10px var(--accent-color) !important;
+    display: none !important;
 }
 
 /* ===== gr.Plot full-width expand ===== */
@@ -2407,16 +2801,28 @@ body:not(.dark) .theme-dark-btn {
     background-color: var(--accent-bg) !important;
 }
 
-/* ===== Sidebar content scroll stretch ===== */
+/* ===== Sidebar content layout ===== */
 #sidebar-col .form {
-    display: grid !important;
-    grid-template-columns: 1fr !important;
+    display: flex !important;
+    flex-direction: column !important;
     gap: var(--layout-gap) !important;
-    min-height: 100% !important;
-    max-height: none !important;
     height: auto !important;
+    overflow: visible !important;
 }
 
+#sidebar-col .form > * {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    flex-shrink: 0 !important;
+}
+
+/* Premium Sidebar Divider */
+.sidebar-divider {
+    height: 1px;
+    background: linear-gradient(90deg, rgba(0, 212, 170, 0) 0%, rgba(0, 212, 170, 0.25) 50%, rgba(0, 212, 170, 0) 100%) !important;
+    margin: 20px 0 15px 0 !important;
+    border: none !important;
+}
 
 /* Hide default Gradio footer and eliminate extra bottom scrolling */
 footer, .gradio-container > footer {
@@ -2551,9 +2957,11 @@ RESOURCES_HTML = """
       <div style="margin-top: 20px;">
         <h4 style="color: var(--accent-color); margin-bottom: 5px; font-size: 1.05rem; opacity: 0.95;">🤗 II. HUGGINGFACE:</h4>
         <ul style="list-style-type: none; padding-left: 0; line-height: 1.6;">
-          <li style="margin-bottom: 8px;">• <a href="https://huggingface.co/hung2903/phobert-vaccine-multitask" target="_blank" style="color: var(--accent-color); text-decoration: none;">PhoBERT Multitask</a></li>
-          <li style="margin-bottom: 8px;">• <a href="https://huggingface.co/hung2903/xlmr-vaccine-multitask" target="_blank" style="color: var(--accent-color); text-decoration: none;">XLM-R Multitask</a></li>
-          <li style="margin-bottom: 8px;">• <a href="https://huggingface.co/hung2903/gemma-4-E4B-unsloth-vaccine-xai" target="_blank" style="color: var(--accent-color); text-decoration: none;">Gemma XAI Reasoning</a></li>
+          <li style="margin-bottom: 8px;">• <a href="https://huggingface.co/spaces/hung2903/vaccinenlp-demo" target="_blank" style="color: var(--accent-color); text-decoration: none;"><b>Gradio Demo App Space</b></a></li>
+          <li style="margin-bottom: 8px;">• <a href="https://huggingface.co/hung2903/gemma-4-E4B-vaccine-xai-merged" target="_blank" style="color: var(--accent-color); text-decoration: none;"><b>Gemma GGUF Merged Model</b></a></li>
+          <li style="margin-bottom: 8px;">• <a href="https://huggingface.co/hung2903/phobert-vaccine-multitask" target="_blank" style="color: var(--accent-color); text-decoration: none;">PhoBERT Multitask Model</a></li>
+          <li style="margin-bottom: 8px;">• <a href="https://huggingface.co/hung2903/xlmr-vaccine-multitask" target="_blank" style="color: var(--accent-color); text-decoration: none;">XLM-R Multitask Model</a></li>
+          <li style="margin-bottom: 8px;">• <a href="https://huggingface.co/hung2903/gemma-4-E4B-unsloth-vaccine-xai" target="_blank" style="color: var(--accent-color); text-decoration: none;">Gemma QLoRA Adapter</a></li>
         </ul>
       </div>
       
@@ -2582,9 +2990,10 @@ RESOURCES_HTML = """
       <div style="margin-top: 20px;">
         <h4 style="color: var(--accent-color); margin-bottom: 5px; font-size: 1.05rem; opacity: 0.95;">🤗 II. HUGGINGFACE:</h4>
         <ul style="list-style-type: none; padding-left: 0; line-height: 1.6;">
-          <li style="margin-bottom: 8px;">• <a href="https://huggingface.co/quynhphuong1209/phobert-multitask" target="_blank" style="color: var(--accent-color); text-decoration: none;">PhoBERT Multitask</a></li>
-          <li style="margin-bottom: 8px;">• <a href="https://huggingface.co/quynhphuong1209/xlmr-multitask" target="_blank" style="color: var(--accent-color); text-decoration: none;">XLM-R Multitask</a></li>
-          <li style="margin-bottom: 8px;">• <a href="https://huggingface.co/quynhphuong1209/gemma-4-E4B-unsloth-vaccine-xai" target="_blank" style="color: var(--accent-color); text-decoration: none;">Gemma XAI Reasoning</a></li>
+          <li style="margin-bottom: 8px;">• <a href="https://huggingface.co/spaces/quynhphuong1209/VaccineNLP_demo" target="_blank" style="color: var(--accent-color); text-decoration: none;"><b>Gradio Demo App Space</b></a></li>
+          <li style="margin-bottom: 8px;">• <a href="https://huggingface.co/quynhphuong1209/phobert-multitask" target="_blank" style="color: var(--accent-color); text-decoration: none;">PhoBERT Multitask Model</a></li>
+          <li style="margin-bottom: 8px;">• <a href="https://huggingface.co/quynhphuong1209/xlmr-multitask" target="_blank" style="color: var(--accent-color); text-decoration: none;">XLM-R Multitask Model</a></li>
+          <li style="margin-bottom: 8px;">• <a href="https://huggingface.co/quynhphuong1209/gemma-4-E4B-unsloth-vaccine-xai" target="_blank" style="color: var(--accent-color); text-decoration: none;">Gemma QLoRA Adapter</a></li>
         </ul>
       </div>
       
@@ -2757,35 +3166,35 @@ THESIS_HTML = """
 def get_sidebar_header_html() -> str:
     logo_src = get_huph_logo_base64()
     return f"""
-    <div style="text-align: center; margin-bottom: 20px; font-family: 'Times New Roman', Times, Georgia, serif;">
+    <div style="text-align: center; margin-bottom: 20px; font-family: 'Times New Roman', Times, serif;">
         <!-- Logo -->
-        <div style="width: 80px; height: 80px; background: rgba(0, 212, 170, 0.05); border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid var(--accent-color); box-shadow: 0 0 15px var(--glow-color); margin: 0 auto 15px auto; transition: all 0.3s ease;">
-            <img src="{logo_src}" style="width: 65px; height: 65px; object-fit: contain;" alt="HUPH Logo">
+        <div style="width: 90px; height: 90px; background: rgba(255, 255, 255, 0.05); border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid var(--accent-color); box-shadow: 0 0 20px var(--glow-color); margin: 0 auto 15px auto;">
+            <img src="{logo_src}" style="width: 75px; height: 75px; object-fit: contain;" alt="HUPH Logo">
         </div>
         
         <!-- App Title -->
-        <h2 style="margin: 0; font-size: 1.5rem; font-weight: 800; color: var(--header-text); display: flex; align-items: center; justify-content: center; gap: 8px; font-family: 'Times New Roman', Times, Georgia, serif !important;">
-            <span style="font-size: 1.4rem;">🦠</span> VaccineNLP
+        <h2 style="margin: 0; font-size: 1.6rem; font-weight: 800; color: var(--header-text); display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <span style="font-size: 1.6rem;">🦠</span> VaccineNLP
         </h2>
         
         <!-- Subtitle -->
-        <p style="margin: 6px 0; font-size: 0.85rem; color: var(--accent-color); font-weight: 600; line-height: 1.3; font-family: 'Times New Roman', Times, Georgia, serif !important;">
-            Phát hiện Tin giả & Phân tích Thái độ Vaccine
+        <p style="margin: 8px 0; font-size: 0.9rem; color: var(--accent-color); font-weight: 600; line-height: 1.3;">
+            Hệ thống phát hiện Tin giả & Phân tích Thái độ Vaccine Tiếng Việt
         </p>
         
         <!-- Architecture Info -->
-        <p style="margin: 2px 0 12px 0; font-size: 0.75rem; color: var(--card-text-muted); font-style: italic; line-height: 1.3; font-family: 'Times New Roman', Times, Georgia, serif !important;">
-            PhoBERT-v2 + Gemma-4 E4B Dual Architecture
+        <p style="margin: 4px 0 15px 0; font-size: 0.8rem; color: var(--card-text-muted); font-style: italic; line-height: 1.3;">
+            Kiến trúc Dual-Student Hybrid · PhoBERT-v2 + Gemma-4 E4B
         </p>
         
         <!-- Author Card -->
-        <div style="background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 8px; padding: 10px; text-align: left; font-size: 0.8rem; line-height: 1.4; color: var(--text-color); font-family: 'Times New Roman', Times, Georgia, serif !important;">
-            <div style="text-align: center; margin-bottom: 6px;">
-                <span style="display: inline-block; background: var(--accent-bg); color: var(--accent-color); padding: 1px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; border: 1px solid var(--input-border);">🎓 ĐỒ ÁN TỐT NGHIỆP HUPH 2026</span>
+        <div style="background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 10px; padding: 12px; text-align: left; font-size: 0.85rem; line-height: 1.5; color: var(--text-color);">
+            <div style="text-align: center; margin-bottom: 8px;">
+                <span style="display: inline-block; background: var(--accent-bg); color: var(--accent-color); padding: 1px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; border: 1px solid var(--input-border);">🎓 ĐỒ ÁN TỐT NGHIỆP HUPH 2026</span>
             </div>
             <b style="color: var(--header-text);">Kim Mạnh Hưng</b> · 2211090016<br>
             <b style="color: var(--header-text);">Đinh Lê Quỳnh Phương</b> · 2211090031<br>
-            <span style="font-size: 0.75rem; color: var(--card-text-muted); display: inline-block; margin-top: 4px;">GVHD: TS. Trần Lâm Quân</span>
+            <span style="font-size: 0.8rem; color: var(--card-text-muted); display: inline-block; margin-top: 4px;">GVHD: TS. Trần Lâm Quân</span>
         </div>
     </div>
     """
@@ -2793,15 +3202,12 @@ def get_sidebar_header_html() -> str:
 
 def get_header_html() -> str:
     return """
-    <div id="hero-banner">
-      <!-- Accent top line -->
-      <div class="hero-accent-line"></div>
-      <div class="hero-emojis">🛡️🔬💉</div>
-      <h1 class="hero-title">
-        PHÁT HIỆN TIN GIẢ VÀ PHÂN TÍCH THÁI ĐỘ VỀ VACCINE TẠI VIỆT NAM
+    <div style="text-align: center; padding: 15px 10px 30px 10px; margin-bottom: 15px; font-family: 'Times New Roman', Times, serif; color: var(--text-color);">
+      <h1 style="margin: 0; font-size: clamp(1.8rem, 4.2vw, 2.7rem); font-weight: 800; color: var(--header-text); line-height: 1.35; text-transform: uppercase; letter-spacing: 0.02em;">
+        PHÁT HIỆN TIN GIẢ VÀ PHÂN TÍCH THÁI ĐỘ VỀ VACCINE TẠI VIỆT NAM 💉
       </h1>
-      <div class="hero-divider"></div>
-      <p class="hero-subtitle">
+      <div style="width: 180px; height: 4px; background: var(--accent-color); margin: 18px auto; border-radius: 2px;"></div>
+      <p style="margin: 0; font-size: clamp(1rem, 2.2vw, 1.3rem); color: var(--card-text-muted); font-style: italic; font-weight: 500; max-width: 900px; margin: 0 auto; line-height: 1.45;">
         Vaccine Misinformation & Attitude Analysis Framework for Vietnamese Social Media
       </p>
     </div>
@@ -3126,7 +3532,7 @@ SIDEBAR_CATEGORIES = {
 
 def get_sidebar_info_html(model_name):
     return f"""
-    <div style="margin-top: 15px; padding: 15px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 10px; font-family: 'Times New Roman', Times, Georgia, serif;">
+    <div style="margin-top: 15px; padding: 15px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 10px; font-family: 'Times New Roman', serif;">
         <div style="font-size: 14px; font-weight: bold; margin-bottom: 8px; color: var(--text-color);">Về hệ thống</div>
         <div style="font-size: 12px; line-height: 1.6; color: var(--text-color); opacity: 0.85;">
             • <b>Classifier:</b> {model_name}<br>
@@ -3459,13 +3865,13 @@ def build_app():
             # Left Sidebar Column
             with gr.Column(scale=1, min_width=290, elem_id="sidebar-col"):
                 gr.HTML(get_sidebar_header_html())
-                gr.HTML("<div class='sidebar-divider'></div>")
-                gr.HTML("<h5 style='font-family: 'Times New Roman', Times, Georgia, serif; font-weight: 600; font-size: 0.85rem; color: var(--accent-color); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em;'>🎨 Giao diện</h5>")
+                gr.HTML("<hr style='border-color: var(--input-border); margin: 15px 0 10px 0;'>")
+                gr.HTML("<h5 style='font-family: \"Times New Roman\", serif; font-weight: bold; margin-bottom: 8px;'>🎨 Giao diện</h5>")
                 with gr.Row():
                     theme_dark_btn = gr.Button("🌙 Tối", elem_classes=["theme-dark-btn"], size="sm")
                     theme_light_btn = gr.Button("☀️ Sáng", elem_classes=["theme-light-btn"], size="sm")
-                gr.HTML("<div class='sidebar-divider'></div>")
-                gr.HTML("<h5 style='font-family: 'Times New Roman', Times, Georgia, serif; font-weight: 600; font-size: 0.85rem; color: var(--accent-color); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em;'>📋 Mẫu thử nghiệm</h5>")
+                gr.HTML("<hr style='border-color: var(--input-border); margin: 15px 0 10px 0;'>")
+                gr.HTML("<h5 style='font-family: \"Times New Roman\", serif; font-weight: bold; margin-bottom: 8px;'>📋 Mẫu thử nghiệm</h5>")
                 sample_category = gr.Dropdown(
                     choices=["Tự nhập", "🚨 Nhóm Tin giả cực đoan", "🟢 Nhóm phân tích Thái độ", "✅ Nhóm Thông tin chuẩn", "💬 Nhóm Từ lóng MXH"],
                     value="Tự nhập",
@@ -3477,11 +3883,11 @@ def build_app():
                     label="Chọn loại văn bản:",
                     visible=False
                 )
-                gr.HTML("<div class='sidebar-divider'></div>")
-                gr.HTML("<h5 style='font-family: 'Times New Roman', Times, Georgia, serif; font-weight: 600; font-size: 0.85rem; color: var(--accent-color); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em;'>🤖 Mô hình Phân loại</h5>")
+                gr.HTML("<hr style='border-color: var(--input-border); margin: 15px 0 10px 0;'>")
+                gr.HTML("<h5 style='font-family: \"Times New Roman\", serif; font-weight: bold; margin-bottom: 8px;'>🤖 Mô hình Phân loại</h5>")
                 gr.Markdown(
                     """
-                    <div style="font-size: 11px; color: var(--card-text-muted); font-family: 'Times New Roman', Times, Georgia, serif; margin-bottom: 8px; line-height: 1.45;">
+                    <div style="font-size: 12px; color: var(--text-color); opacity: 0.8; font-family: 'Times New Roman', serif; margin-bottom: 8px; line-height: 1.4;">
                         Mô hình này đảm nhiệm việc phân loại nhãn (Tin giả, Quan điểm, Cảm xúc).
                     </div>
                     """,
@@ -3493,13 +3899,13 @@ def build_app():
                     label="Chọn model:"
                 )
                 info_box = gr.HTML(value=get_sidebar_info_html("PhoBERT-v2"))
-                gr.HTML("<div class='sidebar-divider'></div>")
-                gr.HTML("<h5 style='font-family: 'Times New Roman', Times, Georgia, serif; font-weight: 600; font-size: 0.85rem; color: var(--accent-color); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em;'>🛠️ Quản trị hệ thống</h5>")
+                gr.HTML("<hr style='border-color: var(--input-border); margin: 15px 0 10px 0;'>")
+                gr.HTML("<h5 style='font-family: \"Times New Roman\", serif; font-weight: bold; margin-bottom: 8px;'>🛠️ Quản trị hệ thống</h5>")
                 clear_cache_btn = gr.Button("🗑️ Xóa Cache & Khởi động lại", elem_classes=["theme-toggle-btn"], size="sm")
                 clear_cache_status = gr.Markdown(value="", visible=False)
                 gr.HTML(
                     """
-                    <div style="font-size: 10.5px; color: var(--card-text-muted); font-family: 'Times New Roman', Times, Georgia, serif; margin-top: 10px; line-height: 1.45;">
+                    <div style="font-size: 11px; color: var(--text-color); opacity: 0.7; font-family: 'Times New Roman', serif; margin-top: 10px; line-height: 1.4;">
                         💡 <b>Lưu ý:</b> Nếu gặp lỗi 403 Forbidden, vui lòng kiểm tra lại quyền 'Inference' của Token trên Hugging Face.
                     </div>
                     """
@@ -3539,6 +3945,10 @@ def build_app():
 
                 session_state = gr.State([])
                 report_state = gr.State("")
+                fetched_raw_state = gr.State("")
+                thread_ctx_map_state = gr.State({})
+                thread_ctx_state = gr.State("")
+                tts_text_state = gr.State("")   # văn bản cho TTS lazy
 
                 with gr.Tabs():
                     # ================================================================
@@ -3557,9 +3967,7 @@ def build_app():
                                     label="🎯 Bật Captum IG (token attribution, chậm hơn 5-10s)",
                                     value=False,
                                 )
-                                with gr.Row():
-                                    analyze_btn = gr.Button("🔬 Phân tích", variant="primary", size="lg", scale=4)
-                                    reset_btn = gr.Button("🔄 Làm mới", variant="secondary", size="lg", scale=1, elem_classes=["reset-btn-layout"])
+                                analyze_btn = gr.Button("🔬 Phân tích", variant="primary", size="lg")
 
                                 with gr.Accordion("🌐 Hoặc thu thập từ URL", open=False):
                                     url_input = gr.Textbox(
@@ -3568,37 +3976,48 @@ def build_app():
                                     )
                                     max_cmt = gr.Slider(10, 100, value=30, step=10, label="Max comments")
                                     fetch_btn = gr.Button("📥 Thu thập")
-                                    fetch_status = gr.Markdown()
-
-                                # Quick Examples (moved here — below input)
-                                gr.HTML("<div style='margin-top:12px; font-size:0.9rem; font-weight:700; "
-                                        "color:var(--accent-color); font-family:\"Times New Roman\",serif;'>"
-                                        "🚀 Ví dụ test nhanh (click để load)</div>")
-                                gr.Examples(
-                                    examples=GRADIO_EXAMPLES,
-                                    inputs=[text_input, model_choice],
-                                    label="",
-                                )
+                                    fetch_status = gr.HTML(value="")
+                                    fetched_table = gr.Dataframe(
+                                        headers=["STT", "Loại", "Nội dung"],
+                                        datatype=["number", "str", "str"],
+                                        wrap=True,
+                                        visible=False,
+                                        label="📋 Luồng đã cào — 📄 bài viết · 💬 bình luận · 🏷️ tag tên (đã lọc). Click 1 dòng để phân tích kèm ngữ cảnh.",
+                                    )
+                                    with gr.Row():
+                                        send_to_batch_btn = gr.Button("🚀 Gửi sang Phân tích Batch", variant="secondary", visible=False)
+                                        export_fetched_btn = gr.Button("📥 Tải dữ liệu cào (.xlsx)", variant="primary", visible=False)
+                                    export_fetched_file = gr.File(label="Tải về tệp Excel dữ liệu đã cào", visible=False)
 
                         with gr.Row():
                             with gr.Column(scale=1):
                                 gr.Markdown("### 📊 Kết quả phân loại")
                                 summary_out = gr.HTML()
-
-                        # Radar + Word Cloud side by side
+                                
                         with gr.Row():
                             with gr.Column(scale=1):
-                                radar_out = gr.Plot(label="📡 Biểu đồ Radar rủi ro")
+                                gr.Markdown("##### Radar — độ tin cậy nhãn dự đoán")
+                                radar_out = gr.Plot()
                             with gr.Column(scale=1):
-                                wordcloud_out = gr.HTML(value="")
+                                gr.Markdown("##### Phân phối xác suất đầy đủ (chuẩn)")
+                                prob_dist_out = gr.Plot()
+
+                        # Quick Examples
+                        gr.Markdown("### 🚀 Ví dụ test nhanh (click để load)")
+                        gr.Examples(
+                            examples=GRADIO_EXAMPLES,
+                            inputs=[text_input, model_choice],
+                            label="",
+                        )
 
                         gr.Markdown("---")
                         gr.Markdown("## 🧠 Giải thích AI (XAI 3-Layer Engine)")
                         with gr.Tabs():
-                            with gr.Tab("💬 CHAIN-OF-THOUGHT REASONING"):
+                            with gr.Tab("💭 Chain-of-Thought Reasoning"):
                                 reasoning_out = gr.Markdown()
+                                voice_btn = gr.Button("🔊 Tạo & Nghe giọng đọc", size="sm", variant="secondary")
                                 audio_out = gr.HTML(value="")
-                            with gr.Tab("🎯 TOKEN ATTRIBUTION (CAPTUM IG)"):
+                            with gr.Tab("🎯 Token Attribution (Captum IG)"):
                                 saliency_out = gr.HTML(value="<p style='color:#888;'><em>💡 Bật checkbox <b>Captum IG</b> ở trên rồi nhấn Phân tích</em></p>")
 
                         # Export Report Button
@@ -3606,8 +4025,8 @@ def build_app():
                             export_btn = gr.Button("📥 Tải báo cáo phân tích (.md)", variant="secondary")
                             export_file = gr.File(label="Báo cáo", visible=False)
 
-                        # Session History Display — now HTML table
-                        history_display = gr.HTML(value=session_history_to_html([]))
+                        # Session History Display
+                        history_display = gr.Markdown(value="*Chưa có lượt phân tích nào trong phiên này*")
 
                         # Sidebar sample and model update wiring
                         sample_category.change(
@@ -3629,35 +4048,21 @@ def build_app():
                             api_name=False
                         )
 
-                        # Main analyze button — 9 outputs now (added wordcloud_out)
+                        # Main analyze button — FIXED: now passes use_captum + returns report
                         analyze_btn.click(
                             fn=handle_analyze,
-                            inputs=[text_input, model_choice, use_captum_cb, session_state],
-                            outputs=[summary_out, radar_out, wordcloud_out, reasoning_out,
-                                     saliency_out, audio_out, session_state,
-                                     history_display, report_state],
+                            inputs=[text_input, model_choice, use_captum_cb, session_state, thread_ctx_state],
+                            outputs=[summary_out, radar_out, prob_dist_out, reasoning_out, saliency_out,
+                                     audio_out, session_state, history_display, report_state,
+                                     tts_text_state],
                             api_name=False
                         )
-
-                        # Reset button — clear all outputs and text input
-                        reset_btn.click(
-                            fn=lambda: (
-                                "",       # text_input
-                                "",       # summary_out
-                                None,     # radar_out
-                                "",       # wordcloud_out
-                                "",       # reasoning_out
-                                "<p style='color:#888;'><em>💡 Bật checkbox <b>Captum IG</b> ở trên rồi nhấn Phân tích</em></p>",  # saliency_out
-                                "",       # audio_out
-                                [],       # session_state
-                                session_history_to_html([]),  # history_display
-                                "",       # report_state
-                            ),
-                            inputs=[],
-                            outputs=[text_input, summary_out, radar_out, wordcloud_out,
-                                     reasoning_out, saliency_out, audio_out,
-                                     session_state, history_display, report_state],
-                            api_name=False
+                        # TTS lazy: bấm nút mới tạo audio (kết quả phân tích hiện ngay, không đợi gTTS)
+                        voice_btn.click(
+                            fn=handle_generate_voice,
+                            inputs=[tts_text_state],
+                            outputs=[audio_out],
+                            api_name=False,
                         )
 
                         # Export button
@@ -3670,22 +4075,54 @@ def build_app():
 
                         # URL fetch
                         fetch_btn.click(
-                            fn=handle_fetch,
+                            fn=handle_fetch_url,
                             inputs=[url_input, max_cmt],
-                            outputs=[text_input, fetch_status],
+                            outputs=[text_input, fetched_table, send_to_batch_btn, export_fetched_btn, fetch_status, fetched_raw_state, thread_ctx_map_state],
                             api_name=False
                         )
+                        export_fetched_btn.click(
+                            fn=handle_export_fetched,
+                            inputs=[fetched_raw_state],
+                            outputs=[export_fetched_file],
+                            api_name=False
+                        )
+                        fetched_table.select(
+                            fn=handle_cell_select,
+                            inputs=[thread_ctx_map_state],
+                            outputs=[text_input, thread_ctx_state],
+                            api_name=False,
+                        )
+                        text_input.input(fn=lambda: "", outputs=[thread_ctx_state], api_name=False)
 
                         # Batch + Compare accordions
-                        with gr.Accordion("📋 Batch Mode (phân tích nhiều mẫu cùng lúc)", open=False):
+                        with gr.Accordion("📋 Batch Mode (phân tích nhiều mẫu cùng lúc)", open=False) as batch_accordion:
+                            upload_data_file = gr.File(
+                                label="📤 Nạp lại file .xlsx/.csv đã cào (cột 'Nội dung thu thập') để phân tích Batch",
+                                file_types=[".xlsx", ".csv"],
+                                visible=True,
+                            )
                             batch_input = gr.Textbox(
-                                label="Mỗi dòng = 1 mẫu (tối đa 50)",
-                                placeholder="Mẫu 1: Vaccine COVID gây vô sinh...\nMẫu 2: Tiêm phòng rất tốt...",
+                                label="Mỗi mẫu ngăn cách bằng dòng chứa --- (tối đa 50). KHÔNG còn tách theo xuống dòng → đoạn văn nhiều dòng giữ nguyên là 1 mẫu.",
+                                placeholder="Mẫu 1 nhiều dòng...\n---\nMẫu 2...\n---\nMẫu 3...",
                                 lines=6,
                             )
                             batch_btn = gr.Button("🚀 Phân tích Batch")
                             batch_out = gr.Markdown()
                             batch_btn.click(fn=handle_batch, inputs=[batch_input, model_choice], outputs=[batch_out], api_name=False)
+
+                        # Send to batch click
+                        send_to_batch_btn.click(
+                            fn=handle_send_to_batch,
+                            inputs=[fetched_raw_state],
+                            outputs=[batch_input, batch_accordion],
+                            api_name=False
+                        )
+                        upload_data_file.change(
+                            fn=handle_upload_data,
+                            inputs=[upload_data_file],
+                            outputs=[batch_input, batch_accordion],
+                            api_name=False,
+                        )
 
                         with gr.Accordion("🔬 So sánh PhoBERT-v2 vs XLM-R-v1", open=False):
                             cmp_input = gr.Textbox(label="Văn bản", lines=4)
@@ -3725,28 +4162,24 @@ def build_app():
                                 gr.HTML(value=get_leaderboard_html())
 
                                 gr.Markdown("#### 📊 So sánh trực quan Macro F1 Score giữa các kiến trúc")
-                                with gr.Row():
-                                    gr.Plot(value=make_benchmark_chart(), show_label=False)
+                                gr.Plot(value=make_benchmark_chart())
 
                                 gr.Markdown("---")
                                 gr.Markdown("### 🕸️ 2. Phân tích hiệu năng chi tiết theo nhãn và phân bổ mẫu (Per-Class Breakdown)")
 
                                 with gr.Tabs():
                                     with gr.Tab("🚨 PHÂN LOẠI TIN GIẢ (MISINFO)"):
-                                        with gr.Row():
-                                            gr.Plot(value=make_per_class_chart("misinfo"), show_label=False)
+                                        gr.Plot(value=make_per_class_chart("misinfo"))
                                         gr.HTML(value=get_per_class_table_html("misinfo"))
-                                        gr.Markdown("💡 **Nhận xét thực nghiệm**: Nhãn **Tin giả** (28 mẫu) có F1 đạt cao nhất là **0.5085** (PhoBERT-v2), đây là bài toán khó do số lượng mẫu huấn luyện hạn chế và sự tinh vi của các thông tin chống vắc-xin cực đoan.")
+                                        gr.Markdown("💡 **Nhận xét thực nghiệm**: Phân lớp **Tin giả** (n=28) đạt giá trị F1 lớn nhất là **0.5079** (kiến trúc XLM-R-v1) và **0.5075** (kiến trúc PhoBERT-v2). Tác vụ này thể hiện độ phức tạp phân loại cao do sự mất cân bằng phân bố mẫu giữa hai lớp (lớp thiểu số có số lượng mẫu hạn chế) kết hợp với các cấu trúc ngữ nghĩa ẩn dụ hoặc châm biếm thường thấy trong các nội dung do dự vắc-xin.")
                                     with gr.Tab("🚩 QUAN ĐIỂM (STANCE)"):
-                                        with gr.Row():
-                                            gr.Plot(value=make_per_class_chart("stance"), show_label=False)
+                                        gr.Plot(value=make_per_class_chart("stance"))
                                         gr.HTML(value=get_per_class_table_html("stance"))
-                                        gr.Markdown("💡 **Nhận xét thực nghiệm**: Nhãn **Trung lập** có kết quả tốt nhất do cách diễn đạt khách quan. **Phản đối** chứng tỏ khả năng nhận diện thái độ phản biện cực đoan rất tốt từ PhoBERT-v2.")
+                                        gr.Markdown("💡 **Nhận xét thực nghiệm**: Phân lớp **Trung lập** đạt chỉ số F1 tối ưu trên cả ba kiến trúc, điều này phù hợp với tính chất biểu đạt khách quan của dữ liệu dạng này. Lập trường **Phản đối** đạt kết quả thực nghiệm ổn định trên kiến trúc PhoBERT-v2, chứng minh năng lực biểu diễn ngữ nghĩa tiếng Việt của mô hình đối với các quan điểm phản đối tiêm chủng.")
                                     with gr.Tab("🎭 CẢM XÚC (SENTIMENT)"):
-                                        with gr.Row():
-                                            gr.Plot(value=make_per_class_chart("sentiment"), show_label=False)
+                                        gr.Plot(value=make_per_class_chart("sentiment"))
                                         gr.HTML(value=get_per_class_table_html("sentiment"))
-                                        gr.Markdown("💡 **Nhận xét thực nghiệm**: Nhãn **Tích cực** tỏ ra thách thức hơn trên mọi kiến trúc do chia sẻ tích cực của người dân Việt Nam về tiêm vắc-xin thường đi kèm các từ mang sắc thái lo lắng.")
+                                        gr.Markdown("💡 **Nhận xét thực nghiệm**: Phân lớp **Tích cực** ghi nhận chỉ số F1 thấp hơn so với các phân lớp còn lại trên mọi cấu trúc mô hình. Nguyên nhân xuất phát từ đặc trưng biểu đạt ngôn ngữ y tế cộng đồng trong tiếng Việt, trong đó các phản hồi tích cực về tiêm chủng thường xuất hiện đồng thời với các mô tả triệu chứng phản ứng sau tiêm thông thường (ví dụ: đau nhẹ, sốt nhẹ), tạo ra sự tương phản sắc thái ngữ cảnh.")
 
                                 selected_model_view.change(
                                     fn=get_kpi_cards_html,
@@ -3760,12 +4193,12 @@ def build_app():
                                 with gr.Row():
                                     with gr.Column():
                                         gr.Markdown("""
-                                        #### ❌ 1. Những nhãn phân loại 'Thách thức' nhất (Hardest Labels)
-                                        Dựa trên kết quả benchmark thực tế từ Gold Test Set, hai nhóm nhãn có chỉ số F1-Score thấp nhất trên mọi mô hình là:
-                                        * **🚨 Tin giả (Misinfo = Tin giả)**: Đạt F1 trung bình là **0.4280** trên cả 3 mô hình. 
-                                          * *Lý do*: Tin giả liên quan đến vắc-xin không đơn thuần là tin đồn nhảm dễ nhận biết, mà thường ẩn chứa dưới dạng ngụy biện khoa học tinh vi, lồng ghép thuật ngữ y học phức tạp hoặc mỉa mai sâu cay.
-                                        * **🎭 Cảm xúc Tích cực (Sentiment = Tích cực)**: Đạt F1 trung bình chỉ **0.4139**.
-                                          * *Lý do*: Chia sẻ tích cực của người dân Việt Nam về tiêm vắc-xin thường có xu hướng đi kèm các từ mang sắc thái lo lắng (như "hơi sốt", "hơi đau tay một chút nhưng trộm vía ổn"), khiến các bộ phân loại dễ nhầm lẫn sang sắc thái tiêu cực hoặc trung tính.
+                                        #### 🔬 1. Các phân lớp có độ phức tạp phân loại cao (High-Complexity Classes)
+                                        Dựa trên kết quả thực nghiệm từ tập Gold Test Set độc lập (n=186), hai nhóm phân lớp có chỉ số F1-Score thấp nhất trên cả ba kiến trúc mô hình bao gồm:
+                                        * **🚨 Tin giả (Misinfo = Tin giả)**: Đạt giá trị F1 trung bình là **0.4866** tổng hợp từ ba mô hình. 
+                                          * *Cơ sở phân tích*: Các nội dung thông tin sai lệch liên quan đến tiêm chủng thường không biểu hiện dưới dạng cấu trúc thông tin đơn giản. Thay vào đó, chúng được ngụy trang dưới các lập luận khoa học giả tạo, tích hợp thuật ngữ y khoa chuyên ngành hoặc sử dụng cấu trúc ngữ nghĩa ẩn dụ, châm biếm nhằm giảm khả năng phát hiện tự động của mô hình.
+                                        * **🎭 Cảm xúc Tích cực (Sentiment = Tích cực)**: Đạt chỉ số F1 trung bình là **0.6221**.
+                                          * *Cơ sở phân tích*: Các biểu đạt thể hiện sự ủng hộ hoặc trạng thái tích cực đối với vắc-xin của người dùng trên mạng xã hội thường có xu hướng đi kèm với các mô tả triệu chứng lâm sàng nhẹ sau tiêm (như: sốt nhẹ, đau nhức cơ, sưng tại chỗ tiêm nhưng sức khỏe vẫn ổn định). Điều này gây ra sự nhiễu loạn đặc trưng ngữ cảnh, khiến các bộ phân loại dễ phân bổ sai sắc thái sang phân lớp trung tính hoặc tiêu cực.
                                         """)
                                     with gr.Column():
                                         gr.Markdown("""
@@ -3864,13 +4297,13 @@ def build_app():
                         with gr.Tabs():
                             with gr.Tab("🚨 Misinformation"):
                                 gr.Plot(value=make_per_class_chart("misinfo"))
-                                gr.Markdown("**Nhận xét:** Nhãn *Tin giả* (n=28) khó nhất do mất cân bằng dữ liệu, F1 cao nhất 0.5079 (XLM-R).")
+                                gr.Markdown("**Nhận xét thực nghiệm:** Phân lớp *Tin giả* (n=28) ghi nhận hiệu năng thấp nhất do mất cân bằng phân bổ dữ liệu lớp thiểu số, đạt giá trị F1 cao nhất là 0.5079 trên cấu trúc XLM-R.")
                             with gr.Tab("🎯 Stance"):
                                 gr.Plot(value=make_per_class_chart("stance"))
-                                gr.Markdown("**Nhận xét:** Nhãn *Trung lập* dễ nhất (F1 ~0.74) do diễn đạt khách quan. *Phản đối* tốt với Gemma (0.6905).")
+                                gr.Markdown("**Nhận xét thực nghiệm:** Phân lớp *Trung lập* đạt hiệu năng tối ưu nhất (F1 xấp xỉ 0.74) do tính chất biểu đạt ngôn ngữ mang sắc thái khách quan. Lập trường *Phản đối* ghi nhận chỉ số khả quan trên cấu trúc Gemma (0.6905).")
                             with gr.Tab("💭 Sentiment"):
                                 gr.Plot(value=make_per_class_chart("sentiment"))
-                                gr.Markdown("**Nhận xét:** Gemma vượt trội ở cả 3 lớp Sentiment, F1 *Tích cực* cao nhất 0.7027.")
+                                gr.Markdown("**Nhận xét thực nghiệm:** Cấu trúc mô hình Gemma thể hiện tính ưu việt ở cả 3 phân lớp Sentiment, ghi nhận chỉ số F1 lớp *Tích cực* đạt giá trị lớn nhất là 0.7027.")
 
                         gr.Markdown("---")
                         gr.Markdown("## 🔍 Bộ máy tính chỉ số thực nghiệm (Interactive Metric Calculator)")
