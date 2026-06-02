@@ -35,3 +35,7 @@ gTTS>=2.5.0
 # ============ Data Processing ============
 numpy>=1.24,<2.0
 pandas>=2.0
+
+# ============ Local LLM / LM Studio ============
+openai>=1.0.0
+
