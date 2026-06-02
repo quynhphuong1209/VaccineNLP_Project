@@ -3901,7 +3901,7 @@ def build_app():
         });
         observer.observe(document.body, { childList: true, subtree: true });
     }""".strip()
-    with gr.Blocks(title="VaccineNLP Demo v2.0", theme=gr.themes.Soft(primary_hue="indigo", font=gr.themes.GoogleFont("Be Vietnam Pro"), font_mono=gr.themes.GoogleFont("Fira Code")), css=CSS_STYLE, fill_width=True, js=init_theme_js) as app:
+    with gr.Blocks(title="VaccineNLP Demo v2.0", theme=gr.themes.Soft(primary_hue="indigo", font=[gr.themes.GoogleFont("Be Vietnam Pro")], font_mono=[gr.themes.GoogleFont("Fira Code")]), css=CSS_STYLE, fill_width=True, js=init_theme_js) as app:
         # Sidebar Toggle Button (positioned via CSS)
         sidebar_toggle_btn = gr.Button("", elem_id="sidebar-toggle-btn", size="sm")
         
