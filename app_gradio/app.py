@@ -1426,17 +1426,17 @@ def render_result_cards_html(result: Dict, elapsed: float, model_choice: str) ->
         if has_cal:
             conf_html = (
                 f'<div style="font-size:0.78rem;color:#8892b0;text-align:center;margin-top:6px;">'
-                f'Th\u00f4: <span style="text-decoration:line-through;opacity:0.65;">{conf_raw:.1f}%</span></div>'
+                f'Thô: <span style="text-decoration:line-through;opacity:0.65;">{conf_raw:.1f}%</span></div>'
                 f'<div style="font-size:2rem;font-weight:800;color:{color};text-align:center;'
                 f'text-shadow:0 0 20px {color}55;margin:4px 0;">{conf_cal:.1f}%</div>'
                 f'<div style="font-size:0.73rem;color:#8892b0;text-align:center;">'
-                f'\u0110\u00e3 hi\u1ec7u chu\u1ea9n (T={T:.2f})</div>'
+                f'Đã hiệu chuẩn (T={T:.2f})</div>'
             )
         else:
             conf_html = (
                 f'<div style="font-size:2rem;font-weight:800;color:{color};text-align:center;'
                 f'text-shadow:0 0 20px {color}55;margin:6px 0;">{conf_raw:.1f}%</div>'
-                f'<div style="font-size:0.73rem;color:#8892b0;text-align:center;">\u0110\u1ed9 tin c\u1eady</div>'
+                f'<div style="font-size:0.73rem;color:#8892b0;text-align:center;">Độ tin cậy</div>'
             )
 
         breakdown_items = ""
@@ -1446,7 +1446,7 @@ def render_result_cards_html(result: Dict, elapsed: float, model_choice: str) ->
             cl    = LABEL_MAPS[axis][idx]
             cc    = LABEL_COLORS[axis][idx]
             pct   = p_cal if has_cal else p_raw
-            pct_label = (f"Th\u00f4: {p_raw:.1f}% \u2192 <b style=\'color:{cc};\'>{p_cal:.1f}%</b>"
+            pct_label = (f"Thô: {p_raw:.1f}% → <b style=\'color:{cc};\'>{p_cal:.1f}%</b>"
                          if has_cal else f"<b style=\'color:{cc};\'>{p_raw:.1f}%</b>")
             breakdown_items += (
                 f'<div style="margin-top:9px;">'
@@ -1476,13 +1476,13 @@ def render_result_cards_html(result: Dict, elapsed: float, model_choice: str) ->
             f'{conf_html}'
             f'<div style="margin-top:16px;border-top:1px solid rgba(255,255,255,0.07);padding-top:12px;">'
             f'<div style="font-size:0.68rem;font-weight:700;color:{color};text-transform:uppercase;'
-            f'margin-bottom:6px;letter-spacing:0.08em;opacity:0.85;">Chi ti\u1ebft nh\u00e3n</div>'
+            f'margin-bottom:6px;letter-spacing:0.08em;opacity:0.85;">Chi tiết nhãn</div>'
             f'{breakdown_items}</div></div>'
         )
 
     html += '</div>'
     html += (f"<div style='margin-top:12px;font-style:italic;color:#8892b0;font-size:0.85rem;text-align:right;'>"
-             f"\u23f1\ufe0f {elapsed:.2f}s \u00b7 {model_choice}</div>")
+             f"⏱️ {elapsed:.2f}s · {model_choice}</div>")
     return html
 
 
@@ -3000,28 +3000,28 @@ def get_kpi_cards_html(selected_view):
             'sentiment': d['sentiment']
         }
 
-    data_source_badge = "\u1f7e2 LIVE"
+    data_source_badge = "🟢 LIVE"
 
-    if selected_view == "T\u1ea5t c\u1ea3 m\u00f4 h\u00ecnh (So s\u00e1nh ch\u00e9o)":
+    if selected_view == "Ttất cả mô hình (So sánh chéo)":
         best_m   = max(benchmark_results, key=lambda k: benchmark_results[k]['misinfo'])
         best_s   = max(benchmark_results, key=lambda k: benchmark_results[k]['stance'])
         best_se  = max(benchmark_results, key=lambda k: benchmark_results[k]['sentiment'])
         best_avg = max(benchmark_results, key=lambda k: benchmark_results[k]['avg_f1'])
         cards = [
-            ("\ud83d\udea8 Best Misinfo F1",   f"{benchmark_results[best_m]['misinfo']:.4f}",  benchmark_results[best_m]['name'].split('(')[0].strip(),  "#ff4b4b"),
-            ("\ud83d\udea9 Best Stance F1",    f"{benchmark_results[best_s]['stance']:.4f}",   benchmark_results[best_s]['name'].split('(')[0].strip(),   "#007bff"),
-            ("\ud83c\udfad Best Sentiment F1", f"{benchmark_results[best_se]['sentiment']:.4f}",benchmark_results[best_se]['name'].split('(')[0].strip(), "#00c853"),
-            ("\ud83c\udfc6 Best Avg F1",       f"{benchmark_results[best_avg]['avg_f1']:.4f}", f"{benchmark_results[best_avg]['name'].split('(')[0].strip()} {data_source_badge}", "#FFD700"),
+            ("🚨 Best Misinfo F1",   f"{benchmark_results[best_m]['misinfo']:.4f}",  benchmark_results[best_m]['name'].split('(')[0].strip(),  "#ff4b4b"),
+            ("🚩 Best Stance F1",    f"{benchmark_results[best_s]['stance']:.4f}",   benchmark_results[best_s]['name'].split('(')[0].strip(),   "#007bff"),
+            ("🎭 Best Sentiment F1", f"{benchmark_results[best_se]['sentiment']:.4f}",benchmark_results[best_se]['name'].split('(')[0].strip(), "#00c853"),
+            ("🏆 Best Avg F1",       f"{benchmark_results[best_avg]['avg_f1']:.4f}", f"{benchmark_results[best_avg]['name'].split('(')[0].strip()} {data_source_badge}", "#FFD700"),
         ]
     else:
         model_key = 'phobert' if 'PhoBERT' in selected_view else ('xlmr' if 'XLM-R' in selected_view else 'gemma')
         m = benchmark_results[model_key]
         mname = "PhoBERT-v2" if model_key == 'phobert' else ("XLM-R-v1" if model_key == 'xlmr' else "Gemma-4 4B")
         cards = [
-            ("\ud83d\udea8 Misinfo Macro F1",   f"{m['misinfo']:.4f}",   mname, "#ff4b4b"),
-            ("\ud83d\udea9 Stance Macro F1",    f"{m['stance']:.4f}",    mname, "#007bff"),
-            ("\ud83c\udfad Sentiment Macro F1", f"{m['sentiment']:.4f}", mname, "#00c853"),
-            ("\ud83c\udfc6 Average Macro F1",   f"{m['avg_f1']:.4f}",   mname, "#FFD700"),
+            ("🚨 Misinfo Macro F1",   f"{m['misinfo']:.4f}",   mname, "#ff4b4b"),
+            ("🚩 Stance Macro F1",    f"{m['stance']:.4f}",    mname, "#007bff"),
+            ("🎭 Sentiment Macro F1", f"{m['sentiment']:.4f}", mname, "#00c853"),
+            ("🏆 Average Macro F1",   f"{m['avg_f1']:.4f}",   mname, "#FFD700"),
         ]
 
     html = '<div style="display:flex;flex-wrap:wrap;gap:16px;width:100%;margin-bottom:22px;">'
