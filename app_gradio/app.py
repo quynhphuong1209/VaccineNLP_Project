@@ -1425,18 +1425,18 @@ def render_result_cards_html(result: Dict, elapsed: float, model_choice: str) ->
 
         if has_cal:
             conf_html = (
-                f'<div style="font-size:0.78rem;color:#8892b0;text-align:center;margin-top:6px;">'
+                f'<div style="font-size:0.78rem;color:var(--card-text-muted);text-align:center;margin-top:6px;">'
                 f'Thô: <span style="text-decoration:line-through;opacity:0.65;">{conf_raw:.1f}%</span></div>'
                 f'<div style="font-size:2rem;font-weight:800;color:{color};text-align:center;'
                 f'text-shadow:0 0 20px {color}55;margin:4px 0;">{conf_cal:.1f}%</div>'
-                f'<div style="font-size:0.73rem;color:#8892b0;text-align:center;">'
+                f'<div style="font-size:0.73rem;color:var(--card-text-muted);text-align:center;">'
                 f'Đã hiệu chuẩn (T={T:.2f})</div>'
             )
         else:
             conf_html = (
                 f'<div style="font-size:2rem;font-weight:800;color:{color};text-align:center;'
                 f'text-shadow:0 0 20px {color}55;margin:6px 0;">{conf_raw:.1f}%</div>'
-                f'<div style="font-size:0.73rem;color:#8892b0;text-align:center;">Độ tin cậy</div>'
+                f'<div style="font-size:0.73rem;color:var(--card-text-muted);text-align:center;">Độ tin cậy</div>'
             )
 
         breakdown_items = ""
@@ -1446,14 +1446,14 @@ def render_result_cards_html(result: Dict, elapsed: float, model_choice: str) ->
             cl    = LABEL_MAPS[axis][idx]
             cc    = LABEL_COLORS[axis][idx]
             pct   = p_cal if has_cal else p_raw
-            pct_label = (f"Thô: {p_raw:.1f}% → <b style=\'color:{cc};\'>{p_cal:.1f}%</b>"
-                         if has_cal else f"<b style=\'color:{cc};\'>{p_raw:.1f}%</b>")
+            pct_label = (f"Thô: {p_raw:.1f}% → <b style='color:{cc};'>{p_cal:.1f}%</b>"
+                         if has_cal else f"<b style='color:{cc};'>{p_raw:.1f}%</b>")
             breakdown_items += (
                 f'<div style="margin-top:9px;">'
-                f'<div style="display:flex;justify-content:space-between;font-size:11px;color:#a8b2d8;margin-bottom:4px;">'
+                f'<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--card-text-secondary);margin-bottom:4px;">'
                 f'<span style="font-weight:600;">{cl}</span>'
                 f'<span style="font-size:10px;">{pct_label}</span></div>'
-                f'<div style="background:rgba(10,20,45,0.7);border-radius:6px;height:7px;overflow:hidden;border:1px solid rgba(255,255,255,0.06);">'
+                f'<div style="background:var(--progress-bar-bg);border-radius:6px;height:7px;overflow:hidden;border:1px solid var(--card-border);">'
                 f'<div style="background:linear-gradient(90deg,{cc},{cc}cc);width:{pct:.1f}%;height:100%;border-radius:6px;'
                 f'box-shadow:0 0 8px {cc}80;animation:pulseGlow 2.5s infinite ease-in-out;"></div></div></div>'
             )
@@ -1461,30 +1461,29 @@ def render_result_cards_html(result: Dict, elapsed: float, model_choice: str) ->
         delay = i * 0.12
         html += (
             f'<div class="result-card-hover" style="flex:1;min-width:230px;'
-            f'background:linear-gradient(145deg,rgba(8,18,40,0.88) 0%,rgba(5,12,30,0.93) 100%);'
+            f'background:var(--card-bg-gradient);'
             f'border:1px solid {color}30;border-top:3px solid {color};border-radius:18px;'
             f'padding:24px 20px;'
-            f'box-shadow:0 10px 32px rgba(0,0,0,0.45),0 0 28px {color}18,inset 0 1px 0 rgba(255,255,255,0.05);'
+            f'box-shadow:0 10px 32px var(--shadow-color),0 0 28px {color}18,inset 0 1px 0 rgba(255,255,255,0.05);'
             f'backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);'
             f'animation:fadeInUp 0.55s cubic-bezier(0.165,0.84,0.44,1) {delay:.2f}s both;">'
             f'<div style="text-align:center;margin-bottom:10px;">'
             f'<div style="font-size:44px;filter:drop-shadow(0 0 12px {color}60);">{icon}</div></div>'
-            f'<div style="font-size:0.7rem;color:#8892b0;text-transform:uppercase;letter-spacing:0.14em;'
+            f'<div style="font-size:0.7rem;color:var(--card-text-muted);text-transform:uppercase;letter-spacing:0.14em;'
             f'text-align:center;font-weight:700;margin-bottom:6px;">{axis_name}</div>'
             f'<div style="font-size:1.55rem;font-weight:800;color:{color};text-align:center;'
             f'text-shadow:0 0 18px {color}50;">{label}</div>'
             f'{conf_html}'
-            f'<div style="margin-top:16px;border-top:1px solid rgba(255,255,255,0.07);padding-top:12px;">'
+            f'<div style="margin-top:16px;border-top:1px solid var(--card-border);padding-top:12px;">'
             f'<div style="font-size:0.68rem;font-weight:700;color:{color};text-transform:uppercase;'
             f'margin-bottom:6px;letter-spacing:0.08em;opacity:0.85;">Chi tiết nhãn</div>'
             f'{breakdown_items}</div></div>'
         )
 
     html += '</div>'
-    html += (f"<div style='margin-top:12px;font-style:italic;color:#8892b0;font-size:0.85rem;text-align:right;'>"
+    html += (f"<div style='margin-top:12px;font-style:italic;color:var(--card-text-muted);font-size:0.85rem;text-align:right;'>"
              f"⏱️ {elapsed:.2f}s · {model_choice}</div>")
     return html
-
 
 
 def make_speed_chart() -> go.Figure:
@@ -2113,13 +2112,13 @@ Dự án xây dựng hệ thống **Ensemble** tận dụng ưu điểm của ha
 
 CSS_STYLE = """
 /* ============================================================
-   VaccineNLP — Premium Theme v4.0
+   VaccineNLP — Premium Theme v4.5
    Design: Hybrid Light White / Dark Navy theme
    Inspired by: quynhphuong1209-rehab-ai-monitor-2026.hf.space
    ============================================================ */
 
 /* ===== GOOGLE FONTS ===== */
-@import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
 
 /* ===== CSS VARIABLES (Light Mode by Default) ===== */
 :root {
@@ -2165,12 +2164,14 @@ CSS_STYLE = """
     --sidebar-border: #cbd5e1;
     --hero-bg: #ffffff;
     --hero-border: #e2e8f0;
-    --hero-title-gradient: linear-gradient(135deg, #00b894 0%, #000000 100%);
+    --hero-title-color: #000000;
+    --sidebar-title-color: #000000;
     --hero-subtitle-color: #475569;
     --footer-bg-gradient: #ffffff;
     --footer-border: #cbd5e1;
     --footer-top-accent: #00b894;
     --footer-shadow: 0 -15px 50px rgba(0,0,0,0.04);
+    --card-bg-gradient: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
 }
 
 /* ===== DARK MODE — Premium Navy ===== */
@@ -2217,12 +2218,14 @@ CSS_STYLE = """
     --sidebar-border: rgba(0, 212, 170, 0.12);
     --hero-bg: linear-gradient(135deg, rgba(4,9,26,0.97) 0%, rgba(5,15,38,0.98) 50%, rgba(4,9,26,0.97) 100%);
     --hero-border: rgba(0, 212, 170, 0.22);
-    --hero-title-gradient: linear-gradient(135deg, #e6f1ff 0%, #00d4aa 35%, #00ffcc 55%, #ccd6f6 100%);
+    --hero-title-color: #ffffff;
+    --sidebar-title-color: #ffffff;
     --hero-subtitle-color: #8892b0;
     --footer-bg-gradient: linear-gradient(135deg, rgba(4,9,26,0.97) 0%, rgba(5,14,35,0.98) 100%);
     --footer-border: rgba(0, 212, 170, 0.18);
     --footer-top-accent: #00d4aa;
     --footer-shadow: 0 -15px 50px rgba(0,0,0,0.4);
+    --card-bg-gradient: linear-gradient(145deg, rgba(8, 18, 40, 0.88) 0%, rgba(5, 12, 30, 0.93) 100%);
 }
 
 /* ===== KEYFRAME ANIMATIONS ===== */
@@ -2245,7 +2248,7 @@ CSS_STYLE = """
 
 /* ===== BASE ===== */
 * {
-    font-family: 'Source Sans 3', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
     text-shadow: none !important;
 }
 body, html {
@@ -2654,19 +2657,14 @@ footer, .gradio-container > footer { display: none !important; height: 0 !import
     margin: 6px 0 16px 0 !important;
     font-size: clamp(1.6rem, 3.5vw, 2.6rem) !important;
     font-weight: 800 !important;
-    background: var(--hero-title-gradient) !important;
-    background-size: 200% auto !important;
-    -webkit-background-clip: text !important;
-    -webkit-text-fill-color: transparent !important;
-    background-clip: text !important;
-    animation: shimmer 4.5s linear infinite !important;
+    color: var(--hero-title-color) !important;
     line-height: 1.3 !important;
     text-transform: uppercase !important;
     letter-spacing: 0.03em !important;
 }
 .hero-divider {
     width: 130px !important; height: 3px !important;
-    background: var(--hero-title-gradient) !important;
+    background: var(--hero-title-gradient, linear-gradient(135deg, #e6f1ff 0%, #00d4aa 35%, #00ffcc 55%, #ccd6f6 100%)) !important;
     background-size: 200% auto !important;
     animation: shimmer 2.5s linear infinite !important;
     margin: 16px auto !important; border-radius: 2px !important;
@@ -2962,26 +2960,26 @@ def get_sidebar_header_html() -> str:
         </div>
 
         <!-- Gradient App Title -->
-        <h2 style="margin: 0; font-size: 1.55rem; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 8px; background: linear-gradient(135deg, #e6f1ff 0%, #00d4aa 45%, #00ffcc 65%, #ccd6f6 100%); background-size: 200% auto; -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; animation: sidebar-title-shimmer 4s linear infinite;">
+        <h2 style="margin: 0; font-size: 1.55rem; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--sidebar-title-color, var(--text-color));">
             🦠 VaccineNLP
         </h2>
 
         <!-- Subtitle badge -->
-        <p style="margin: 10px 0 6px 0; font-size: 0.82rem; color: #00d4aa; font-weight: 600; line-height: 1.4; letter-spacing: 0.01em;">
+        <p style="margin: 10px 0 6px 0; font-size: 0.82rem; color: var(--accent-color, #00d4aa); font-weight: 600; line-height: 1.4; letter-spacing: 0.01em;">
             Phát hiện Tin giả · Phân tích Thái độ Vaccine
         </p>
-        <p style="margin: 0 0 14px 0; font-size: 0.75rem; color: #8892b0; font-style: italic; line-height: 1.3;">
+        <p style="margin: 0 0 14px 0; font-size: 0.75rem; color: var(--card-text-muted, #8892b0); font-style: italic; line-height: 1.3;">
             PhoBERT-v2 · Gemma-4 E4B · XAI
         </p>
 
         <!-- Author Card -->
-        <div style="background: rgba(10,20,45,0.7); border: 1px solid rgba(0,212,170,0.25); border-radius: 12px; padding: 13px; text-align: left; font-size: 0.83rem; line-height: 1.55; backdrop-filter: blur(10px);">
+        <div style="background: var(--card-bg, rgba(10,20,45,0.7)); border: 1px solid var(--card-border, rgba(0,212,170,0.25)); border-radius: 12px; padding: 13px; text-align: left; font-size: 0.83rem; line-height: 1.55; backdrop-filter: blur(10px);">
             <div style="text-align: center; margin-bottom: 10px;">
-                <span style="display: inline-block; background: linear-gradient(135deg, rgba(0,212,170,0.18) 0%, rgba(0,212,170,0.08) 100%); color: #00d4aa; padding: 3px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 700; border: 1px solid rgba(0,212,170,0.35); letter-spacing: 0.04em;">🎓 ĐỒ ÁN TỐT NGHIỆP HUPH 2026</span>
+                <span style="display: inline-block; background: linear-gradient(135deg, rgba(0,212,170,0.18) 0%, rgba(0,212,170,0.08) 100%); color: var(--accent-color, #00d4aa); padding: 3px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 700; border: 1px solid var(--sidebar-border, rgba(0,212,170,0.35)); letter-spacing: 0.04em;">🎓 ĐỒ ÁN TỐT NGHIỆP HUPH 2026</span>
             </div>
-            <div style="color: #e6f1ff; margin-bottom: 3px;"><span style="color: #00d4aa; font-weight: 700;">●</span> <b>Kim Mạnh Hưng</b> <span style="color: #8892b0; font-size: 0.78rem;">· 2211090016</span></div>
-            <div style="color: #e6f1ff; margin-bottom: 6px;"><span style="color: #00d4aa; font-weight: 700;">●</span> <b>Đinh Lê Quỳnh Phương</b> <span style="color: #8892b0; font-size: 0.78rem;">· 2211090031</span></div>
-            <div style="font-size: 0.76rem; color: #8892b0; border-top: 1px solid rgba(0,212,170,0.15); padding-top: 7px; margin-top: 3px;">👨‍🏫 GVHD: <span style="color: #a8b2d8;">TS. Trần Lâm Quân</span></div>
+            <div style="color: var(--text-color, #e6f1ff); margin-bottom: 3px;"><span style="color: var(--accent-color, #00d4aa); font-weight: 700;">●</span> <b>Kim Mạnh Hưng</b> <span style="color: var(--card-text-muted, #8892b0); font-size: 0.78rem;">· 2211090016</span></div>
+            <div style="color: var(--text-color, #e6f1ff); margin-bottom: 6px;"><span style="color: var(--accent-color, #00d4aa); font-weight: 700;">●</span> <b>Đinh Lê Quỳnh Phương</b> <span style="color: var(--card-text-muted, #8892b0); font-size: 0.78rem;">· 2211090031</span></div>
+            <div style="font-size: 0.76rem; color: var(--card-text-muted, #8892b0); border-top: 1px solid var(--card-border, rgba(0,212,170,0.15)); padding-top: 7px; margin-top: 3px;">👨‍🏫 GVHD: <span style="color: var(--card-text-secondary, #a8b2d8);">TS. Trần Lâm Quân</span></div>
         </div>
     </div>
     """
@@ -3659,7 +3657,7 @@ def build_app():
         });
         observer.observe(document.body, { childList: true, subtree: true });
     }""".strip()
-    with gr.Blocks(title="VaccineNLP Demo v2.0", theme=gr.themes.Soft(primary_hue="indigo", font=[gr.themes.GoogleFont("Source Sans 3")], font_mono=[gr.themes.GoogleFont("Fira Code")]), css=CSS_STYLE, fill_width=True, js=init_theme_js) as app:
+    with gr.Blocks(title="VaccineNLP Demo v2.0", theme=gr.themes.Soft(primary_hue="indigo", font=[gr.themes.GoogleFont("Plus Jakarta Sans")], font_mono=[gr.themes.GoogleFont("Fira Code")]), css=CSS_STYLE, fill_width=True, js=init_theme_js) as app:
         # Sidebar Toggle Button (positioned via CSS)
         sidebar_toggle_btn = gr.Button("", elem_id="sidebar-toggle-btn", size="sm")
         
