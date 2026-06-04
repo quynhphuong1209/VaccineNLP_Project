@@ -3177,26 +3177,6 @@ def get_sidebar_header_html() -> str:
         <h2 style="margin: 0; font-size: 1.6rem; font-weight: 800; color: var(--header-text); display: flex; align-items: center; justify-content: center; gap: 8px;">
             <span style="font-size: 1.6rem;">🦠</span> VaccineNLP
         </h2>
-        
-        <!-- Subtitle -->
-        <p style="margin: 8px 0; font-size: 0.9rem; color: var(--accent-color); font-weight: 600; line-height: 1.3;">
-            Hệ thống phát hiện Tin giả & Phân tích Thái độ Vaccine Tiếng Việt
-        </p>
-        
-        <!-- Architecture Info -->
-        <p style="margin: 4px 0 15px 0; font-size: 0.8rem; color: var(--card-text-muted); font-style: italic; line-height: 1.3;">
-            Kiến trúc Dual-Student Hybrid · PhoBERT-v2 + Gemma-4 E4B
-        </p>
-        
-        <!-- Author Card -->
-        <div style="background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 10px; padding: 12px; text-align: left; font-size: 0.85rem; line-height: 1.5; color: var(--text-color);">
-            <div style="text-align: center; margin-bottom: 8px;">
-                <span style="display: inline-block; background: var(--accent-bg); color: var(--accent-color); padding: 1px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; border: 1px solid var(--input-border);">🎓 ĐỒ ÁN TỐT NGHIỆP HUPH 2026</span>
-            </div>
-            <b style="color: var(--header-text);">Kim Mạnh Hưng</b> · 2211090016<br>
-            <b style="color: var(--header-text);">Đinh Lê Quỳnh Phương</b> · 2211090031<br>
-            <span style="font-size: 0.8rem; color: var(--card-text-muted); display: inline-block; margin-top: 4px;">GVHD: TS. Trần Lâm Quân</span>
-        </div>
     </div>
     """
 
@@ -4003,13 +3983,6 @@ def build_app():
                                 gr.Markdown("##### Phân phối xác suất đầy đủ (chuẩn)")
                                 prob_dist_out = gr.Plot()
 
-                        # Quick Examples
-                        gr.Markdown("### 🚀 Ví dụ test nhanh (click để load)")
-                        gr.Examples(
-                            examples=GRADIO_EXAMPLES,
-                            inputs=[text_input, model_choice],
-                            label="",
-                        )
 
                         gr.Markdown("---")
                         gr.Markdown("## 🧠 Giải thích AI (XAI 3-Layer Engine)")
