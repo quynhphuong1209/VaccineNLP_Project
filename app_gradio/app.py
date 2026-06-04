@@ -2903,6 +2903,48 @@ footer, .gradio-container > footer {
 .dark .hero-subtitle {
     color: #88a4c0 !important;
 }
+
+/* Toggle Switch Styles */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 46px;
+    height: 22px;
+}
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(148, 163, 184, 0.3);
+    transition: .3s;
+    border-radius: 22px;
+}
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .3s;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+input:checked + .slider {
+    background-color: var(--accent-color) !important;
+}
+input:checked + .slider:before {
+    transform: translateX(24px);
+}
 """
 
 SPEED_METRICS_HTML = """
@@ -3837,6 +3879,35 @@ def build_app():
             }
         });
         observer.observe(document.body, { childList: true, subtree: true });
+
+        /* Theme toggle switch handler */
+        function setupThemeSwitch() {
+            const toggle = document.getElementById('theme-toggle-switch');
+            const label = document.getElementById('theme-switch-text');
+            if (!toggle || !label) {
+                setTimeout(setupThemeSwitch, 100);
+                return;
+            }
+            
+            const isDark = document.documentElement.classList.contains('dark') || document.body.classList.contains('dark');
+            toggle.checked = isDark;
+            label.innerHTML = isDark ? '☀️ Chế độ Sáng' : '🌙 Chế độ Tối';
+            
+            toggle.addEventListener('change', function() {
+                if (toggle.checked) {
+                    document.documentElement.classList.add('dark');
+                    document.body.classList.add('dark');
+                    localStorage.setItem('theme', 'dark');
+                    label.innerHTML = '☀️ Chế độ Sáng';
+                } else {
+                    document.documentElement.classList.remove('dark');
+                    document.body.classList.remove('dark');
+                    localStorage.setItem('theme', 'light');
+                    label.innerHTML = '🌙 Chế độ Tối';
+                }
+            });
+        }
+        setupThemeSwitch();
     }""".strip()
     with gr.Blocks(title="VaccineNLP Demo v2.0", theme=gr.themes.Soft(primary_hue="indigo"), css=CSS_STYLE, fill_width=True, js=init_theme_js) as app:
         # Sidebar Toggle Button (positioned via CSS)
@@ -3848,9 +3919,17 @@ def build_app():
                 gr.HTML(get_sidebar_header_html())
                 gr.HTML("<hr style='border-color: var(--input-border); margin: 15px 0 10px 0;'>")
                 gr.HTML("<h5 style='font-family: \"Inter\", serif; font-weight: bold; margin-bottom: 8px;'>🎨 Giao diện</h5>")
-                with gr.Row():
-                    theme_dark_btn = gr.Button("🌙 Tối", elem_classes=["theme-dark-btn"], size="sm")
-                    theme_light_btn = gr.Button("☀️ Sáng", elem_classes=["theme-light-btn"], size="sm")
+                theme_switch_html = gr.HTML(
+                    """
+                    <div class="theme-switch-wrapper" style="display: flex; align-items: center; justify-content: space-between; margin: 10px 0; padding: 5px 0; font-family: 'Inter', sans-serif;">
+                        <span id="theme-switch-text" style="font-size: 0.95rem; font-weight: 600; color: var(--text-color);">🌙 Chế độ Tối</span>
+                        <label class="switch" style="position: relative; display: inline-block; width: 46px; height: 22px; margin: 0;">
+                            <input type="checkbox" id="theme-toggle-switch" style="opacity: 0; width: 0; height: 0;">
+                            <span class="slider round" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(148, 163, 184, 0.3); transition: .3s; border-radius: 22px;"></span>
+                        </label>
+                    </div>
+                    """
+                )
                 gr.HTML("<hr style='border-color: var(--input-border); margin: 15px 0 10px 0;'>")
                 gr.HTML("<h5 style='font-family: \"Inter\", serif; font-weight: bold; margin-bottom: 8px;'>📋 Mẫu thử nghiệm</h5>")
                 sample_category = gr.Dropdown(
@@ -3891,17 +3970,6 @@ def build_app():
                     </div>
                     """
                 )
-            # Event wiring for sidebar
-            theme_dark_btn.click(
-                None, None, None,
-                js="function() { document.documentElement.classList.add('dark'); document.body.classList.add('dark'); localStorage.setItem('theme', 'dark'); }",
-                api_name=False
-            )
-            theme_light_btn.click(
-                None, None, None,
-                js="function() { document.documentElement.classList.remove('dark'); document.body.classList.remove('dark'); localStorage.setItem('theme', 'light'); }",
-                api_name=False
-            )
             clear_cache_btn.click(
                 fn=handle_clear_cache,
                 inputs=[],
