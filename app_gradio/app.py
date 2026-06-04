@@ -728,7 +728,7 @@ def render_saliency_html(tokens: List[str], attr_norm: List[float], pred_class: 
     # 2) Render
     html = ('<div style="line-height:2.1; padding:20px; border-radius:15px; '
             'background:var(--custom-card-bg); border:1px dashed var(--custom-card-border); '
-            'font-family:Times New Roman, serif; font-size:1.05rem;">')
+            'font-family:Inter, sans-serif; font-size:1.05rem;">')
     for word, score in zip(words, scores):
         abs_score = abs(score)
         if abs_score < 0.15:
@@ -786,7 +786,7 @@ def text_to_speech(text: str) -> str:
                 gap: 8px;
                 box-shadow: 0 4px 15px rgba(0, 200, 83, 0.3);
                 transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                font-family: 'Times New Roman', serif;
+                font-family: 'Inter', sans-serif;
                 font-size: 1rem;
             " onclick="togglePlay(this)">
                 <span style="font-size: 1.2rem;">🔊</span> Nghe AI Giải Thích
@@ -1225,7 +1225,7 @@ def make_probability_distribution_chart(result: Dict) -> go.Figure:
     fig.update_layout(
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
         height=520, margin=dict(l=90, r=40, t=46, b=30),
-        font=dict(family="Times New Roman, serif", size=12, color="#8899aa"),
+        font=dict(family="Inter, sans-serif", size=12, color="#8899aa"),
         title=dict(text="Phân phối xác suất đã hiệu chuẩn (lớp đậm = dự đoán)",
                    font=dict(size=11), x=0.5, xanchor="center"),
     )
@@ -1409,7 +1409,7 @@ def get_huph_logo_base64():
 
 def render_result_cards_html(result: Dict, elapsed: float, model_choice: str) -> str:
     """Render beautiful HTML cards with progress bars for multi-task predictions."""
-    html = '<div style="display: flex; flex-wrap: wrap; gap: 20px; width: 100%; font-family: \'Times New Roman\', Times, serif; margin-bottom: 10px;">'
+    html = '<div style="display: flex; flex-wrap: wrap; gap: 20px; width: 100%; font-family: \'Inter\', Times, serif; margin-bottom: 10px;">'
     for axis, axis_name in [("misinfo", "Tin giả / Xác thực"), ("stance", "Quan điểm"), ("sentiment", "Cảm xúc")]:
         r = result[axis]
         pred_id = r["pred"]
@@ -1424,16 +1424,16 @@ def render_result_cards_html(result: Dict, elapsed: float, model_choice: str) ->
         
         if has_cal:
             conf_html = f"""
-            <div style="font-size: 0.85rem; color: var(--card-text-muted); margin-top: 5px; font-family: 'Times New Roman', Times, serif;">
+            <div style="font-size: 0.85rem; color: var(--card-text-muted); margin-top: 5px; font-family: 'Inter', sans-serif;">
                 Thô: <span style="text-decoration: line-through;">{conf_raw:.1f}%</span>
             </div>
-            <div style="font-size: 1.05rem; color: {color}; font-weight: bold; margin-top: 2px; font-family: 'Times New Roman', Times, serif;">
+            <div style="font-size: 1.05rem; color: {color}; font-weight: bold; margin-top: 2px; font-family: 'Inter', sans-serif;">
                 Đã hiệu chuẩn (T={T:.2f}): {conf_cal:.1f}%
             </div>
             """
         else:
             conf_html = f"""
-            <div style="font-size: 0.95rem; color: var(--card-text-muted); margin-top: 5px; font-family: 'Times New Roman', Times, serif;">
+            <div style="font-size: 0.95rem; color: var(--card-text-muted); margin-top: 5px; font-family: 'Inter', sans-serif;">
                 Độ tin cậy: <strong style="color: {color};">{conf_raw:.1f}%</strong>
             </div>
             """
@@ -1450,7 +1450,7 @@ def render_result_cards_html(result: Dict, elapsed: float, model_choice: str) ->
             if has_cal:
                 breakdown_items += f"""
                 <div style="margin-top: 8px;">
-                    <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--card-text-secondary); font-family: 'Times New Roman', Times, serif;">
+                    <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--card-text-secondary); font-family: 'Inter', sans-serif;">
                         <span>{class_label}</span>
                         <span style="font-size: 10px; color: var(--card-text-muted);">Thô: {pct_raw:.1f}% → <strong style="color: {class_color};">{pct_cal:.1f}%</strong></span>
                     </div>
@@ -1462,7 +1462,7 @@ def render_result_cards_html(result: Dict, elapsed: float, model_choice: str) ->
             else:
                 breakdown_items += f"""
                 <div style="margin-top: 8px;">
-                    <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--card-text-secondary); font-family: 'Times New Roman', Times, serif;">
+                    <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--card-text-secondary); font-family: 'Inter', sans-serif;">
                         <span>{class_label}</span>
                         <span style="color: {class_color}; font-weight: bold;">{pct_raw:.1f}%</span>
                     </div>
@@ -1475,18 +1475,18 @@ def render_result_cards_html(result: Dict, elapsed: float, model_choice: str) ->
         html += f"""
         <div class="result-card-hover" style="flex: 1; min-width: 240px; background: var(--card-bg); border: 1px solid {color}60; border-radius: 16px; padding: 22px; text-align: center; box-shadow: 0 8px 24px var(--shadow-color), 0 0 15px {color}10; backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border-bottom: 4px solid {color};">
             <div style="font-size: 40px; margin-bottom: 5px;">{icon}</div>
-            <div style="font-size: 0.8rem; color: var(--card-text-muted); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 5px; font-family: 'Times New Roman', Times, serif; font-weight: 600;">{axis_name}</div>
-            <div style="font-size: 1.6rem; font-weight: bold; color: {color}; margin-bottom: 8px; font-family: 'Times New Roman', Times, serif;">{label}</div>
+            <div style="font-size: 0.8rem; color: var(--card-text-muted); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 5px; font-family: 'Inter', sans-serif; font-weight: 600;">{axis_name}</div>
+            <div style="font-size: 1.6rem; font-weight: bold; color: {color}; margin-bottom: 8px; font-family: 'Inter', sans-serif;">{label}</div>
             {conf_html}
             
             <div style="margin-top: 15px; border-top: 1px dashed var(--input-border); padding-top: 10px; text-align: left;">
-                <div style="font-size: 0.8rem; font-weight: bold; color: var(--accent-color); text-transform: uppercase; margin-bottom: 5px; font-family: 'Times New Roman', Times, serif; letter-spacing: 0.05em;">Chi tiết nhãn:</div>
+                <div style="font-size: 0.8rem; font-weight: bold; color: var(--accent-color); text-transform: uppercase; margin-bottom: 5px; font-family: 'Inter', sans-serif; letter-spacing: 0.05em;">Chi tiết nhãn:</div>
                 {breakdown_items}
             </div>
         </div>
         """
     html += '</div>'
-    html += f"<div style='margin-top: 15px; font-style: italic; color: var(--card-text-muted); font-family: \"Times New Roman\", Times, serif; font-size: 0.9rem; text-align: right;'>⏱️ Thời gian xử lý: {elapsed:.2f}s · Mô hình: {model_choice}</div>"
+    html += f"<div style='margin-top: 15px; font-style: italic; color: var(--card-text-muted); font-family: \"Inter\", Times, serif; font-size: 0.9rem; text-align: right;'>⏱️ Thời gian xử lý: {elapsed:.2f}s · Mô hình: {model_choice}</div>"
     return html
 
 
@@ -1503,7 +1503,7 @@ def make_speed_chart() -> go.Figure:
     fig.update_layout(
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
-        font=dict(family='Times New Roman', color='#ccd6f6', size=13),
+        font=dict(family='Inter', color='#ccd6f6', size=13),
         yaxis=dict(title='Số mẫu xử lý/giây', range=[0, 140]),
         height=420,
         margin=dict(l=20, r=20, t=30, b=20),
@@ -1571,7 +1571,7 @@ def update_calculator(selected_class: str):
     f1 = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0.0
     
     metrics_html = f"""
-    <div style="display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px; font-family: 'Times New Roman', serif;">
+    <div style="display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px; font-family: 'Inter', sans-serif;">
         <div style="flex: 1; min-width: 130px; border: 1px solid var(--custom-card-border); border-radius: 8px; padding: 10px; text-align: center; background: var(--custom-card-bg);">
             <p style="margin: 0; font-size: 0.85rem; color: var(--custom-text-muted);">Support (Tổng mẫu)</p>
             <h3 style="margin: 5px 0; color: var(--custom-text-neon); font-size: 1.5rem;">{support}</h3>
@@ -1625,7 +1625,7 @@ def handle_analyze(
 ) -> Tuple:
     """Main analysis handler with progress indicator."""
     if not text or not text.strip():
-        error_html = '<div style="color: #ff4b4b; font-weight: bold; font-size: 1.1rem; padding: 15px; border: 1px solid #ff4b4b; border-radius: 8px; background: rgba(255,75,75,0.1); font-family: \'Times New Roman\', serif;">⚠️ Vui lòng nhập văn bản hoặc chọn mẫu thử!</div>'
+        error_html = '<div style="color: #ff4b4b; font-weight: bold; font-size: 1.1rem; padding: 15px; border: 1px solid #ff4b4b; border-radius: 8px; background: rgba(255,75,75,0.1); font-family: \'Inter\', serif;">⚠️ Vui lòng nhập văn bản hoặc chọn mẫu thử!</div>'
         return (error_html, None, None, "", "", "", history,
                 session_history_to_markdown(history), "", "")
 
@@ -1637,7 +1637,7 @@ def handle_analyze(
     result = predict(text, model_choice)
     t_predict = time.time() - t0
     if not result:
-        error_html = f'<div style="color: #ff4b4b; font-weight: bold; font-size: 1.1rem; padding: 15px; border: 1px solid #ff4b4b; border-radius: 8px; background: rgba(255,75,75,0.1); font-family: \'Times New Roman\', serif;">❌ Không thể load mô hình {model_choice} — kiểm tra HF_TOKEN</div>'
+        error_html = f'<div style="color: #ff4b4b; font-weight: bold; font-size: 1.1rem; padding: 15px; border: 1px solid #ff4b4b; border-radius: 8px; background: rgba(255,75,75,0.1); font-family: \'Inter\', serif;">❌ Không thể load mô hình {model_choice} — kiểm tra HF_TOKEN</div>'
         return (error_html, None, None, "", "", "", history,
                 session_history_to_markdown(history), "", "")
 
@@ -2114,6 +2114,7 @@ Dự án xây dựng hệ thống **Ensemble** tận dụng ưu điểm của ha
 """
 
 CSS_STYLE = """
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800&display=swap');
 /* Theme styles via CSS variables */
 :root {
     --bg-color: #f8fafc;
@@ -2270,9 +2271,9 @@ body, html {
     color: #030712 !important;
 }
 
-/* Base typography - strict Times New Roman styled elegantly */
+/* Base typography - strict Inter styled elegantly */
 * {
-    font-family: 'Times New Roman', Times, Georgia, serif !important;
+    font-family: 'Inter', 'Outfit', system-ui, -apple-system, sans-serif !important;
     text-shadow: 0 1px 1px rgba(0,0,0,0.01);
 }
 
@@ -2905,7 +2906,7 @@ footer, .gradio-container > footer {
 """
 
 SPEED_METRICS_HTML = """
-<div style="display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; font-family: 'Times New Roman', serif;">
+<div style="display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; font-family: 'Inter', sans-serif;">
     <div style="flex: 1; min-width: 200px; border: 1px solid var(--custom-phobert-border); border-radius: 8px; padding: 15px; text-align: center; background: var(--custom-phobert-bg);">
         <p style="margin: 0; font-size: 0.9rem; color: var(--custom-text-muted);">🏎️ Tốc độ PhoBERT-v2</p>
         <h2 style="margin: 5px 0; color: var(--custom-phobert-text); font-size: 1.8rem; font-weight: bold;">120.5 mẫu/s</h2>
@@ -2925,7 +2926,7 @@ SPEED_METRICS_HTML = """
 """
 
 RECOMMENDATIONS_HTML = """
-<div style="background: var(--custom-card-bg); border: 1px solid var(--custom-card-border); border-radius: 8px; padding: 20px; font-family: 'Times New Roman', serif;">
+<div style="background: var(--custom-card-bg); border: 1px solid var(--custom-card-border); border-radius: 8px; padding: 20px; font-family: 'Inter', sans-serif;">
     <h4 style="margin-top: 0; color: var(--custom-text-neon); font-size: 1.2rem;">🤝 Kiến trúc lai đề xuất cho dự án VaccineNLP (HUPH 2026):</h4>
     <ol style="margin-bottom: 0; padding-left: 20px; line-height: 1.6; color: var(--custom-text-normal);">
         <li><b>Vòng ngoài (Real-time Classification - PhoBERT-v2)</b>: Nhờ tốc độ suy luận cực nhanh (120.5 mẫu/giây) và độ chính xác F1 vượt trội, PhoBERT-v2 được đề xuất làm màng lọc trực tiếp ở luồng dữ liệu mạng xã hội để phân loại nhanh tin giả, sắc thái và lập trường.</li>
@@ -2935,7 +2936,7 @@ RECOMMENDATIONS_HTML = """
 """
 
 RESOURCES_HTML = """
-<div style="font-family: 'Times New Roman', Times, serif; color: var(--text-color);">
+<div style="font-family: 'Inter', sans-serif; color: var(--text-color);">
   <h2 style="color: var(--accent-color); margin-bottom: 20px; font-size: 1.8rem;">📚 Tài liệu & Notebooks Nghiên cứu</h2>
   
   <div style="display: flex; flex-wrap: wrap; gap: 20px;">
@@ -3009,7 +3010,7 @@ RESOURCES_HTML = """
 """
 
 METHODOLOGY_HTML = """
-<div style="font-family: 'Times New Roman', Times, serif; color: var(--text-color); line-height: 1.6;">
+<div style="font-family: 'Inter', sans-serif; color: var(--text-color); line-height: 1.6;">
   <h2 style="color: var(--accent-color); border-bottom: 1px solid var(--input-border); padding-bottom: 10px; font-size: 1.8rem; margin-bottom: 20px;">📜 Phương pháp luận & Kiến trúc Hệ thống</h2>
   
   <div style="display: flex; flex-wrap: wrap; gap: 20px;">
@@ -3098,7 +3099,7 @@ METHODOLOGY_HTML = """
 """
 
 THESIS_HTML = """
-<div style="font-family: 'Times New Roman', Times, serif; color: var(--text-color); line-height: 1.6;">
+<div style="font-family: 'Inter', sans-serif; color: var(--text-color); line-height: 1.6;">
   <h2 style="color: var(--accent-color); border-bottom: 1px solid var(--input-border); padding-bottom: 10px; font-size: 1.8rem; margin-bottom: 20px;">📑 Đề cương & Mục lục Đồ án tốt nghiệp</h2>
   
   <div style="background: var(--accent-bg); border-left: 5px solid var(--accent-color); padding: 20px; border-radius: 5px; margin-bottom: 25px; box-shadow: 0 4px 8px var(--shadow-color);">
@@ -3166,7 +3167,7 @@ THESIS_HTML = """
 def get_sidebar_header_html() -> str:
     logo_src = get_huph_logo_base64()
     return f"""
-    <div style="text-align: center; margin-bottom: 20px; font-family: 'Times New Roman', Times, serif;">
+    <div style="text-align: center; margin-bottom: 20px; font-family: 'Inter', sans-serif;">
         <!-- Logo -->
         <div style="width: 90px; height: 90px; background: rgba(255, 255, 255, 0.05); border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid var(--accent-color); box-shadow: 0 0 20px var(--glow-color); margin: 0 auto 15px auto;">
             <img src="{logo_src}" style="width: 75px; height: 75px; object-fit: contain;" alt="HUPH Logo">
@@ -3202,7 +3203,7 @@ def get_sidebar_header_html() -> str:
 
 def get_header_html() -> str:
     return """
-    <div style="text-align: center; padding: 15px 10px 30px 10px; margin-bottom: 15px; font-family: 'Times New Roman', Times, serif; color: var(--text-color);">
+    <div style="text-align: center; padding: 15px 10px 30px 10px; margin-bottom: 15px; font-family: 'Inter', sans-serif; color: var(--text-color);">
       <h1 style="margin: 0; font-size: clamp(1.8rem, 4.2vw, 2.7rem); font-weight: 800; color: var(--header-text); line-height: 1.35; text-transform: uppercase; letter-spacing: 0.02em;">
         PHÁT HIỆN TIN GIẢ VÀ PHÂN TÍCH THÁI ĐỘ VỀ VACCINE TẠI VIỆT NAM 💉
       </h1>
@@ -3217,19 +3218,19 @@ def get_header_html() -> str:
 def get_footer_html():
     logo_src = get_huph_logo_base64()
     return f"""
-    <div style="background: var(--footer-bg); color: var(--footer-text); padding: 45px 30px; border-radius: 16px; margin-top: 45px; font-family: 'Times New Roman', Times, serif; border: 1px solid var(--input-border); border-top: 4px solid var(--accent-color); box-shadow: 0 -12px 35px rgba(0, 0, 0, 0.2);">
+    <div style="background: var(--footer-bg); color: var(--footer-text); padding: 45px 30px; border-radius: 16px; margin-top: 45px; font-family: 'Inter', sans-serif; border: 1px solid var(--input-border); border-top: 4px solid var(--accent-color); box-shadow: 0 -12px 35px rgba(0, 0, 0, 0.2);">
       <div style="display: flex; flex-wrap: wrap; gap: 35px; justify-content: space-between;">
         <div style="flex: 1.1; min-width: 250px; text-align: center; border-right: 1px solid var(--input-border); padding-right: 20px;">
           <div style="width: 100px; height: 100px; background: rgba(255,255,255,0.08); border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid var(--accent-color); box-shadow: 0 0 20px rgba(100, 255, 218, 0.15); margin: 0 auto 15px auto;">
             <img src="{logo_src}" style="width: 80px; height: 80px; object-fit: contain;" alt="HUPH Logo">
           </div>
-          <h3 style="color: var(--header-text); font-size: 1.05rem; margin: 5px 0; font-family: 'Times New Roman', Times, serif !important; font-weight: 700; letter-spacing: 0.05em;">TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG</h3>
+          <h3 style="color: var(--header-text); font-size: 1.05rem; margin: 5px 0; font-family: 'Inter', sans-serif !important; font-weight: 700; letter-spacing: 0.05em;">TRƯỜNG ĐẠI HỌC Y TẾ CÔNG CỘNG</h3>
           <p style="font-size: 0.85rem; color: var(--tab-button-text); margin: 6px 0;">📍 Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</p>
           <p style="font-size: 0.85rem; margin: 6px 0;">🌐 <a href="https://huph.edu.vn/" target="_blank" style="color: var(--accent-color); text-decoration: none; font-weight: 600;">huph.edu.vn</a></p>
         </div>
         
         <div style="flex: 1.5; min-width: 250px; border-right: 1px solid var(--input-border); padding-right: 20px;">
-          <h3 style="color: var(--accent-color); font-size: 1.1rem; text-transform: uppercase; margin-bottom: 15px; font-family: 'Times New Roman', Times, serif !important; font-weight: 700; letter-spacing: 0.05em;">🔬 Đề tài đồ án</h3>
+          <h3 style="color: var(--accent-color); font-size: 1.1rem; text-transform: uppercase; margin-bottom: 15px; font-family: 'Inter', sans-serif !important; font-weight: 700; letter-spacing: 0.05em;">🔬 Đề tài đồ án</h3>
           <p style="color: #ffd700; font-weight: bold; font-style: italic; font-size: 1rem; line-height: 1.6; margin-bottom: 8px;">
             "Ứng dụng Xử lý Ngôn ngữ Tự nhiên trong phát hiện thông tin sai lệch về vaccine và phân tích thái độ cộng đồng trên môi trường số tại Việt Nam"
           </p>
@@ -3239,7 +3240,7 @@ def get_footer_html():
         </div>
         
         <div style="flex: 1.2; min-width: 250px; border-right: 1px solid var(--input-border); padding-right: 20px;">
-          <h3 style="color: var(--accent-color); font-size: 1.1rem; text-transform: uppercase; margin-bottom: 15px; font-family: 'Times New Roman', Times, serif !important; font-weight: 700; letter-spacing: 0.05em;">👥 Nhóm thực hiện</h3>
+          <h3 style="color: var(--accent-color); font-size: 1.1rem; text-transform: uppercase; margin-bottom: 15px; font-family: 'Inter', sans-serif !important; font-weight: 700; letter-spacing: 0.05em;">👥 Nhóm thực hiện</h3>
           <div style="margin-bottom: 12px;">
             <p style="margin: 0; color: var(--header-text); font-weight: 600;">1. Kim Mạnh Hưng</p>
             <p style="font-size: 0.85rem; color: var(--tab-button-text); margin: 2px 0 0 0;">MSSV: 2211090016 · Lớp: CNCQ KHDL1-1A</p>
@@ -3251,7 +3252,7 @@ def get_footer_html():
         </div>
         
         <div style="flex: 1; min-width: 200px;">
-          <h3 style="color: var(--accent-color); font-size: 1.1rem; text-transform: uppercase; margin-bottom: 15px; font-family: 'Times New Roman', Times, serif !important; font-weight: 700; letter-spacing: 0.05em;">👨‍🏫 GV Hướng dẫn</h3>
+          <h3 style="color: var(--accent-color); font-size: 1.1rem; text-transform: uppercase; margin-bottom: 15px; font-family: 'Inter', sans-serif !important; font-weight: 700; letter-spacing: 0.05em;">👨‍🏫 GV Hướng dẫn</h3>
           <p style="font-size: 1.1rem; font-weight: bold; color: var(--header-text); margin-bottom: 6px;">TS. Trần Lâm Quân</p>
           <p style="font-size: 0.85rem; color: var(--tab-button-text); line-height: 1.5;">
             Giảng viên Khoa học dữ liệu<br>
@@ -3261,7 +3262,7 @@ def get_footer_html():
         </div>
       </div>
       <hr style="border-color: var(--input-border); margin: 30px 0 20px 0;">
-      <p style="text-align: center; font-size: 0.85rem; color: var(--tab-button-text); margin: 0; font-family: 'Times New Roman', Times, serif !important; letter-spacing: 0.02em;">
+      <p style="text-align: center; font-size: 0.85rem; color: var(--tab-button-text); margin: 0; font-family: 'Inter', sans-serif !important; letter-spacing: 0.02em;">
         © 2026 VaccineNLP Project | Đồ án tốt nghiệp chuyên ngành Khoa học Dữ liệu - HUPH
       </p>
     </div>
@@ -3306,13 +3307,13 @@ def get_kpi_cards_html(selected_view):
             ("🏆 Average Macro F1", f"{m_data['avg_f1']:.4f}", "PhoBERT-v2" if model_key == 'phobert' else ("XLM-R-v1" if model_key == 'xlmr' else "Gemma-4 4B"), "#FFD700")
         ]
 
-    html = '<div style="display: flex; flex-wrap: wrap; gap: 15px; width: 100%; margin-bottom: 20px; font-family: \'Times New Roman\', Times, serif;">'
+    html = '<div style="display: flex; flex-wrap: wrap; gap: 15px; width: 100%; margin-bottom: 20px; font-family: \'Inter\', Times, serif;">'
     for title, val, sub, border_color in cards:
         html += f"""
         <div style="flex: 1; min-width: 220px; background: var(--card-bg); border: 1px solid var(--input-border); border-top: 4px solid {border_color}; border-radius: 8px; padding: 15px; text-align: left; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
-            <div style="font-size: 0.85rem; color: var(--tab-button-text); text-transform: uppercase; font-weight: bold; letter-spacing: 0.05em; margin-bottom: 5px; font-family: \'Times New Roman\', Times, serif !important;">{title}</div>
-            <div style="font-size: 1.8rem; font-weight: bold; color: var(--header-text); margin-bottom: 3px; font-family: \'Times New Roman\', Times, serif !important;">{val}</div>
-            <div style="font-size: 0.8rem; color: var(--text-color); font-style: italic; font-family: \'Times New Roman\', Times, serif !important;">{sub}</div>
+            <div style="font-size: 0.85rem; color: var(--tab-button-text); text-transform: uppercase; font-weight: bold; letter-spacing: 0.05em; margin-bottom: 5px; font-family: \'Inter\', Times, serif !important;">{title}</div>
+            <div style="font-size: 1.8rem; font-weight: bold; color: var(--header-text); margin-bottom: 3px; font-family: \'Inter\', Times, serif !important;">{val}</div>
+            <div style="font-size: 0.8rem; color: var(--text-color); font-style: italic; font-family: \'Inter\', Times, serif !important;">{sub}</div>
         </div>
         """
     html += '</div>'
@@ -3362,7 +3363,7 @@ def get_leaderboard_html():
             </tr>"""
     
     table_html = f"""
-    <table style="width:100%; border-collapse:collapse; background:{table_bg}; border:1px solid {table_border}; border-radius:10px; overflow:hidden; font-family:'Times New Roman', serif; text-align:center;">
+    <table style="width:100%; border-collapse:collapse; background:{table_bg}; border:1px solid {table_border}; border-radius:10px; overflow:hidden; font-family:'Inter', sans-serif; text-align:center;">
         <thead style="background:{header_bg}; color:{text_col}; font-weight:bold;">
             <tr style="border-bottom:2px solid var(--custom-card-border);">
                 <th style="padding:12px;">Hạng</th>
@@ -3424,7 +3425,7 @@ def get_per_class_table_html(task_key):
         </tr>'''
         
     table_html = f'''
-    <table style="width:100%; border-collapse:collapse; background:{table_bg}; border:1px solid {table_border}; font-family:'Times New Roman', serif; text-align:center;">
+    <table style="width:100%; border-collapse:collapse; background:{table_bg}; border:1px solid {table_border}; font-family:'Inter', sans-serif; text-align:center;">
         <thead style="background:{header_bg}; color:{text_col}; font-weight:bold;">
             <tr style="border-bottom:1px solid var(--custom-card-border);">
                 <th style="padding:10px; text-align:left;">{header_label}</th>
@@ -3465,7 +3466,7 @@ def render_live_table(data_list):
         """
         
     return f"""
-    <table style="width: 100%; border-collapse: collapse; background: var(--card-bg); border: 1px solid var(--input-border); border-radius: 10px; overflow: hidden; font-family: 'Times New Roman', serif; text-align: center;">
+    <table style="width: 100%; border-collapse: collapse; background: var(--card-bg); border: 1px solid var(--input-border); border-radius: 10px; overflow: hidden; font-family: 'Inter', sans-serif; text-align: center;">
         <thead style="background: var(--tab-button-bg);">
             <tr>
                 <th style="padding: 12px; text-align: left; color: {chart_font_color}; border-bottom: 2px solid {info_border};">Kiến trúc mô hình</th>
@@ -3489,14 +3490,14 @@ def run_live_evaluation():
     
     current_data = []
     for row in benchmark_data:
-        status = f"<div style='color: orange; font-weight: bold; font-family: \"Times New Roman\", serif;'>🤖 Đang giả lập kiểm thử trực tiếp trên GPU: {row['Model']}...</div>"
+        status = f"<div style='color: orange; font-weight: bold; font-family: \"Inter\", serif;'>🤖 Đang giả lập kiểm thử trực tiếp trên GPU: {row['Model']}...</div>"
         yield status, render_live_table(current_data)
         time.sleep(0.8)
         current_data.append(row)
         yield status, render_live_table(current_data)
         time.sleep(0.4)
         
-    status = f"<div style='color: #38ef7d; font-weight: bold; font-family: \"Times New Roman\", serif;'>✅ Quá trình suy luận Live hoàn tất! Bảng kết quả F1 đã được cập nhật thành công.</div>"
+    status = f"<div style='color: #38ef7d; font-weight: bold; font-family: \"Inter\", serif;'>✅ Quá trình suy luận Live hoàn tất! Bảng kết quả F1 đã được cập nhật thành công.</div>"
     yield status, render_live_table(benchmark_data)
 
 def handle_clear_cache():
@@ -3532,7 +3533,7 @@ SIDEBAR_CATEGORIES = {
 
 def get_sidebar_info_html(model_name):
     return f"""
-    <div style="margin-top: 15px; padding: 15px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 10px; font-family: 'Times New Roman', serif;">
+    <div style="margin-top: 15px; padding: 15px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 10px; font-family: 'Inter', sans-serif;">
         <div style="font-size: 14px; font-weight: bold; margin-bottom: 8px; color: var(--text-color);">Về hệ thống</div>
         <div style="font-size: 12px; line-height: 1.6; color: var(--text-color); opacity: 0.85;">
             • <b>Classifier:</b> {model_name}<br>
@@ -3866,12 +3867,12 @@ def build_app():
             with gr.Column(scale=1, min_width=290, elem_id="sidebar-col"):
                 gr.HTML(get_sidebar_header_html())
                 gr.HTML("<hr style='border-color: var(--input-border); margin: 15px 0 10px 0;'>")
-                gr.HTML("<h5 style='font-family: \"Times New Roman\", serif; font-weight: bold; margin-bottom: 8px;'>🎨 Giao diện</h5>")
+                gr.HTML("<h5 style='font-family: \"Inter\", serif; font-weight: bold; margin-bottom: 8px;'>🎨 Giao diện</h5>")
                 with gr.Row():
                     theme_dark_btn = gr.Button("🌙 Tối", elem_classes=["theme-dark-btn"], size="sm")
                     theme_light_btn = gr.Button("☀️ Sáng", elem_classes=["theme-light-btn"], size="sm")
                 gr.HTML("<hr style='border-color: var(--input-border); margin: 15px 0 10px 0;'>")
-                gr.HTML("<h5 style='font-family: \"Times New Roman\", serif; font-weight: bold; margin-bottom: 8px;'>📋 Mẫu thử nghiệm</h5>")
+                gr.HTML("<h5 style='font-family: \"Inter\", serif; font-weight: bold; margin-bottom: 8px;'>📋 Mẫu thử nghiệm</h5>")
                 sample_category = gr.Dropdown(
                     choices=["Tự nhập", "🚨 Nhóm Tin giả cực đoan", "🟢 Nhóm phân tích Thái độ", "✅ Nhóm Thông tin chuẩn", "💬 Nhóm Từ lóng MXH"],
                     value="Tự nhập",
@@ -3884,10 +3885,10 @@ def build_app():
                     visible=False
                 )
                 gr.HTML("<hr style='border-color: var(--input-border); margin: 15px 0 10px 0;'>")
-                gr.HTML("<h5 style='font-family: \"Times New Roman\", serif; font-weight: bold; margin-bottom: 8px;'>🤖 Mô hình Phân loại</h5>")
+                gr.HTML("<h5 style='font-family: \"Inter\", serif; font-weight: bold; margin-bottom: 8px;'>🤖 Mô hình Phân loại</h5>")
                 gr.Markdown(
                     """
-                    <div style="font-size: 12px; color: var(--text-color); opacity: 0.8; font-family: 'Times New Roman', serif; margin-bottom: 8px; line-height: 1.4;">
+                    <div style="font-size: 12px; color: var(--text-color); opacity: 0.8; font-family: 'Inter', sans-serif; margin-bottom: 8px; line-height: 1.4;">
                         Mô hình này đảm nhiệm việc phân loại nhãn (Tin giả, Quan điểm, Cảm xúc).
                     </div>
                     """,
@@ -3900,12 +3901,12 @@ def build_app():
                 )
                 info_box = gr.HTML(value=get_sidebar_info_html("PhoBERT-v2"))
                 gr.HTML("<hr style='border-color: var(--input-border); margin: 15px 0 10px 0;'>")
-                gr.HTML("<h5 style='font-family: \"Times New Roman\", serif; font-weight: bold; margin-bottom: 8px;'>🛠️ Quản trị hệ thống</h5>")
+                gr.HTML("<h5 style='font-family: \"Inter\", serif; font-weight: bold; margin-bottom: 8px;'>🛠️ Quản trị hệ thống</h5>")
                 clear_cache_btn = gr.Button("🗑️ Xóa Cache & Khởi động lại", elem_classes=["theme-toggle-btn"], size="sm")
                 clear_cache_status = gr.Markdown(value="", visible=False)
                 gr.HTML(
                     """
-                    <div style="font-size: 11px; color: var(--text-color); opacity: 0.7; font-family: 'Times New Roman', serif; margin-top: 10px; line-height: 1.4;">
+                    <div style="font-size: 11px; color: var(--text-color); opacity: 0.7; font-family: 'Inter', sans-serif; margin-top: 10px; line-height: 1.4;">
                         💡 <b>Lưu ý:</b> Nếu gặp lỗi 403 Forbidden, vui lòng kiểm tra lại quyền 'Inference' của Token trên Hugging Face.
                     </div>
                     """
@@ -4138,7 +4139,7 @@ def build_app():
                             with gr.Tab("📋 BÁO CÁO BENCHMARK KHOA HỌC"):
                                 gr.Markdown("## 📊 BÁO CÁO ĐÁNH GIÁ HIỆU NĂNG & BENCHMARK MÔ HÌNH KHOA HỌC")
                                 gr.HTML("""
-                                    <div style="background: var(--accent-bg); border-left: 5px solid var(--accent-color); padding: 15px; border-radius: 8px; margin-bottom: 25px; font-family: 'Times New Roman', Times, serif;">
+                                    <div style="background: var(--accent-bg); border-left: 5px solid var(--accent-color); padding: 15px; border-radius: 8px; margin-bottom: 25px; font-family: 'Inter', sans-serif;">
                                         <span style="color: var(--text-color); font-size: 1.05rem;">
                                             💡 Báo cáo đối sáng hiệu năng thực nghiệm chi tiết giữa 3 kiến trúc mô hình: <b>PhoBERT-v2</b>, <b>XLM-R-v1</b> và <b>Gemma-4 4B (QLoRA)</b> trên tập dữ liệu kiểm thử vàng <b>Gold Test Set (186 mẫu)</b>, được gán nhãn thủ công bởi chuyên gia từ HUPH 2026.
                                         </span>
@@ -4213,7 +4214,7 @@ def build_app():
                                 gr.Markdown("### 🛡️ 4. Giải pháp thực tiễn: Kiến trúc lai Dual-Student Hybrid")
                                 gr.Markdown("Để tối ưu hóa cả tốc độ phân loại chính xác và chiều sâu lý luận giải thích, hệ thống đề xuất kiến trúc kết hợp Dual-Student:")
                                 gr.HTML("""
-                                <div style="display:flex; flex-direction:row; justify-content:space-around; align-items:center; flex-wrap:wrap; margin-top:20px; font-family:'Times New Roman', serif;">
+                                <div style="display:flex; flex-direction:row; justify-content:space-around; align-items:center; flex-wrap:wrap; margin-top:20px; font-family:'Inter', sans-serif;">
                                     <div style="background:var(--accent-bg); border:1px solid var(--accent-color); border-radius:10px; padding:20px; width:280px; text-align:center; box-shadow:0 4px 10px rgba(0,0,0,0.1); margin-bottom:10px;">
                                         <span style="font-size:2rem;">📥</span>
                                         <h4 style="margin:10px 0; color:var(--text-color);">1. Văn bản mạng xã hội</h4>
@@ -4236,14 +4237,14 @@ def build_app():
 
                             with gr.Tab("⚡ ĐÁNH GIÁ LIVE (LIVE EVALUATION)"):
                                 gr.HTML("""
-                                    <div style="background: var(--accent-bg); border-left: 5px solid var(--accent-color); padding: 15px; border-radius: 5px; margin-bottom: 20px; font-family: 'Times New Roman', Times, serif;">
+                                    <div style="background: var(--accent-bg); border-left: 5px solid var(--accent-color); padding: 15px; border-radius: 5px; margin-bottom: 20px; font-family: 'Inter', sans-serif;">
                                         <span style="color: var(--text-color);">⚡ <b>Chế độ Đánh giá Live</b> giả lập quá trình quét trực tiếp và tính toán F1-Score thời gian thực của các mô hình trên tập kiểm thử vàng Gold Test Set (186 mẫu).</span>
                                     </div>
                                 """)
 
                                 gr.Markdown("#### 🚀 Trạng thái Tiến trình Suy luận (Inference Pipeline)")
 
-                                live_status = gr.HTML(value="<div style='color: var(--tab-button-text); font-family: \"Times New Roman\", serif;'>💡 Nhấn nút bên dưới để bắt đầu chạy kiểm thử suy luận trên GPU trực tiếp...</div>")
+                                live_status = gr.HTML(value="<div style='color: var(--tab-button-text); font-family: \"Inter\", serif;'>💡 Nhấn nút bên dưới để bắt đầu chạy kiểm thử suy luận trên GPU trực tiếp...</div>")
                                 live_table = gr.HTML(value=render_live_table([]))
 
                                 live_eval_btn = gr.Button("⚡ Bắt đầu Đánh giá Live", variant="primary", size="lg")
@@ -4258,7 +4259,7 @@ def build_app():
                                 gr.Markdown("---")
                                 gr.Markdown("### ⚡ 1. Đánh giá Hiệu năng Vận hành & Tốc độ Suy luận (Runtime Performance)")
                                 gr.HTML("""
-                                    <div style="margin-top: -10px; margin-bottom: 20px; font-family: 'Times New Roman', Times, serif;">
+                                    <div style="margin-top: -10px; margin-bottom: 20px; font-family: 'Inter', sans-serif;">
                                         <span style="color: var(--text-color); font-style: italic; font-size: 0.95rem; opacity: 0.85;">
                                             💡 Phân tích so sánh khía cạnh kỹ thuật phần mềm: Tốc độ xử lý (Thông lượng) và Độ trễ phản hồi của từng kiến trúc mô hình khi quét vắc-xin.
                                         </span>
@@ -4271,66 +4272,6 @@ def build_app():
                                 gr.Markdown("---")
                                 gr.HTML(RECOMMENDATIONS_HTML)
 
-                    # ================================================================
-                    # TAB 3: ĐÁNH GIÁ CHUYÊN SÂU (Enhanced với Per-class)
-                    # ================================================================
-                    with gr.Tab("📈 ĐÁNH GIÁ CHUYÊN SÂU"):
-                        gr.Markdown("## 🌀 Dòng chảy Cảm xúc → Lập trường (n=186)")
-                        gr.Plot(value=make_sankey_chart())
-
-                        gr.Markdown(
-                            """
-                            ---
-                            ### 🔍 Diễn giải Sankey Flow
-
-                            **Phát hiện chính:**
-                            - **93.8%** (45/48) nội dung **Phản đối** vaccine mang cảm xúc **Tiêu cực**
-                            - **82.5%** (33/40) nội dung **Tích cực** đồng hành với lập trường **Ủng hộ**
-                            - **77.4%** (65/84) nội dung **Trung lập** đi với cảm xúc **Trung tính**
-
-                            → Sắc thái cảm xúc là **chỉ thị mạnh** dự báo lập trường tiêm chủng (Chi-square p < 10⁻⁴⁰).
-                            """
-                        )
-
-                        gr.Markdown("---")
-                        gr.Markdown("## 📊 Per-class F1 Breakdown")
-                        with gr.Tabs():
-                            with gr.Tab("🚨 Misinformation"):
-                                gr.Plot(value=make_per_class_chart("misinfo"))
-                                gr.Markdown("**Nhận xét thực nghiệm:** Phân lớp *Tin giả* (n=28) ghi nhận hiệu năng thấp nhất do mất cân bằng phân bổ dữ liệu lớp thiểu số, đạt giá trị F1 cao nhất là 0.5079 trên cấu trúc XLM-R.")
-                            with gr.Tab("🎯 Stance"):
-                                gr.Plot(value=make_per_class_chart("stance"))
-                                gr.Markdown("**Nhận xét thực nghiệm:** Phân lớp *Trung lập* đạt hiệu năng tối ưu nhất (F1 xấp xỉ 0.74) do tính chất biểu đạt ngôn ngữ mang sắc thái khách quan. Lập trường *Phản đối* ghi nhận chỉ số khả quan trên cấu trúc Gemma (0.6905).")
-                            with gr.Tab("💭 Sentiment"):
-                                gr.Plot(value=make_per_class_chart("sentiment"))
-                                gr.Markdown("**Nhận xét thực nghiệm:** Cấu trúc mô hình Gemma thể hiện tính ưu việt ở cả 3 phân lớp Sentiment, ghi nhận chỉ số F1 lớp *Tích cực* đạt giá trị lớn nhất là 0.7027.")
-
-                        gr.Markdown("---")
-                        gr.Markdown("## 🔍 Bộ máy tính chỉ số thực nghiệm (Interactive Metric Calculator)")
-                        with gr.Row():
-                            with gr.Column(scale=1):
-                                calc_class_choice = gr.Dropdown(
-                                    choices=list(METRICS_DB.keys()),
-                                    value="Tin giả (Misinfo = Tin giả)",
-                                    label="Lựa chọn nhãn lớp cụ thể để tính toán chỉ số:",
-                                )
-                                calc_metrics_area = gr.HTML(value=update_calculator("Tin giả (Misinfo = Tin giả)")[0])
-                            with gr.Column(scale=1):
-                                with gr.Row():
-                                    calc_p_area = gr.Markdown(value=update_calculator("Tin giả (Misinfo = Tin giả)")[1])
-                                    calc_r_area = gr.Markdown(value=update_calculator("Tin giả (Misinfo = Tin giả)")[2])
-                                    calc_f1_area = gr.Markdown(value=update_calculator("Tin giả (Misinfo = Tin giả)")[3])
-
-                        calc_class_choice.change(
-                            fn=update_calculator,
-                            inputs=[calc_class_choice],
-                            outputs=[calc_metrics_area, calc_p_area, calc_r_area, calc_f1_area],
-                            api_name=False
-                        )
-
-                        gr.Markdown("---")
-                        gr.Markdown("## 📊 Phân cấp nhãn Gold Test Set (Sunburst)")
-                        gr.Plot(value=make_sunburst_chart())
 
                     # ================================================================
                     # TAB 4: TÀI LIỆU
