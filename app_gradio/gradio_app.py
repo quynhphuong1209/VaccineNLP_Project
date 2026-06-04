@@ -4180,9 +4180,9 @@ def build_app():
                             with gr.Tab("📋 BÁO CÁO BENCHMARK KHOA HỌC"):
                                 gr.Markdown("## 📊 BÁO CÁO ĐÁNH GIÁ HIỆU NĂNG & BENCHMARK MÔ HÌNH KHOA HỌC")
                                 gr.HTML("""
-                                    <div style="background: var(--accent-bg); border-left: 5px solid var(--accent-color); padding: 15px; border-radius: 8px; margin-bottom: 25px; font-family: 'Inter', sans-serif;">
-                                        <span style="color: var(--text-color); font-size: 1.05rem;">
-                                            💡 Báo cáo đối sáng hiệu năng thực nghiệm chi tiết giữa 3 kiến trúc mô hình: <b>PhoBERT-v2</b>, <b>XLM-R-v1</b> và <b>Gemma-4 4B (QLoRA)</b> trên tập dữ liệu kiểm thử vàng <b>Gold Test Set (186 mẫu)</b>, được gán nhãn thủ công bởi chuyên gia từ HUPH 2026.
+                                    <div style="background: var(--accent-bg); border-left: 5px solid var(--accent-color); padding: 12px; border-radius: 8px; margin-bottom: 20px; font-family: 'Inter', sans-serif;">
+                                        <span style="color: var(--text-color); font-size: 0.95rem;">
+                                            💡 Báo cáo đối sánh hiệu năng của <b>PhoBERT-v2</b>, <b>XLM-R-v1</b> và <b>Gemma-4 (QLoRA)</b> trên tập kiểm thử độc lập <b>Gold Test Set (186 mẫu)</b> gán nhãn bởi chuyên gia HUPH.
                                         </span>
                                     </div>
                                 """)
@@ -4207,21 +4207,21 @@ def build_app():
                                 gr.Plot(value=make_benchmark_chart())
 
                                 gr.Markdown("---")
-                                gr.Markdown("### 🕸️ 2. Phân tích hiệu năng chi tiết theo nhãn và phân bổ mẫu (Per-Class Breakdown)")
+                                gr.Markdown("### 🕸️ 2. Phân tích hiệu năng chi tiết theo nhãn (Per-Class Breakdown)")
 
                                 with gr.Tabs():
                                     with gr.Tab("🚨 PHÂN LOẠI TIN GIẢ (MISINFO)"):
                                         gr.Plot(value=make_per_class_chart("misinfo"))
                                         gr.HTML(value=get_per_class_table_html("misinfo"))
-                                        gr.Markdown("💡 **Nhận xét thực nghiệm**: Phân lớp **Tin giả** (n=28) đạt giá trị F1 lớn nhất là **0.5079** (kiến trúc XLM-R-v1) và **0.5075** (kiến trúc PhoBERT-v2). Tác vụ này thể hiện độ phức tạp phân loại cao do sự mất cân bằng phân bố mẫu giữa hai lớp (lớp thiểu số có số lượng mẫu hạn chế) kết hợp với các cấu trúc ngữ nghĩa ẩn dụ hoặc châm biếm thường thấy trong các nội dung do dự vắc-xin.")
+                                        gr.Markdown("💡 **Nhận xét**: Phân lớp *Tin giả* (n=28) có độ khó phân loại cao nhất (F1 ~0.50) do mất cân bằng mẫu lớp thiểu số và tính chất ẩn dụ/châm biếm của thông tin sai lệch.")
                                     with gr.Tab("🚩 QUAN ĐIỂM (STANCE)"):
                                         gr.Plot(value=make_per_class_chart("stance"))
                                         gr.HTML(value=get_per_class_table_html("stance"))
-                                        gr.Markdown("💡 **Nhận xét thực nghiệm**: Phân lớp **Trung lập** đạt chỉ số F1 tối ưu trên cả ba kiến trúc, điều này phù hợp với tính chất biểu đạt khách quan của dữ liệu dạng này. Lập trường **Phản đối** đạt kết quả thực nghiệm ổn định trên kiến trúc PhoBERT-v2, chứng minh năng lực biểu diễn ngữ nghĩa tiếng Việt của mô hình đối với các quan điểm phản đối tiêm chủng.")
+                                        gr.Markdown("💡 **Nhận xét**: Lớp *Trung lập* đạt F1 tối ưu trên cả 3 mô hình nhờ tính biểu đạt khách quan. Lập trường *Phản đối* đạt hiệu năng tốt nhất trên PhoBERT-v2.")
                                     with gr.Tab("🎭 CẢM XÚC (SENTIMENT)"):
                                         gr.Plot(value=make_per_class_chart("sentiment"))
                                         gr.HTML(value=get_per_class_table_html("sentiment"))
-                                        gr.Markdown("💡 **Nhận xét thực nghiệm**: Phân lớp **Tích cực** ghi nhận chỉ số F1 thấp hơn so với các phân lớp còn lại trên mọi cấu trúc mô hình. Nguyên nhân xuất phát từ đặc trưng biểu đạt ngôn ngữ y tế cộng đồng trong tiếng Việt, trong đó các phản hồi tích cực về tiêm chủng thường xuất hiện đồng thời với các mô tả triệu chứng phản ứng sau tiêm thông thường (ví dụ: đau nhẹ, sốt nhẹ), tạo ra sự tương phản sắc thái ngữ cảnh.")
+                                        gr.Markdown("💡 **Nhận xét**: Lớp *Tích cực* có F1 thấp hơn do các phản hồi ủng hộ vắc-xin thường đi kèm mô tả phản ứng phụ nhẹ sau tiêm (sốt, đau), gây nhiễu sắc thái ngữ cảnh.")
 
                                 selected_model_view.change(
                                     fn=get_kpi_cards_html,
@@ -4231,47 +4231,33 @@ def build_app():
                                 )
 
                                 gr.Markdown("---")
-                                gr.Markdown("### 🔬 3. Phân tích sâu & Đánh giá thực nghiệm (Scientific Deep-dive)")
-                                with gr.Row():
-                                    with gr.Column():
-                                        gr.Markdown("""
-                                        #### 🔬 1. Các phân lớp có độ phức tạp phân loại cao (High-Complexity Classes)
-                                        Dựa trên kết quả thực nghiệm từ tập Gold Test Set độc lập (n=186), hai nhóm phân lớp có chỉ số F1-Score thấp nhất trên cả ba kiến trúc mô hình bao gồm:
-                                        * **🚨 Tin giả (Misinfo = Tin giả)**: Đạt giá trị F1 trung bình là **0.4866** tổng hợp từ ba mô hình. 
-                                          * *Cơ sở phân tích*: Các nội dung thông tin sai lệch liên quan đến tiêm chủng thường không biểu hiện dưới dạng cấu trúc thông tin đơn giản. Thay vào đó, chúng được ngụy trang dưới các lập luận khoa học giả tạo, tích hợp thuật ngữ y khoa chuyên ngành hoặc sử dụng cấu trúc ngữ nghĩa ẩn dụ, châm biếm nhằm giảm khả năng phát hiện tự động của mô hình.
-                                        * **🎭 Cảm xúc Tích cực (Sentiment = Tích cực)**: Đạt chỉ số F1 trung bình là **0.6221**.
-                                          * *Cơ sở phân tích*: Các biểu đạt thể hiện sự ủng hộ hoặc trạng thái tích cực đối với vắc-xin của người dùng trên mạng xã hội thường có xu hướng đi kèm với các mô tả triệu chứng lâm sàng nhẹ sau tiêm (như: sốt nhẹ, đau nhức cơ, sưng tại chỗ tiêm nhưng sức khỏe vẫn ổn định). Điều này gây ra sự nhiễu loạn đặc trưng ngữ cảnh, khiến các bộ phân loại dễ phân bổ sai sắc thái sang phân lớp trung tính hoặc tiêu cực.
-                                        """)
-                                    with gr.Column():
-                                        gr.Markdown("""
-                                        #### 🤖 2. Tại sao F1-Score của Gemma-4 4B lại thấp hơn?
-                                        * **Bản chất kiến trúc**: Gemma-4 là mô hình Generative (tạo sinh) được tinh chỉnh qua QLoRA nhằm phục vụ việc tạo lập **Giải thích khoa học (XAI - Explainable AI)** và **Tư vấn chiến lược phản ứng** dưới dạng ngôn ngữ tự nhiên.
-                                        * **Trade-off giữa Giải thích & Phân loại**:
-                                          * Mô hình Encoder (như PhoBERT-v2) được thiết kế đặc thù cho bài toán phân loại đa nhãn (Multi-task Classification), giúp trích xuất nhãn cực nhanh và chính xác cao (Avg F1 = 0.6967).
-                                          * Gemma-4 4B đóng vai trò lý luận sâu, giúp người dùng hiểu *tại sao* đó là tin giả và đề xuất kịch bản phản hồi khủng hoảng cho chuyên gia y tế HUPH, chứ không cạnh tranh hiệu năng ở bài toán gán nhãn cứng.
-                                        """)
+                                gr.Markdown("### 🔬 3. Phân tích thực nghiệm chính (Key Analyses)")
+                                gr.Markdown("""
+                                * **🚨 Độ phức tạp tác vụ**: Phân loại lớp *Tin giả* (Avg F1 = 0.48) và *Cảm xúc Tích cực* (Avg F1 = 0.62) có độ khó cao nhất do mất cân bằng dữ liệu, ngữ nghĩa châm biếm tinh vi, hoặc nhiễu ngữ cảnh do lồng ghép mô tả phản ứng sau tiêm thông thường.
+                                * **🤖 Vai trò của Gemma-4**: Gemma-4 4B hoạt động như một mô hình tạo sinh tinh chỉnh để giải thích lý luận sâu (XAI) và tư vấn phản hồi khủng hoảng truyền thông, không tối ưu cho bài toán gán nhãn cứng như mô hình chuyên biệt PhoBERT-v2.
+                                """)
 
                                 gr.Markdown("---")
                                 gr.Markdown("### 🛡️ 4. Giải pháp thực tiễn: Kiến trúc lai Dual-Student Hybrid")
-                                gr.Markdown("Để tối ưu hóa cả tốc độ phân loại chính xác và chiều sâu lý luận giải thích, hệ thống đề xuất kiến trúc kết hợp Dual-Student:")
+                                gr.Markdown("Để tối ưu hóa cả tốc độ phân loại chính xác và chiều sâu lý luận giải thích, hệ thống đề xuất kiến trúc kết hợp:")
                                 gr.HTML("""
                                 <div style="display:flex; flex-direction:row; justify-content:space-around; align-items:center; flex-wrap:wrap; margin-top:20px; font-family:'Inter', sans-serif;">
                                     <div style="background:var(--accent-bg); border:1px solid var(--accent-color); border-radius:10px; padding:20px; width:280px; text-align:center; box-shadow:0 4px 10px rgba(0,0,0,0.1); margin-bottom:10px;">
                                         <span style="font-size:2rem;">📥</span>
-                                        <h4 style="margin:10px 0; color:var(--text-color);">1. Văn bản mạng xã hội</h4>
-                                        <p style="font-size:0.9rem; color:var(--text-color); opacity:0.8;">Người dùng nhập dữ liệu hoặc quét tin từ các URL tin tức.</p>
+                                        <h4 style="margin:10px 0; color:var(--text-color);">1. Dữ liệu đầu vào</h4>
+                                        <p style="font-size:0.9rem; color:var(--text-color); opacity:0.8;">Văn bản mạng xã hội thu thập qua URL hoặc nhập trực tiếp.</p>
                                     </div>
                                     <div style="font-size:2rem; color:var(--accent-color); font-weight:bold; margin-bottom:10px;">➔</div>
                                     <div style="background:var(--accent-bg); border:1px solid #007bff; border-radius:10px; padding:20px; width:280px; text-align:center; box-shadow:0 4px 10px rgba(0,0,0,0.1); margin-bottom:10px;">
                                         <span style="font-size:2rem;">🥇</span>
                                         <h4 style="margin:10px 0; color:#007bff;">2. PhoBERT-v2 (Phân loại)</h4>
-                                        <p style="font-size:0.9rem; color:var(--text-color); opacity:0.8;">Gán nhãn cực nhanh các khía cạnh: Tin giả, Lập trường & Cảm xúc.</p>
+                                        <p style="font-size:0.9rem; color:var(--text-color); opacity:0.8;">Gán nhãn siêu tốc (120 mẫu/s): Tin giả, Quan điểm, Cảm xúc.</p>
                                     </div>
                                     <div style="font-size:2rem; color:var(--accent-color); font-weight:bold; margin-bottom:10px;">➔</div>
                                     <div style="background:var(--accent-bg); border:1px solid #FFA500; border-radius:10px; padding:20px; width:280px; text-align:center; box-shadow:0 4px 10px rgba(0,0,0,0.1); margin-bottom:10px;">
                                         <span style="font-size:2rem;">🧠</span>
                                         <h4 style="margin:10px 0; color:#FFA500;">3. Gemma-4 4B (Giải thích)</h4>
-                                        <p style="font-size:0.9rem; color:var(--text-color); opacity:0.8;">Lý luận lý do gán nhãn & đề xuất kịch bản phản hồi khủng hoảng cho chuyên gia y tế HUPH.</p>
+                                        <p style="font-size:0.9rem; color:var(--text-color); opacity:0.8;">Tạo giải thích lập luận (XAI) và tư vấn kịch bản phản hồi khủng hoảng.</p>
                                     </div>
                                 </div>
                                 """)
