@@ -19,7 +19,7 @@ def deploy():
             folder_path="app_gradio",
             repo_id=REPO_ID,
             repo_type="space",
-            commit_message="Fix: sidebar scroll — exclude #sidebar-col from nuclear overflow:visible rule so content is fully visible and scrollable"
+            commit_message="style(ui): premium dark navy + teal neon redesign v3.0 — glassmorphism, shimmer animations, glow effects"
         )
         print("\n✅ Cập nhật Space thành công! Bạn có thể kiểm tra tại: https://huggingface.co/spaces/quynhphuong1209/VaccineNLP_demo")
     except Exception as e:

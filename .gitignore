@@ -82,3 +82,6 @@ scripts/
 # Gradio deployment exclusions
 app_gradio/.venv_gradio/
 app_gradio/data/
+
+# Nested project copy
+VaccineNLP_Project-feat-gradio-migration/
