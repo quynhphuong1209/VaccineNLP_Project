@@ -2902,14 +2902,14 @@ footer, .gradio-container > footer { display: none !important; height: 0 !import
 /* ===== COMPACT DROPDOWNS & SELECTION BOXES ===== */
 .gradio-dropdown, .select-wrap {
     min-height: 28px !important;
-    font-size: 0.82rem !important;
+    font-size: 0.76rem !important;
 }
 .select-wrap input,
 .select-wrap .token,
 .select-wrap .single-select,
 .select-wrap .item,
 .select-wrap .control {
-    font-size: 0.82rem !important;
+    font-size: 0.76rem !important;
     padding-top: 2px !important;
     padding-bottom: 2px !important;
     min-height: 26px !important;
@@ -2920,10 +2920,10 @@ footer, .gradio-container > footer { display: none !important; height: 0 !import
 .gradio-container .select-options .item,
 .gradio-container .dropdown-menu .option,
 .gradio-container .dropdown-menu .item {
-    padding: 5px 10px !important;
-    font-size: 0.82rem !important;
-    margin: 2px 0 !important;
-    line-height: 1.25 !important;
+    padding: 4px 6px !important;
+    font-size: 0.76rem !important;
+    margin: 1px 0 !important;
+    line-height: 1.2 !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
@@ -3908,7 +3908,7 @@ def build_app():
         
         with gr.Row(elem_id="main-layout-row"):
             # Left Sidebar Column
-            with gr.Column(scale=1, min_width=290, elem_id="sidebar-col"):
+            with gr.Column(scale=1, min_width=315, elem_id="sidebar-col"):
                 gr.HTML(get_sidebar_header_html())
                 gr.HTML("<hr style='border-color: var(--input-border); margin: 15px 0 10px 0;'>")
                 theme_switch_html = gr.HTML(
