@@ -1176,19 +1176,22 @@ def make_radar_chart(result: Dict) -> go.Figure:
         marker=dict(size=8, color="#64ffda"),
         text=[f"{v:.0f}%" for v in values] + [f"{values[0]:.0f}%"],
         textposition="top center",
-        textfont=dict(size=13, color="#0a192f"),
+        textfont=dict(size=12),
         hovertext=hover + [hover[0]], hoverinfo="text",
         name="Độ tin cậy (hiệu chuẩn)",
     ))
     fig.update_layout(
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
-        polar=dict(radialaxis=dict(
-            visible=True, range=[0, 100], showticklabels=True,
-            ticksuffix="%", tickvals=[20, 40, 60, 80, 100],
-            tickfont=dict(size=9, color="#8899aa"), gridcolor="rgba(136,153,170,0.25)")),
-        showlegend=False, height=370,
-        margin=dict(l=60, r=60, t=40, b=40),
+        polar=dict(
+            bgcolor='rgba(0,0,0,0)',
+            radialaxis=dict(
+                visible=True, range=[0, 100], showticklabels=True,
+                ticksuffix="%", tickvals=[20, 40, 60, 80, 100],
+                tickfont=dict(size=9, color="#8899aa"), gridcolor="rgba(136,153,170,0.25)")
+        ),
+        showlegend=False, height=415,
+        margin=dict(l=95, r=95, t=35, b=35),
         title=dict(text="Độ tin cậy (đã hiệu chuẩn) của nhãn dự đoán — đọc theo từng trục",
                    font=dict(size=11, color="#8899aa"), x=0.5, xanchor="center"),
     )
@@ -2322,25 +2325,25 @@ label { font-size: 1.02rem !important; font-weight: 500 !important; }
 .gradio-container .dropdown-menu {
     z-index: 999999 !important;
     background-color: var(--dropdown-bg) !important;
-    border: 1px solid var(--input-border) !important;
+    border: 1px solid var(--card-border) !important;
     color: var(--text-color) !important;
-    box-shadow: 0 12px 40px rgba(0,0,0,0.06), 0 0 30px rgba(0,212,170,0.03) !important;
-    backdrop-filter: blur(20px) !important;
-    -webkit-backdrop-filter: blur(20px) !important;
-    border-radius: 12px !important;
-    padding: 6px 0 !important;
-    
-    /* Force dropdown list to show below the dropdown component instead of above */
+    box-shadow: 0 16px 45px var(--shadow-color), 0 0 35px var(--glow-color) !important;
+    backdrop-filter: blur(25px) !important;
+    -webkit-backdrop-filter: blur(25px) !important;
+    border-radius: 14px !important;
+    padding: 8px !important;
     position: absolute !important;
     top: 100% !important;
     bottom: auto !important;
-    transform: translateY(4px) !important;
+    transform: translateY(6px) !important;
+    animation: dropdownFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
-.dark .gradio-container .options,
-.dark .gradio-container .select-options,
-.dark .gradio-container .dropdown-menu {
-    box-shadow: 0 12px 40px rgba(0,0,0,0.55), 0 0 30px rgba(0,212,170,0.08) !important;
+
+@keyframes dropdownFadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(6px); }
 }
+
 .gradio-container .options .option,
 .gradio-container .options .item,
 .gradio-container .select-options .option,
@@ -2348,32 +2351,50 @@ label { font-size: 1.02rem !important; font-weight: 500 !important; }
 .gradio-container .dropdown-menu .option,
 .gradio-container .dropdown-menu .item {
     color: var(--text-color) !important;
-    padding: 10px 14px !important;
-    margin: 4px 6px !important;
+    padding: 11px 15px !important;
+    margin: 4px 0 !important;
     border-radius: 8px !important;
-    font-size: 0.94rem !important;
-    transition: all 0.15s ease !important;
+    font-size: 0.92rem !important;
+    font-weight: 500 !important;
+    transition: all 0.2s ease !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
 }
+
+/* Hover effect */
 .gradio-container .options .option:hover,
-.gradio-container .options .option.selected,
 .gradio-container .options .item:hover,
-.gradio-container .options .item.selected,
 .gradio-container .select-options .option:hover,
-.gradio-container .select-options .option.selected,
+.gradio-container .select-options .item:hover,
 .gradio-container .dropdown-menu .option:hover,
-.gradio-container .dropdown-menu .option.selected {
-    background-color: var(--accent-color) !important;
-    color: #ffffff !important;
+.gradio-container .dropdown-menu .item:hover {
+    background-color: rgba(0, 212, 170, 0.1) !important;
+    color: var(--accent-color) !important;
+    padding-left: 19px !important; /* Slide right animation */
 }
-.dark .gradio-container .options .option:hover,
+
+/* Selected state */
+.gradio-container .options .option.selected,
+.gradio-container .options .item.selected,
+.gradio-container .select-options .option.selected,
+.gradio-container .select-options .item.selected,
+.gradio-container .dropdown-menu .option.selected,
+.gradio-container .dropdown-menu .item.selected {
+    background: linear-gradient(135deg, #00d4aa 0%, #00b894 100%) !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    box-shadow: 0 4px 14px rgba(0, 212, 170, 0.25) !important;
+}
 .dark .gradio-container .options .option.selected,
-.dark .gradio-container .options .item:hover,
 .dark .gradio-container .options .item.selected,
-.dark .gradio-container .select-options .option:hover,
 .dark .gradio-container .select-options .option.selected,
-.dark .gradio-container .dropdown-menu .option:hover,
-.dark .gradio-container .dropdown-menu .option.selected {
-    color: #030712 !important;
+.dark .gradio-container .select-options .item.selected,
+.dark .gradio-container .dropdown-menu .option.selected,
+.dark .gradio-container .dropdown-menu .item.selected {
+    color: #04091a !important;
+    box-shadow: 0 4px 14px rgba(0, 212, 170, 0.45) !important;
 }
 
 /* ===== TABS ===== */
@@ -2401,9 +2422,9 @@ label { font-size: 1.02rem !important; font-weight: 500 !important; }
     color: var(--tab-button-text) !important;
     border: none !important;
     border-radius: 8px !important;
-    padding: 8px 18px !important;
+    padding: 6px 14px !important;
     font-weight: 600 !important;
-    font-size: 0.88rem !important;
+    font-size: 0.81rem !important;
     text-transform: none !important;
     white-space: nowrap !important;
     flex-shrink: 0 !important;
@@ -2423,8 +2444,8 @@ label { font-size: 1.02rem !important; font-weight: 500 !important; }
     box-shadow: 0 4px 18px rgba(0,212,170,0.45), 0 0 25px rgba(0,212,170,0.18) !important;
 }
 @media (max-width: 768px) {
-    .tab-nav { gap: 4px !important; padding: 6px !important; }
-    .tab-nav button { padding: 8px 12px !important; font-size: 0.8rem !important; border-radius: 7px !important; }
+    .tab-nav { gap: 4px !important; padding: 5px !important; }
+    .tab-nav button { padding: 6px 10px !important; font-size: 0.76rem !important; border-radius: 7px !important; }
 }
 
 /* ===== BUTTONS — Primary ===== */
@@ -2674,14 +2695,21 @@ body:not(.dark) .theme-dark-btn { background-color: var(--tab-button-bg) !import
 /* ===== PLOTLY ===== */
 .js-plotly-plot { background-color: transparent !important; width: 100% !important; }
 .js-plotly-plot .bg { fill: transparent !important; }
-.js-plotly-plot text, .js-plotly-plot .xtick text, .js-plotly-plot .ytick text,
+.js-plotly-plot text, .js-plotly-plot tspan, .js-plotly-plot .xtick text, .js-plotly-plot .ytick text,
 .js-plotly-plot .gtitle, .js-plotly-plot .xtitle, .js-plotly-plot .ytitle,
 .js-plotly-plot .legendtext { fill: var(--text-color) !important; }
+.dark .js-plotly-plot text, .dark .js-plotly-plot tspan { fill: #ffffff !important; }
 .js-plotly-plot .gridlayer path, .js-plotly-plot .zerolinelayer path,
-.js-plotly-plot .axis line, .js-plotly-plot .polargrid path { stroke: rgba(128,128,128,0.15) !important; }
+.js-plotly-plot .axis line { stroke: rgba(128,128,128,0.15) !important; }
 .dark .js-plotly-plot .gridlayer path, .dark .js-plotly-plot .zerolinelayer path,
-.dark .js-plotly-plot .axis line, .dark .js-plotly-plot .polargrid path { stroke: rgba(255,255,255,0.1) !important; }
+.dark .js-plotly-plot .axis line { stroke: rgba(255,255,255,0.1) !important; }
 .js-plotly-plot .sankey-node text { fill: var(--text-color) !important; }
+
+/* Radar polar styles */
+.js-plotly-plot .polarbg { fill: #ffffff !important; }
+.dark .js-plotly-plot .polarbg { fill: #000000 !important; }
+.js-plotly-plot .polargrid path { stroke: rgba(0,0,0,0.1) !important; }
+.dark .js-plotly-plot .polargrid path { stroke: rgba(255,255,255,0.75) !important; }
 .gr-plot, .gradio-plot, .plot-container, [data-testid="plot"], .js-plotly-plot,
 .plotly, .svg-container, .main-svg { width: 100% !important; max-width: 100% !important; }
 .gr-plot > div, .plot-container > div, .js-plotly-plot > div { width: 100% !important; max-width: 100% !important; }
@@ -3161,13 +3189,15 @@ def get_kpi_cards_html(selected_view):
             ("🏆 Average Macro F1", f"{m_data['avg_f1']:.4f}", "PhoBERT-v2" if model_key == 'phobert' else ("XLM-R-v1" if model_key == 'xlmr' else "Gemma-4 4B"), "#FFD700")
         ]
 
-    html = '<div style="display: flex; flex-wrap: wrap; gap: 15px; width: 100%; margin-bottom: 20px; font-family: \'Inter\', Times, serif;">'
+    html = '<div style="display: flex; flex-wrap: wrap; gap: 15px; width: 100%; margin-bottom: 20px;">'
     for title, val, sub, border_color in cards:
         html += f"""
-        <div style="flex: 1; min-width: 220px; background: var(--card-bg); border: 1px solid var(--input-border); border-top: 4px solid {border_color}; border-radius: 8px; padding: 15px; text-align: left; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
-            <div style="font-size: 0.85rem; color: var(--tab-button-text); text-transform: uppercase; font-weight: bold; letter-spacing: 0.05em; margin-bottom: 5px; font-family: \'Inter\', Times, serif !important;">{title}</div>
-            <div style="font-size: 1.8rem; font-weight: bold; color: var(--header-text); margin-bottom: 3px; font-family: \'Inter\', Times, serif !important;">{val}</div>
-            <div style="font-size: 0.8rem; color: var(--text-color); font-style: italic; font-family: \'Inter\', Times, serif !important;">{sub}</div>
+        <div style="flex: 1; min-width: 220px; background: var(--card-bg); border: 1px solid var(--card-border); border-top: 4px solid {border_color}; border-radius: 12px; padding: 16px 20px; text-align: left; box-shadow: 0 10px 25px var(--shadow-color);">
+            <div style="font-size: 0.72rem; color: var(--card-text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.08em; margin-bottom: 8px;">{title}</div>
+            <div style="font-size: 2.2rem; font-weight: 800; color: var(--text-color); margin-bottom: 8px; letter-spacing: -0.02em; line-height: 1; text-shadow: 0 0 10px {border_color}1a;">{val}</div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="font-size: 0.75rem; color: {border_color}; font-weight: 600; background: {border_color}12; padding: 3px 8px; border-radius: 6px; border: 1px solid {border_color}25;">{sub}</span>
+            </div>
         </div>
         """
     html += '</div>'
@@ -3723,19 +3753,19 @@ def build_app():
             
             const isDark = document.documentElement.classList.contains('dark') || document.body.classList.contains('dark');
             toggle.checked = isDark;
-            label.innerHTML = isDark ? '☀️ Chế độ Sáng' : '🌙 Chế độ Tối';
+            label.innerHTML = isDark ? '🌙 Giao diện tối' : '☀️ Giao diện sáng';
             
             toggle.addEventListener('change', function() {
                 if (toggle.checked) {
                     document.documentElement.classList.add('dark');
                     document.body.classList.add('dark');
                     localStorage.setItem('theme', 'dark');
-                    label.innerHTML = '☀️ Chế độ Sáng';
+                    label.innerHTML = '🌙 Giao diện tối';
                 } else {
                     document.documentElement.classList.remove('dark');
                     document.body.classList.remove('dark');
                     localStorage.setItem('theme', 'light');
-                    label.innerHTML = '🌙 Chế độ Tối';
+                    label.innerHTML = '☀️ Giao diện sáng';
                 }
             });
         }
@@ -3754,7 +3784,7 @@ def build_app():
                 theme_switch_html = gr.HTML(
                     """
                     <div class="theme-switch-wrapper" style="display: flex; align-items: center; justify-content: space-between; margin: 10px 0; padding: 5px 0; font-family: 'Inter', sans-serif;">
-                        <span id="theme-switch-text" style="font-size: 0.95rem; font-weight: 600; color: var(--text-color);">🌙 Chế độ Tối</span>
+                        <span id="theme-switch-text" style="font-size: 0.95rem; font-weight: 600; color: var(--text-color);">☀️ Giao diện sáng</span>
                         <label class="switch" style="position: relative; display: inline-block; width: 46px; height: 22px; margin: 0;">
                             <input type="checkbox" id="theme-toggle-switch" style="opacity: 0; width: 0; height: 0;">
                             <span class="slider round" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(148, 163, 184, 0.3); transition: .3s; border-radius: 22px;"></span>
