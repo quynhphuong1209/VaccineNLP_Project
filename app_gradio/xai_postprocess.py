@@ -26,12 +26,9 @@ import unicodedata
 from typing import Any, Dict, Optional, Tuple
 
 
-# Bảng nhãn — KHỚP CHÍNH XÁC với LABEL_MAPS trong app.py
-LABEL_MAPS = {
-    "misinfo":   {0: "Tin giả",  1: "Tin thật"},
-    "stance":    {0: "Ủng hộ",   1: "Phản đối", 2: "Trung lập"},
-    "sentiment": {0: "Tiêu cực", 1: "Trung tính", 2: "Tích cực"},
-}
+# Bảng nhãn — nguồn duy nhất: shared_styles.py
+from shared_styles import LABEL_MAPS
+
 
 # Marker cấu trúc đầu ra Gemma
 _RESULT_MARK = "=== KẾT QUẢ ==="
