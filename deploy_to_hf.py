@@ -1,5 +1,10 @@
 import os
+import sys
 from huggingface_hub import HfApi
+
+# Reconfigure stdout to support UTF-8 on Windows terminal
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
 
 TOKEN = os.environ.get("HF_TOKEN") or os.environ.get("VaccineNLP_TOKEN")
 REPO_ID = "quynhphuong1209/VaccineNLP_demo"
