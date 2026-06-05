@@ -2271,6 +2271,28 @@ h4 { font-size: 1.18rem !important; font-weight: 600 !important; }
 h5, h6 { font-size: 1.06rem !important; font-weight: 600 !important; }
 label { font-size: 1.02rem !important; font-weight: 500 !important; }
 
+/* ===== REMOVE GRADIO LABEL BADGES ===== */
+.gradio-container .block-label,
+.gradio-container [data-testid="block-label"],
+.gradio-container label span,
+.gradio-container label > span {
+    background: transparent !important;
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: var(--text-color) !important;
+    padding: 0 !important;
+    margin: 0 0 6px 0 !important;
+    font-weight: 600 !important;
+    font-size: 0.92rem !important;
+}
+.dark .gradio-container .block-label,
+.dark .gradio-container [data-testid="block-label"],
+.dark .gradio-container label span,
+.dark .gradio-container label > span {
+    color: var(--text-color) !important;
+}
+
 /* ===== SCROLLBAR ===== */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
