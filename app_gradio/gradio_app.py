@@ -2887,26 +2887,42 @@ footer, .gradio-container > footer { display: none !important; height: 0 !import
     padding: 15px 0 !important;
 }
 
-/* ===== SHRINK DROPDOWNS IN SIDEBAR ===== */
-#sidebar-col .gradio-dropdown,
-#sidebar-col .select-wrap {
-    font-size: 0.85rem !important;
+/* ===== REMOVE BORDERS AND BACKGROUNDS FROM GRADIO MARKDOWN BLOCKS ===== */
+.gradio-markdown.block, .gradio-markdown, .prose {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 8px 0 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
 }
-#sidebar-col .select-wrap input,
-#sidebar-col .select-wrap .token,
-#sidebar-col .select-wrap .single-select,
-#sidebar-col .select-wrap .item {
-    font-size: 0.85rem !important;
+
+/* ===== COMPACT DROPDOWNS & SELECTION BOXES ===== */
+.gradio-dropdown, .select-wrap {
+    min-height: 28px !important;
+    font-size: 0.82rem !important;
+}
+.select-wrap input,
+.select-wrap .token,
+.select-wrap .single-select,
+.select-wrap .item,
+.select-wrap .control {
+    font-size: 0.82rem !important;
     padding-top: 2px !important;
     padding-bottom: 2px !important;
-    min-height: 28px !important;
+    min-height: 26px !important;
 }
-#sidebar-col .select-wrap ul.options {
-    font-size: 0.85rem !important;
-}
-#sidebar-col .select-wrap ul.options li.item {
-    padding: 4px 8px !important;
-    font-size: 0.85rem !important;
+.gradio-container .options .option,
+.gradio-container .options .item,
+.gradio-container .select-options .option,
+.gradio-container .select-options .item,
+.gradio-container .dropdown-menu .option,
+.gradio-container .dropdown-menu .item {
+    padding: 5px 10px !important;
+    font-size: 0.82rem !important;
+    margin: 2px 0 !important;
+    line-height: 1.25 !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
