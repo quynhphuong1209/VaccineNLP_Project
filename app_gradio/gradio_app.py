@@ -2887,8 +2887,9 @@ footer, .gradio-container > footer { display: none !important; height: 0 !import
     padding: 15px 0 !important;
 }
 
-/* ===== REMOVE BORDERS AND BACKGROUNDS FROM GRADIO MARKDOWN BLOCKS ===== */
-.gradio-markdown.block, .gradio-markdown, .prose {
+/* ===== REMOVE BORDERS AND BACKGROUNDS FROM GRADIO MARKDOWN & HTML BLOCKS ===== */
+.type-markdown, .block:has(.prose), .block:has(.gradio-markdown),
+.type-html, .gradio-html, .gradio-html.block {
     background: transparent !important;
     border: none !important;
     box-shadow: none !important;
