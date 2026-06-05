@@ -25,9 +25,10 @@ import re
 import unicodedata
 from typing import Any, Dict, Optional, Tuple
 
+
 # Bảng nhãn — KHỚP CHÍNH XÁC với LABEL_MAPS trong app.py
 LABEL_MAPS = {
-    "misinfo":   {0: "Tin giả",  1: "Chính xác"},
+    "misinfo":   {0: "Tin giả",  1: "Tin thật"},
     "stance":    {0: "Ủng hộ",   1: "Phản đối", 2: "Trung lập"},
     "sentiment": {0: "Tiêu cực", 1: "Trung tính", 2: "Tích cực"},
 }
@@ -44,7 +45,7 @@ _SPECIAL_TOKENS = ["<end_of_turn>", "<start_of_turn>", "<|turn|>", "<|turn>",
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _normalize_label(s: str) -> str:
-    """'Chính xác' / 'Chinh xac' → 'chinh xac' (bỏ dấu + lowercase + gọn space)."""
+    """'Tin thật' / 'Chính xác' → 'tin that' (bỏ dấu + lowercase + gọn space)."""
     s = unicodedata.normalize("NFD", s or "")
     s = "".join(c for c in s if unicodedata.category(c) != "Mn")
     s = s.replace("đ", "d").replace("Đ", "D")
@@ -52,7 +53,7 @@ def _normalize_label(s: str) -> str:
 
 
 # bản đồ chuỗi-chuẩn-hoá → index (khớp LABEL_MAPS)
-_MISINFO_STR2IDX = {"tin gia": 0, "chinh xac": 1}
+_MISINFO_STR2IDX = {"tin gia": 0, "chinh xac": 1, "tin that": 1}
 _STANCE_STR2IDX = {"ung ho": 0, "phan doi": 1, "trung lap": 2}
 _SENTIMENT_STR2IDX = {"tieu cuc": 0, "trung tinh": 1, "tich cuc": 2}
 

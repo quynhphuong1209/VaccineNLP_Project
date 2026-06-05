@@ -125,11 +125,13 @@ CONFIG = {
     "session_history_limit": 10,
 }
 
+
 LABEL_MAPS = {
-    "misinfo":   {0: "Tin giả",  1: "Chính xác"},
+    "misinfo":   {0: "Tin giả",  1: "Tin thật"},
     "stance":    {0: "Ủng hộ",   1: "Phản đối", 2: "Trung lập"},
     "sentiment": {0: "Tiêu cực", 1: "Trung tính", 2: "Tích cực"},
 }
+
 LABEL_ICONS = {
     "misinfo":   {0: "🚨", 1: "✅"},
     "stance":    {0: "👍", 1: "👎", 2: "🤝"},
@@ -1161,7 +1163,7 @@ def make_radar_chart(result: Dict) -> go.Figure:
         pred = result[ax]["pred"]
         cal = float(result[ax]["conf_cal"][pred]) * 100.0
         lab = LABEL_MAPS[ax][pred]
-        labels.append(f"{name}<br><b>{lab}</b>")
+        labels.append(f"{name}<br><b>{lab} ({cal:.0f}%)</b>")
         values.append(cal)
         hover.append(f"{name}: {lab}<br>Tin cậy (hiệu chuẩn): {cal:.1f}%"
                      f"<br>T={result[ax]['T']:.2f}")
@@ -1172,11 +1174,8 @@ def make_radar_chart(result: Dict) -> go.Figure:
         theta=labels + [labels[0]],
         fill="toself", line_color="#64ffda",
         fillcolor="rgba(100, 255, 218, 0.18)",   # mờ — không nhấn mạnh diện tích
-        mode="lines+markers+text",
+        mode="lines+markers",
         marker=dict(size=8, color="#64ffda"),
-        text=[f"{v:.0f}%" for v in values] + [f"{values[0]:.0f}%"],
-        textposition="top center",
-        textfont=dict(size=12),
         hovertext=hover + [hover[0]], hoverinfo="text",
         name="Độ tin cậy (hiệu chuẩn)",
     ))
@@ -1196,7 +1195,6 @@ def make_radar_chart(result: Dict) -> go.Figure:
                    font=dict(size=11, color="#8899aa"), x=0.5, xanchor="center"),
     )
     return fig
-
 
 def make_probability_distribution_chart(result: Dict) -> go.Figure:
     """Biểu đồ cột PHÂN PHỐI XÁC SUẤT đầy đủ (đã hiệu chuẩn) cho 3 tác vụ.
@@ -1298,7 +1296,7 @@ def make_per_class_chart(task: str = "misinfo") -> go.Figure:
     colors = ["#64ffda", "#007bff", "#FFA500"]
     
     if task == "misinfo":
-        class_labels = ["Tin giả", "Chính xác"]
+        class_labels = ["Tin giả", "Tin thật"]
         pc_key = "per_class_misinfo"
         support_key = "support_misinfo"
     elif task == "stance":
@@ -1365,19 +1363,88 @@ def make_sankey_chart() -> go.Figure:
 # ============================================================================
 # SESSION HISTORY (Fixed: now updates correctly)
 # ============================================================================
-
-def session_history_to_markdown(history: List) -> str:
-    """Render session history as markdown table."""
+def session_history_to_html(history: List) -> str:
+    """Render session history as a premium styled HTML table."""
+    import html
     if not history:
-        return "*Chưa có lượt phân tích nào trong phiên này*"
-    md = "### 📜 10 Lượt phân tích gần nhất\n\n"
-    md += "| ⏱️ Thời gian | 📝 Văn bản | 🦠 Misinfo | 🎯 Stance | 💭 Sentiment |\n"
-    md += "|---|---|---|---|---|\n"
+        return "<div style='color: var(--card-text-muted); font-style: italic; padding: 10px 0;'>*Chưa có lượt phân tích nào trong phiên này*</div>"
+    
+    table_html = """
+    <div class="recent-history-container" style="margin-top: 25px; overflow-x: auto; border-radius: 12px; border: 1px solid var(--card-border); background: var(--card-bg); box-shadow: 0 10px 30px var(--shadow-color);">
+        <div style="padding: 16px 20px; border-bottom: 1px solid var(--card-border); display: flex; align-items: center; gap: 10px; background: rgba(0, 212, 170, 0.04);">
+            <span style="font-size: 1.3rem;">📜</span>
+            <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: var(--accent-bright);">10 Lượt phân tích gần nhất</h3>
+        </div>
+        <table class="recent-history-table" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem;">
+            <thead>
+                <tr style="border-bottom: 1px solid var(--card-border); background: rgba(0, 0, 0, 0.12);">
+                    <th style="padding: 14px 18px; font-weight: 600; color: var(--card-text-primary); width: 100px;">⏱️ Thời gian</th>
+                    <th style="padding: 14px 18px; font-weight: 600; color: var(--card-text-primary);">📝 Văn bản</th>
+                    <th style="padding: 14px 18px; font-weight: 600; color: var(--card-text-primary); text-align: center; width: 120px;">🦠 Misinfo</th>
+                    <th style="padding: 14px 18px; font-weight: 600; color: var(--card-text-primary); text-align: center; width: 120px;">🎯 Stance</th>
+                    <th style="padding: 14px 18px; font-weight: 600; color: var(--card-text-primary); text-align: center; width: 120px;">💭 Sentiment</th>
+                </tr>
+            </thead>
+            <tbody>
+    """
+    
     for h in history:
-        # Sanitize newlines and pipe characters which break markdown tables
-        text_clean = h['text'].replace('\n', ' ').replace('\r', ' ').replace('|', '&#124;')
-        md += f"| {h['timestamp']} | {text_clean} | {h['misinfo']} | {h['stance']} | {h['sentiment']} |\n"
-    return md
+        text_clean = html.escape(h['text'])
+        misinfo_val = h['misinfo']
+        stance_val = h['stance']
+        sentiment_val = h['sentiment']
+        
+        # Color mapping for misinformation
+        if "Tin giả" in misinfo_val:
+            misinfo_badge = '<span class="hist-badge" style="background: rgba(255, 75, 75, 0.15); color: #ff4b4b; border: 1px solid rgba(255, 75, 75, 0.3); padding: 4px 10px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; display: inline-block;">' + misinfo_val + '</span>'
+        elif "Tin thật" in misinfo_val:
+            misinfo_badge = '<span class="hist-badge" style="background: rgba(0, 200, 83, 0.15); color: #00c853; border: 1px solid rgba(0, 200, 83, 0.3); padding: 4px 10px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; display: inline-block;">' + misinfo_val + '</span>'
+        else:
+            misinfo_badge = '<span class="hist-badge" style="background: rgba(255, 165, 0, 0.15); color: #ffa500; border: 1px solid rgba(255, 165, 0, 0.3); padding: 4px 10px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; display: inline-block;">' + misinfo_val + '</span>'
+            
+        # Color mapping for stance
+        if "Ủng hộ" in stance_val:
+            stance_badge = '<span class="hist-badge" style="background: rgba(0, 200, 83, 0.15); color: #00c853; border: 1px solid rgba(0, 200, 83, 0.3); padding: 4px 10px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; display: inline-block;">' + stance_val + '</span>'
+        elif "Phản đối" in stance_val:
+            stance_badge = '<span class="hist-badge" style="background: rgba(255, 75, 75, 0.15); color: #ff4b4b; border: 1px solid rgba(255, 75, 75, 0.3); padding: 4px 10px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; display: inline-block;">' + stance_val + '</span>'
+        else:
+            stance_badge = '<span class="hist-badge" style="background: rgba(136, 153, 170, 0.15); color: #8899aa; border: 1px solid rgba(136, 153, 170, 0.3); padding: 4px 10px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; display: inline-block;">' + stance_val + '</span>'
+            
+        # Color mapping for sentiment
+        if "Tích cực" in sentiment_val:
+            sentiment_badge = '<span class="hist-badge" style="background: rgba(0, 200, 83, 0.15); color: #00c853; border: 1px solid rgba(0, 200, 83, 0.3); padding: 4px 10px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; display: inline-block;">' + sentiment_val + '</span>'
+        elif "Tiêu cực" in sentiment_val:
+            sentiment_badge = '<span class="hist-badge" style="background: rgba(255, 75, 75, 0.15); color: #ff4b4b; border: 1px solid rgba(255, 75, 75, 0.3); padding: 4px 10px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; display: inline-block;">' + sentiment_val + '</span>'
+        else:
+            sentiment_badge = '<span class="hist-badge" style="background: rgba(136, 153, 170, 0.15); color: #8899aa; border: 1px solid rgba(136, 153, 170, 0.3); padding: 4px 10px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; display: inline-block;">' + sentiment_val + '</span>'
+
+        table_html += f"""
+                <tr class="hist-row" style="border-bottom: 1px solid rgba(136, 153, 170, 0.1); transition: background-color 0.2s ease;">
+                    <td style="padding: 12px 18px; color: var(--card-text-muted); font-size: 0.9rem;">{h['timestamp']}</td>
+                    <td style="padding: 12px 18px; color: var(--card-text-secondary); max-width: 400px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{text_clean}">{text_clean}</td>
+                    <td style="padding: 12px 18px; text-align: center;">{misinfo_badge}</td>
+                    <td style="padding: 12px 18px; text-align: center;">{stance_badge}</td>
+                    <td style="padding: 12px 18px; text-align: center;">{sentiment_badge}</td>
+                </tr>
+        """
+        
+    table_html += """
+            </tbody>
+        </table>
+    </div>
+    <style>
+        .hist-row:hover {
+            background-color: rgba(0, 212, 170, 0.04) !important;
+        }
+        .dark .recent-history-table thead tr {
+            background: rgba(0, 0, 0, 0.3) !important;
+        }
+        .dark .hist-row:hover {
+            background-color: rgba(0, 212, 170, 0.06) !important;
+        }
+    </style>
+    """
+    return table_html
 
 
 # ============================================================================
@@ -1412,7 +1479,7 @@ def get_huph_logo_base64():
 
 def render_result_cards_html(result: Dict, elapsed: float, model_choice: str) -> str:
     """Render premium glassmorphism HTML cards with glow progress bars."""
-    AXES = [("misinfo", "Tin giả / Xác thực"), ("stance", "Quan điểm"), ("sentiment", "Cảm xúc")]
+    AXES = [("misinfo", "Tính xác thực"), ("stance", "Quan điểm"), ("sentiment", "Cảm xúc")]
     html = '<div style="display:flex;flex-wrap:wrap;gap:18px;width:100%;margin-bottom:12px;">'
 
     for i, (axis, axis_name) in enumerate(AXES):
@@ -1533,7 +1600,7 @@ METRICS_DB = {
     "Tin giả (Misinfo = Tin giả)": {
         "support": 28, "tp": 20, "fp": 33, "fn": 8, "desc": "Nhận diện tin giả chứa thông tin sai lệch về tác dụng phụ nguy hiểm hoặc thuyết âm mưu vắc-xin."
     },
-    "Tin chính xác (Misinfo = Chính xác)": {
+    "Tin thật (Misinfo = Tin thật)": {
         "support": 158, "tp": 150, "fp": 8, "fn": 8, "desc": "Tin tức y tế chính thống, hướng dẫn tiêm chủng hoặc thông báo khoa học xác thực từ Bộ Y Tế."
     },
     "Lập trường Ủng hộ (Stance = Ủng hộ)": {
@@ -1626,7 +1693,7 @@ def handle_analyze(
     if not text or not text.strip():
         error_html = '<div style="color: #ff4b4b; font-weight: bold; font-size: 1.1rem; padding: 15px; border: 1px solid #ff4b4b; border-radius: 8px; background: rgba(255,75,75,0.1); font-family: \'Inter\', serif;">⚠️ Vui lòng nhập văn bản hoặc chọn mẫu thử!</div>'
         return (error_html, None, None, "", "", "", history,
-                session_history_to_markdown(history), "", "")
+                session_history_to_html(history), "", "")
 
     progress(0.1, desc="🔬 Đang tải mô hình...")
     start = time.time()
@@ -1638,7 +1705,7 @@ def handle_analyze(
     if not result:
         error_html = f'<div style="color: #ff4b4b; font-weight: bold; font-size: 1.1rem; padding: 15px; border: 1px solid #ff4b4b; border-radius: 8px; background: rgba(255,75,75,0.1); font-family: \'Inter\', serif;">❌ Không thể load mô hình {model_choice} — kiểm tra HF_TOKEN</div>'
         return (error_html, None, None, "", "", "", history,
-                session_history_to_markdown(history), "", "")
+                session_history_to_html(history), "", "")
 
     progress(0.5, desc="📊 Đang tính radar chart...")
     radar = make_radar_chart(result)
@@ -1660,15 +1727,16 @@ def handle_analyze(
         saliency_html = ("<p style='color:#888;'><em>💡 Bật checkbox <b>Token Attribution</b> "
                          "để xem đóng góp cấp từ (Level 1 bổ trợ — chậm hơn vài giây trên CPU)</em></p>")
 
-    # gTTS bị TÁCH khỏi luồng chính (trước đây chặn ~40s). Văn bản đọc được lưu
-    # vào state; người dùng bấm nút "Nghe" để tạo audio theo yêu cầu (lazy).
+    # gTTS tự động tạo audio và mã hóa nhúng trực tiếp vào kết quả trả về
     voice_text = strip_markdown_for_tts(reasoning) if reasoning and not reasoning.startswith("⚠️") else ""
-    audio_html = ("<p style='color:#888; font-size:0.9rem;'><em>🔊 Bấm nút "
-                  "<b>“Tạo &amp; Nghe giọng đọc”</b> bên dưới để nghe phần giải thích "
-                  "(tách riêng để kết quả hiển thị nhanh hơn).</em></p>") if voice_text else ""
+    if voice_text:
+        progress(0.9, desc="🔊 Đang tạo giọng đọc giải thích...")
+        audio_html = text_to_speech(voice_text)
+    else:
+        audio_html = ""
 
     elapsed = time.time() - start
-    logger.info(f"⏱️ Tổng handle_analyze (chưa tính TTS): {elapsed:.1f}s "
+    logger.info(f"⏱️ Tổng handle_analyze (kèm gTTS): {elapsed:.1f}s "
                 f"| predict={t_predict:.1f}s · reasoning={t_reason:.1f}s")
 
     # Generate custom HTML result cards
@@ -1689,11 +1757,11 @@ def handle_analyze(
         "sentiment": LABEL_MAPS["sentiment"][result["sentiment"]["pred"]],
     }
     history = ([entry] + (history or []))[:CONFIG["session_history_limit"]]
-    history_md = session_history_to_markdown(history)
+    history_html = session_history_to_html(history)
 
     progress(1.0, desc="✅ Hoàn tất!")
     return (summary_html, radar, prob_dist, reasoning_md, saliency_html, audio_html, history,
-            history_md, report_md, voice_text)
+            history_html, report_md, voice_text)
 
 
 def build_report_markdown(text: str, model: str, result: Dict, reasoning: str, elapsed: float) -> str:
@@ -2797,6 +2865,52 @@ footer, .gradio-container > footer { display: none !important; height: 0 !import
     max-width: 820px !important;
     line-height: 1.55 !important;
 }
+
+/* ===== REMOVE XAI TAB BOX BORDERS ===== */
+#xai-tabs {
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+#xai-tabs > div {
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+}
+#xai-tabs .tabitem {
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 15px 0 !important;
+}
+
+/* ===== SHRINK DROPDOWNS IN SIDEBAR ===== */
+#sidebar-col .gradio-dropdown,
+#sidebar-col .select-wrap {
+    font-size: 0.85rem !important;
+}
+#sidebar-col .select-wrap input,
+#sidebar-col .select-wrap .token,
+#sidebar-col .select-wrap .single-select,
+#sidebar-col .select-wrap .item {
+    font-size: 0.85rem !important;
+    padding-top: 2px !important;
+    padding-bottom: 2px !important;
+    min-height: 28px !important;
+}
+#sidebar-col .select-wrap ul.options {
+    font-size: 0.85rem !important;
+}
+#sidebar-col .select-wrap ul.options li.item {
+    padding: 4px 8px !important;
+    font-size: 0.85rem !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
 """
 
 SPEED_METRICS_HTML = """
@@ -3282,7 +3396,7 @@ def get_per_class_table_html(task_key):
         }
         
     task_labels = {
-        'misinfo': (['Tin giả', 'Chính xác'], ['#ff4b4b', '#38ef7d'], 'Nhãn phân loại'),
+        'misinfo': (['Tin giả', 'Tin thật'], ['#ff4b4b', '#38ef7d'], 'Nhãn phân loại'),
         'stance': (['Ủng hộ', 'Phản đối', 'Trung lập'], ['#38ef7d', '#ff4b4b', '#007bff'], 'Nhãn lập trường'),
         'sentiment': (['Tiêu cực', 'Trung tính', 'Tích cực'], ['#ff4b4b', '#007bff', '#38ef7d'], 'Sắc thái cảm xúc')
     }
@@ -3780,7 +3894,6 @@ def build_app():
             with gr.Column(scale=1, min_width=290, elem_id="sidebar-col"):
                 gr.HTML(get_sidebar_header_html())
                 gr.HTML("<hr style='border-color: var(--input-border); margin: 15px 0 10px 0;'>")
-                gr.HTML("<h5 style='font-family: \"Inter\", serif; font-weight: bold; margin-bottom: 8px;'>🎨 Giao diện</h5>")
                 theme_switch_html = gr.HTML(
                     """
                     <div class="theme-switch-wrapper" style="display: flex; align-items: center; justify-content: space-between; margin: 10px 0; padding: 5px 0; font-family: 'Inter', sans-serif;">
@@ -3799,7 +3912,7 @@ def build_app():
                     value="Tự nhập",
                     label="Chọn nhóm mẫu:"
                 )
-                sample_detail = gr.Radio(
+                sample_detail = gr.Dropdown(
                     choices=["Tự nhập"],
                     value="Tự nhập",
                     label="Chọn loại văn bản:",
@@ -3870,7 +3983,7 @@ def build_app():
                             with gr.Column(scale=1):
                                 gr.Markdown("### 📝 Nhập văn bản")
                                 text_input = gr.Textbox(
-                                    label="Văn bản tiếng Việt",
+                                    show_label=False,
                                     placeholder="Nhập hoặc dán văn bản về vaccine...",
                                     lines=8,
                                 )
@@ -3916,10 +4029,9 @@ def build_app():
 
                         gr.Markdown("---")
                         gr.Markdown("## 🧠 Giải thích AI (XAI 3-Layer Engine)")
-                        with gr.Tabs():
+                        with gr.Tabs(elem_id="xai-tabs"):
                             with gr.Tab("💭 Chain-of-Thought Reasoning"):
                                 reasoning_out = gr.Markdown()
-                                voice_btn = gr.Button("🔊 Tạo & Nghe giọng đọc", size="sm", variant="secondary")
                                 audio_out = gr.HTML(value="")
                             with gr.Tab("🎯 Token Attribution (Captum IG)"):
                                 saliency_out = gr.HTML(value="<p style='color:#888;'><em>💡 Bật checkbox <b>Captum IG</b> ở trên rồi nhấn Phân tích</em></p>")
@@ -3930,7 +4042,7 @@ def build_app():
                             export_file = gr.File(label="Báo cáo", visible=False)
 
                         # Session History Display
-                        history_display = gr.Markdown(value="*Chưa có lượt phân tích nào trong phiên này*")
+                        history_display = gr.HTML(value="<div style='color: var(--card-text-muted); font-style: italic; padding: 10px 0;'>*Chưa có lượt phân tích nào trong phiên này*</div>")
 
                         # Sidebar sample and model update wiring
                         sample_category.change(
@@ -3960,13 +4072,6 @@ def build_app():
                                      audio_out, session_state, history_display, report_state,
                                      tts_text_state],
                             api_name=False
-                        )
-                        # TTS lazy: bấm nút mới tạo audio (kết quả phân tích hiện ngay, không đợi gTTS)
-                        voice_btn.click(
-                            fn=handle_generate_voice,
-                            inputs=[tts_text_state],
-                            outputs=[audio_out],
-                            api_name=False,
                         )
 
                         # Export button
