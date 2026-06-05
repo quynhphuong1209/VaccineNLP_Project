@@ -85,3 +85,11 @@ app_gradio/data/
 
 # Nested project copy
 VaccineNLP_Project-feat-gradio-migration/
+
+# Excluded per user request
+Gemma_4_E4B_Self_Host_via_ngrok_colab.ipynb
+PROMPT_IDE_deploy_gradio.md
+engagement_check_utf8.txt
+deploy_to_hf.py
+tests/
+dataset_facebook-groups-scraper_*.json
