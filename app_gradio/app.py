@@ -2305,6 +2305,14 @@ label { font-size: 1.02rem !important; font-weight: 500 !important; }
     box-shadow: 0 12px 40px rgba(0,0,0,0.06), 0 0 30px rgba(0,212,170,0.03) !important;
     backdrop-filter: blur(20px) !important;
     -webkit-backdrop-filter: blur(20px) !important;
+    border-radius: 12px !important;
+    padding: 6px 0 !important;
+    
+    /* Force dropdown list to show below the dropdown component instead of above */
+    position: absolute !important;
+    top: 100% !important;
+    bottom: auto !important;
+    transform: translateY(4px) !important;
 }
 .dark .gradio-container .options,
 .dark .gradio-container .select-options,
@@ -2316,7 +2324,14 @@ label { font-size: 1.02rem !important; font-weight: 500 !important; }
 .gradio-container .select-options .option,
 .gradio-container .select-options .item,
 .gradio-container .dropdown-menu .option,
-.gradio-container .dropdown-menu .item { color: var(--text-color) !important; padding: 8px 12px !important; }
+.gradio-container .dropdown-menu .item {
+    color: var(--text-color) !important;
+    padding: 10px 14px !important;
+    margin: 4px 6px !important;
+    border-radius: 8px !important;
+    font-size: 0.94rem !important;
+    transition: all 0.15s ease !important;
+}
 .gradio-container .options .option:hover,
 .gradio-container .options .option.selected,
 .gradio-container .options .item:hover,
@@ -2324,7 +2339,10 @@ label { font-size: 1.02rem !important; font-weight: 500 !important; }
 .gradio-container .select-options .option:hover,
 .gradio-container .select-options .option.selected,
 .gradio-container .dropdown-menu .option:hover,
-.gradio-container .dropdown-menu .option.selected { background-color: var(--accent-color) !important; color: #ffffff !important; }
+.gradio-container .dropdown-menu .option.selected {
+    background-color: var(--accent-color) !important;
+    color: #ffffff !important;
+}
 .dark .gradio-container .options .option:hover,
 .dark .gradio-container .options .option.selected,
 .dark .gradio-container .options .item:hover,
@@ -2332,7 +2350,9 @@ label { font-size: 1.02rem !important; font-weight: 500 !important; }
 .dark .gradio-container .select-options .option:hover,
 .dark .gradio-container .select-options .option.selected,
 .dark .gradio-container .dropdown-menu .option:hover,
-.dark .gradio-container .dropdown-menu .option.selected { color: #030712 !important; }
+.dark .gradio-container .dropdown-menu .option.selected {
+    color: #030712 !important;
+}
 
 /* ===== TABS ===== */
 .tabs { border-bottom: 1px solid rgba(0,212,170,0.12) !important; background: transparent !important; }
@@ -2486,6 +2506,51 @@ body.dark .theme-dark-btn { background: linear-gradient(135deg, var(--accent-col
 body.dark .theme-light-btn { background-color: var(--tab-button-bg) !important; color: var(--text-color) !important; }
 body:not(.dark) .theme-light-btn { background: linear-gradient(135deg, var(--accent-color) 0%, #00b894 100%) !important; color: #ffffff !important; font-weight: bold !important; border-color: var(--accent-color) !important; }
 body:not(.dark) .theme-dark-btn { background-color: var(--tab-button-bg) !important; color: var(--text-color) !important; }
+
+/* ===== TOGGLE SWITCH ===== */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 22px;
+}
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #cbd5e1 !important; /* light gray when off */
+    transition: .4s;
+    border-radius: 34px !important;
+}
+.dark .slider {
+    background-color: #334155 !important; /* dark gray when off */
+}
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white !important;
+    transition: .4s;
+    border-radius: 50% !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
+}
+.switch input:checked + .slider {
+    background-color: #22c55e !important; /* emerald/green when on */
+}
+.switch input:checked + .slider:before {
+    transform: translateX(22px) !important;
+}
 
 /* ===== SIDEBAR LAYOUT ===== */
 #sidebar-col {
@@ -2947,12 +3012,8 @@ def get_sidebar_header_html() -> str:
         0%, 100% {{ box-shadow: 0 0 18px rgba(0,212,170,0.4), 0 0 40px rgba(0,212,170,0.15); border-color: rgba(0,212,170,0.7); }}
         50%       {{ box-shadow: 0 0 30px rgba(0,212,170,0.7), 0 0 60px rgba(0,212,170,0.28); border-color: rgba(0,255,200,0.9); }}
     }}
-    @keyframes sidebar-title-shimmer {{
-        0%   {{ background-position: -200% center; }}
-        100% {{ background-position: 200% center; }}
-    }}
     </style>
-    <div style="text-align: center; margin-bottom: 22px;">
+    <div style="text-align: center; margin-bottom: 12px;">
         <!-- Animated Logo Ring -->
         <div style="position: relative; width: 95px; height: 95px; margin: 0 auto 16px auto;">
             <div style="width: 95px; height: 95px; border-radius: 50%; border: 2.5px solid rgba(0,212,170,0.7); display: flex; align-items: center; justify-content: center; background: rgba(0,212,170,0.06); animation: sidebar-glow-pulse 3s ease-in-out infinite;">
@@ -2960,28 +3021,10 @@ def get_sidebar_header_html() -> str:
             </div>
         </div>
 
-        <!-- Gradient App Title -->
+        <!-- App Title -->
         <h2 style="margin: 0; font-size: 1.55rem; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--sidebar-title-color, var(--text-color));">
             🦠 VaccineNLP
         </h2>
-
-        <!-- Subtitle badge -->
-        <p style="margin: 10px 0 6px 0; font-size: 0.82rem; color: var(--accent-color, #00d4aa); font-weight: 600; line-height: 1.4; letter-spacing: 0.01em;">
-            Phát hiện Tin giả · Phân tích Thái độ Vaccine
-        </p>
-        <p style="margin: 0 0 14px 0; font-size: 0.75rem; color: var(--card-text-muted, #8892b0); font-style: italic; line-height: 1.3;">
-            PhoBERT-v2 · Gemma-4 E4B · XAI
-        </p>
-
-        <!-- Author Card -->
-        <div style="background: var(--card-bg, rgba(10,20,45,0.7)); border: 1px solid var(--card-border, rgba(0,212,170,0.25)); border-radius: 12px; padding: 13px; text-align: left; font-size: 0.83rem; line-height: 1.55; backdrop-filter: blur(10px);">
-            <div style="text-align: center; margin-bottom: 10px;">
-                <span style="display: inline-block; background: linear-gradient(135deg, rgba(0,212,170,0.18) 0%, rgba(0,212,170,0.08) 100%); color: var(--accent-color, #00d4aa); padding: 3px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 700; border: 1px solid var(--sidebar-border, rgba(0,212,170,0.35)); letter-spacing: 0.04em;">🎓 ĐỒ ÁN TỐT NGHIỆP HUPH 2026</span>
-            </div>
-            <div style="color: var(--text-color, #e6f1ff); margin-bottom: 3px;"><span style="color: var(--accent-color, #00d4aa); font-weight: 700;">●</span> <b>Kim Mạnh Hưng</b> <span style="color: var(--card-text-muted, #8892b0); font-size: 0.78rem;">· 2211090016</span></div>
-            <div style="color: var(--text-color, #e6f1ff); margin-bottom: 6px;"><span style="color: var(--accent-color, #00d4aa); font-weight: 700;">●</span> <b>Đinh Lê Quỳnh Phương</b> <span style="color: var(--card-text-muted, #8892b0); font-size: 0.78rem;">· 2211090031</span></div>
-            <div style="font-size: 0.76rem; color: var(--card-text-muted, #8892b0); border-top: 1px solid var(--card-border, rgba(0,212,170,0.15)); padding-top: 7px; margin-top: 3px;">👨‍🏫 GVHD: <span style="color: var(--card-text-secondary, #a8b2d8);">TS. Trần Lâm Quân</span></div>
-        </div>
     </div>
     """
 
