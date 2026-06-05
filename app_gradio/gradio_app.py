@@ -1761,7 +1761,7 @@ def handle_analyze(
 
     progress(1.0, desc="✅ Hoàn tất!")
     return (summary_html, radar, prob_dist, reasoning_md, saliency_html, audio_html, history,
-            history_html, report_md, voice_text, gr.update(visible=True))
+            history_html, report_md, voice_text, gr.update(visible=True), gr.update(visible=True))
 
 
 def build_report_markdown(text: str, model: str, result: Dict, reasoning: str, elapsed: float) -> str:
@@ -4047,19 +4047,20 @@ def build_app():
                                 prob_dist_out = gr.Plot()
 
 
-                        gr.Markdown("---")
-                        gr.Markdown("## 🧠 Giải thích AI (XAI 3-Layer Engine)")
-                        with gr.Tabs(elem_id="xai-tabs"):
-                            with gr.Tab("💭 Chain-of-Thought Reasoning"):
-                                reasoning_out = gr.Markdown()
-                                audio_out = gr.HTML(value="")
-                            with gr.Tab("🎯 Token Attribution (Captum IG)"):
-                                saliency_out = gr.HTML(value="<p style='color:#888;'><em>💡 Bật checkbox <b>Captum IG</b> ở trên rồi nhấn Phân tích</em></p>")
+                        with gr.Column(visible=False) as xai_section:
+                            gr.Markdown("---")
+                            gr.Markdown("## 🧠 Giải thích AI (XAI 3-Layer Engine)")
+                            with gr.Tabs(elem_id="xai-tabs"):
+                                with gr.Tab("💭 Chain-of-Thought Reasoning"):
+                                    reasoning_out = gr.Markdown()
+                                    audio_out = gr.HTML(value="")
+                                with gr.Tab("🎯 Token Attribution (Captum IG)"):
+                                    saliency_out = gr.HTML(value="<p style='color:#888;'><em>💡 Bật checkbox <b>Captum IG</b> ở trên rồi nhấn Phân tích</em></p>")
 
-                        # Export Report Button
-                        with gr.Row():
-                            export_btn = gr.Button("📥 Tải báo cáo phân tích (.md)", variant="secondary")
-                            export_file = gr.File(label="Báo cáo", visible=False)
+                            # Export Report Button
+                            with gr.Row():
+                                export_btn = gr.Button("📥 Tải báo cáo phân tích (.md)", variant="secondary")
+                                export_file = gr.File(label="Báo cáo", visible=False)
 
                         # Session History Display
                         history_display = gr.HTML(value="<div style='color: var(--card-text-muted); font-style: italic; padding: 10px 0;'>*Chưa có lượt phân tích nào trong phiên này*</div>")
@@ -4084,13 +4085,13 @@ def build_app():
                             api_name=False
                         )
 
-                        # Main analyze button — FIXED: now passes use_captum + returns report
+                        # Main analyze button
                         analyze_btn.click(
                             fn=handle_analyze,
                             inputs=[text_input, model_choice, use_captum_cb, session_state, thread_ctx_state],
                             outputs=[summary_out, radar_out, prob_dist_out, reasoning_out, saliency_out,
                                      audio_out, session_state, history_display, report_state,
-                                     tts_text_state, charts_row],
+                                     tts_text_state, charts_row, xai_section],
                             api_name=False
                         )
 
@@ -4123,19 +4124,25 @@ def build_app():
                         )
                         text_input.input(fn=lambda: "", outputs=[thread_ctx_state], api_name=False)
 
-                        # Batch + Compare accordions
-                        with gr.Accordion("📋 Batch Mode (phân tích nhiều mẫu cùng lúc)", open=False) as batch_accordion:
+
+                    # ================================================================
+                    # TAB 1.5: CÔNG CỤ NÂNG CAO (Batch + So sánh)
+                    # ================================================================
+                    with gr.Tab("🔧 CÔNG CỤ NÂNG CAO"):
+                        gr.Markdown("## 📋 Batch Mode & So sánh mô hình")
+
+                        with gr.Accordion("📋 Batch Mode (phân tích nhiều mẫu cùng lúc)", open=True) as batch_accordion:
                             upload_data_file = gr.File(
-                                label="📤 Nạp lại file .xlsx/.csv đã cào (cột 'Nội dung thu thập') để phân tích Batch",
+                                label="📤 Nạp lại file .xlsx/.csv đã cào (để phân tích Batch)",
                                 file_types=[".xlsx", ".csv"],
                                 visible=True,
                             )
                             batch_input = gr.Textbox(
-                                label="Mỗi mẫu ngăn cách bằng dòng chứa --- (tối đa 50). KHÔNG còn tách theo xuống dòng → đoạn văn nhiều dòng giữ nguyên là 1 mẫu.",
+                                label="Mỗi mẫu ngăn cách bằng dòng chứa --- (tối đa 50). Đoạn văn nhiều dòng giữ nguyên là 1 mẫu.",
                                 placeholder="Mẫu 1 nhiều dòng...\n---\nMẫu 2...\n---\nMẫu 3...",
                                 lines=6,
                             )
-                            batch_btn = gr.Button("🚀 Phân tích Batch")
+                            batch_btn = gr.Button("🚀 Phân tích Batch", variant="primary")
                             batch_out = gr.Markdown()
                             batch_btn.click(fn=handle_batch, inputs=[batch_input, model_choice], outputs=[batch_out], api_name=False)
 

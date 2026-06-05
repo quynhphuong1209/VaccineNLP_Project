@@ -41,6 +41,7 @@ build_app()
 │   │       ├── Hero Banner
 │   │       └── gr.Tabs()           ← 5 Tab chính
 │   │           ├── 🔍 PHÂN TÍCH VĂN BẢN
+│   │           ├── 🔧 CÔNG CỤ NÂNG CAO  ← Batch Mode + So sánh
 │   │           ├── 📊 BENCHMARK & BÁO CÁO KHOA HỌC
 │   │           ├── 📚 TÀI LIỆU & NOTEBOOKS
 │   │           └── 📜 PHƯƠNG PHÁP LUẬN
@@ -49,6 +50,8 @@ build_app()
 │
 └── Event handlers (Gradio `.change()`, `.click()`, `.submit()`)
 ```
+
+> **Thay đổi v2.1:** Batch Mode và So sánh mô hình được tách khỏi Tab 1 vào tab riêng **🔧 CÔNG CỤ NÂNG CAO** để giữ Tab 1 gọn gàng. XAI section và biểu đồ ẩn đến khi phân tích xong.
 
 ---
 
@@ -174,7 +177,7 @@ Bao gồm:
 
 ### 3. Sidebar — Các điều khiển
 
-| Thành phần | Gradio Component | Mô tả |
+| Thành phần | Gradio Component | Nội dung |
 |---|---|---|
 | Theme toggle | `gr.HTML` + JS | Light/Dark switch |
 | Mẫu thử nghiệm | `gr.Dropdown` | Chọn nhóm mẫu (5 nhóm) |
@@ -399,7 +402,64 @@ python app_gradio/app.py
 
 ## 💡 Gợi ý cải thiện
 
+---
+
+## ⚠️ Vấn đề & Rủi ro bảo trì
+
+### 1. Hai file app gần như đồng nhất
+
+`app.py` và `gradio_app.py` chứa nội dung gần như giống hệt nhau. Mọi thay đổi CSS/layout phải áp dụng song song cho cả hai:
+
+- Dễ sửa một file nhưng quên file còn lại → lệch layout giữa local và HF Spaces.
+- Khó review vì cùng logic bị nhân đôi.
+- **Giải pháp:** Tách `CSS_STYLE`, `LABEL_MAPS`, `LABEL_ICONS`, `LABEL_COLORS` vào `shared_styles.py` rồi import.
+
+### 2. CSS nhúng trong Python khó mở rộng
+
+`CSS_STYLE` là chuỗi Python ~2900 dòng. Nhược điểm:
+
+- Không lint/format được như CSS thật.
+- Khó tái sử dụng token giữa các component.
+- Ngày càng dài → khó kiểm soát.
+
+**Giải pháp:** Tách ra `styles.css`, đọc bằng `open("styles.css").read()`.
+
+### 3. Phụ thuộc selector nội bộ Gradio
+
+Dropdown override dùng `.svelte-*`, `.options`, `.select-wrap` — những class này **có thể đổi khi upgrade Gradio**.
+
+- Sau mỗi `pip install gradio --upgrade`, kiểm tra DevTools để confirm selector còn đúng không.
+- Xem bảng upgrade checklist bên dưới.
+
+### 4. Z-index rất cao
+
+| Phần tử | Z-index |
+|---|---|
+| Sidebar | `9999` |
+| Toggle button | `10001` |
+| Dropdown | `999999` |
+
+Các giá trị này giải quyết va chạm trước mắt nhưng sẽ tạo vấn đề khi thêm modal, toast, tooltip. Nên chuẩn hóa bằng CSS variables (xem mục bên dưới).
+
+### 5. Thiếu mô tả trạng thái async 2 nhịp
+
+Flow hiện tại là blocking — kết quả phân loại và XAI trả về cùng lúc. Nếu backend được tách thành 2 phase (phân loại nhanh → XAI sau), cần cập nhật:
+- Contract request/response.
+- Polling hoặc WebSocket.
+- Timeout/error state của XAI.
+- Stale request protection.
+
+### 6. Chưa có API contract
+
+Nếu frontend được tách thành SPA, cần định nghĩa:
+- Request shape: `{text, model, use_captum}`.
+- Response shape: `{misinfo, stance, sentiment, probs, xai_reasoning}`.
+- Error response: `{error_code, message}`.
+
+---
+
 ### Nếu tiếp tục dùng Gradio
+
 
 #### 1. Tách shared layout/CSS giữa `app.py` và `gradio_app.py`
 
@@ -511,3 +571,71 @@ user click → handle_analyze() [blocking]
 - [ ] Dropdown không bị crop ngoài viewport
 - [ ] Plotly charts scale đúng (width: 100%)
 - [ ] Hero title readable (`clamp(1.6rem, 3.5vw, 2.6rem)`)
+
+---
+
+### Nếu dùng tài liệu này để migration sang React / SPA
+
+Dùng tài liệu này như **inventory tính năng**, không phải spec triển khai trực tiếp. Cần thêm phần mapping:
+
+```md
+## Migration Mapping: Gradio → React
+
+| Gradio component | React component |
+|---|---|
+| Header HTML (get_header_html) | `<Header />` |
+| Sidebar controls | `<Sidebar />` |
+| gr.Tabs (5 tabs) | React Router hoặc `<Tabs />` |
+| render_result_cards_html | `<ResultCards />` |
+| LABEL_MAPS | TypeScript constants (`labels.ts`) |
+| Plotly gr.Plot (radar) | `react-plotly.js <Plot />` |
+| Plotly gr.Plot (bar) | `react-plotly.js <Plot />` |
+| CSS custom properties | CSS variables hoặc Tailwind theme |
+| gr.Markdown (reasoning_out) | `<ReactMarkdown />` |
+| gr.HTML (saliency_out) | `dangerouslySetInnerHTML` hoặc iframe |
+| gr.Dropdown | `<Select />` (react-select hoặc shadcn) |
+| gr.Textbox (multiline) | `<Textarea />` |
+| gr.File | `<FileUpload />` |
+| gr.Examples | `<ExampleList />` |
+| JS theme toggle | Zustand / Context theme state |
+| JS sidebar collapse | Zustand / Context sidebar state |
+| Gradio event handlers | API client methods (axios/fetch) |
+| gr.State | Zustand store hoặc React useState |
+| gr.Progress | React loading skeleton / toast |
+```
+
+**API contract cần định nghĩa khi tách backend:**
+
+```typescript
+// Request
+interface AnalyzeRequest {
+  text: string;
+  model: "PhoBERT-v2" | "XLM-R-v1";
+  use_captum: boolean;
+}
+
+// Response
+interface AnalyzeResponse {
+  misinfo: { pred: number; probs: number[] };
+  stance:  { pred: number; probs: number[] };
+  sentiment: { pred: number; probs: number[] };
+  xai_reasoning: string;    // Markdown
+  saliency_html?: string;   // HTML (optional, Captum)
+  elapsed_ms: number;
+}
+
+// Error
+interface ApiError {
+  error_code: string;   // "MODEL_NOT_LOADED" | "TEXT_TOO_SHORT" | "XAI_TIMEOUT" | ...
+  message: string;
+}
+```
+
+---
+
+## 📌 Kết luận
+
+`FRONTEND_DOCS.md` là tài liệu tốt cho frontend Gradio hiện có, đặc biệt về layout, CSS, tabs và charts.
+
+- **Nếu tiếp tục với Gradio:** Ưu tiên tách `shared_styles.py`, chuẩn hóa z-index, và thêm error state guards.
+- **Nếu chuyển sang React:** Dùng tài liệu này như inventory tính năng, bổ sung API contract và migration mapping ở trên.
