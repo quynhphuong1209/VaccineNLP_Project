@@ -1762,7 +1762,7 @@ def handle_analyze(
 
     progress(1.0, desc="✅ Hoàn tất!")
     return (summary_html, radar, prob_dist, reasoning_md, saliency_html, audio_html, history,
-            history_html, report_md, voice_text)
+            history_html, report_md, voice_text, gr.update(visible=True))
 
 
 def build_report_markdown(text: str, model: str, result: Dict, reasoning: str, elapsed: float) -> str:
@@ -2903,19 +2903,19 @@ footer, .gradio-container > footer { display: none !important; height: 0 !import
 /* ===== COMPACT DROPDOWNS & SELECTION BOXES ===== */
 .gradio-dropdown, .select-wrap {
     min-height: 28px !important;
-    font-size: 0.72rem !important;
+    font-size: 0.80rem !important;
 }
 .select-wrap input,
 .select-wrap .token,
 .select-wrap .single-select,
 .select-wrap .item,
 .select-wrap .control {
-    font-size: 0.72rem !important;
+    font-size: 0.80rem !important;
     padding-top: 2px !important;
     padding-bottom: 2px !important;
     min-height: 26px !important;
 }
-/* Dropdown list items: smaller text, flush to left edge */
+/* Dropdown list items: flush to left edge */
 .gradio-container .options .option,
 .gradio-container .options .item,
 .gradio-container .select-options .option,
@@ -2925,7 +2925,7 @@ footer, .gradio-container > footer { display: none !important; height: 0 !import
 ul.options > li,
 .options li {
     padding: 3px 4px 3px 6px !important;
-    font-size: 0.70rem !important;
+    font-size: 0.78rem !important;
     margin: 0 !important;
     line-height: 1.2 !important;
     white-space: nowrap !important;
@@ -4039,7 +4039,7 @@ def build_app():
                                 gr.Markdown("### 📊 Kết quả phân loại")
                                 summary_out = gr.HTML()
                                 
-                        with gr.Row():
+                        with gr.Row(visible=False) as charts_row:
                             with gr.Column(scale=1):
                                 gr.Markdown("##### Radar — độ tin cậy nhãn dự đoán")
                                 radar_out = gr.Plot()
@@ -4091,7 +4091,7 @@ def build_app():
                             inputs=[text_input, model_choice, use_captum_cb, session_state, thread_ctx_state],
                             outputs=[summary_out, radar_out, prob_dist_out, reasoning_out, saliency_out,
                                      audio_out, session_state, history_display, report_state,
-                                     tts_text_state],
+                                     tts_text_state, charts_row],
                             api_name=False
                         )
 

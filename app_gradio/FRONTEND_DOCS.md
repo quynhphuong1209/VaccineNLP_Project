@@ -394,3 +394,120 @@ python app_gradio/app.py
 3. **Nhãn phân loại:** Sửa `LABEL_MAPS` và cập nhật đồng thời tất cả hàm render HTML, biểu đồ, benchmark.
 4. **Plotly dark mode:** Khi thêm biểu đồ, luôn truyền `paper_bgcolor="rgba(0,0,0,0)"` và `plot_bgcolor="rgba(0,0,0,0)"` để tương thích CSS.
 5. **Z-index:** Sidebar = `9999`, Toggle button = `10001`, Dropdown = `999999`.
+
+---
+
+## 💡 Gợi ý cải thiện
+
+### Nếu tiếp tục dùng Gradio
+
+#### 1. Tách shared layout/CSS giữa `app.py` và `gradio_app.py`
+
+Hiện tại cả hai file chứa toàn bộ CSS giống hệt nhau (~2900 dòng CSS inline). Khi có thay đổi phải cập nhật tay cả hai — dễ gây lệch version.
+
+**Đề xuất:** Trích xuất CSS ra file riêng:
+```python
+# shared_styles.py
+CSS_STYLE = """..."""
+LABEL_MAPS = {...}
+LABEL_ICONS = {...}
+LABEL_COLORS = {...}
+```
+```python
+# app.py và gradio_app.py
+from shared_styles import CSS_STYLE, LABEL_MAPS, LABEL_ICONS, LABEL_COLORS
+```
+
+> ⚠️ Cần kiểm tra HuggingFace Spaces có nhận import relative trong cùng thư mục không (thường là có nếu `app.py` và `shared_styles.py` cùng cấp).
+
+---
+
+#### 2. Quy ước z-index
+
+Hiện tại các z-index được viết rải rác trong CSS. Nên thống nhất bằng CSS variables:
+
+```css
+:root {
+    --z-sidebar:        9999;
+    --z-sidebar-toggle: 10001;
+    --z-dropdown:       999999;
+    --z-modal:          100000;
+    --z-toast:          200000;
+}
+```
+
+---
+
+#### 3. Quy ước cập nhật CSS khi upgrade Gradio
+
+Mỗi lần Gradio ra version mới, internal class names (`svelte-*`, `.options`, `.select-wrap`…) có thể thay đổi. Checklist cần làm khi upgrade:
+
+| Bước | Hành động |
+|---|---|
+| 1 | Chạy app và mở DevTools → Inspect dropdown đang mở |
+| 2 | So sánh class names thực tế với selectors trong `CSS_STYLE` |
+| 3 | Nếu lệch → cập nhật selectors trong block `COMPACT DROPDOWNS` |
+| 4 | Kiểm tra `DROPDOWN FIX` block (z-index, animation) |
+| 5 | Kiểm tra sidebar có bị Gradio override không (`#sidebar-col`) |
+| 6 | Chạy thử cả Light và Dark mode |
+
+---
+
+#### 4. State flow cho phân tích async
+
+Luồng state hiện tại khi nhấn **Phân tích**:
+
+```
+user click → handle_analyze() [blocking]
+    │
+    ├── gr.Progress(0.1) "Đang tải mô hình..."
+    ├── load_model()         → model loaded into _CACHE
+    ├── gr.Progress(0.4) "Đang phân loại..."
+    ├── classify(text)       → result dict
+    ├── gr.Progress(0.7) "Đang giải thích AI..."
+    ├── call_xai_engine()    → reasoning_md
+    ├── gr.Progress(0.9) "Đang render..."
+    └── return (summary_html, radar, prob_dist, ..., gr.update(visible=True))
+                                                         ↑
+                                              charts_row hiện ra
+```
+
+**Vấn đề hiện tại:** `handle_analyze` là blocking — nếu model chưa load, UI bị freeze. Khi triển khai trên CPU Spaces, nên cân nhắc:
+- Dùng `gr.Request` + background thread nếu Gradio hỗ trợ.
+- Hoặc pre-load model khi khởi động app (`app.load(fn=warmup)`).
+
+---
+
+#### 5. Error states cần xử lý rõ ràng
+
+| Tình huống | Trạng thái hiện tại | Đề xuất |
+|---|---|---|
+| **Fetch URL thất bại** | Hiển thị `❌ msg` trong `fetch_status` HTML | ✅ Đã có |
+| **Model load lỗi** | Exception → UI trắng | ⚠️ Cần wrap try/except, trả về thông báo lỗi trong `summary_out` |
+| **XAI timeout** | Silently fallback | ⚠️ Nên thêm indicator "XAI không khả dụng" |
+| **Cache clear lỗi** | Hiển thị trong `clear_cache_status` | ✅ Đã có |
+| **Văn bản rỗng** | Không có guard rõ ràng | ⚠️ Nên kiểm tra `if not text.strip()` trước khi phân tích |
+| **Batch quá 50 mẫu** | Silently truncate | ⚠️ Nên cảnh báo user |
+
+---
+
+#### 6. Checklist test responsive desktop / mobile
+
+**Desktop (≥ 1280px):**
+- [ ] Sidebar hiển thị đúng 290px, sticky
+- [ ] Toggle button đúng vị trí (left: 258px khi mở, 16px khi đóng)
+- [ ] Dropdown không bị cắt bởi sidebar
+- [ ] Charts row hiện sau khi phân tích
+- [ ] Dark/Light mode chuyển đổi không bị flash
+
+**Tablet (768px – 1280px):**
+- [ ] Sidebar không che content khi đang mở
+- [ ] Tab text không bị overflow
+
+**Mobile (< 768px):**
+- [ ] Sidebar `position: fixed` — ẩn mặc định
+- [ ] Toggle button ở `left: 16px`
+- [ ] Content padding thu gọn (8px)
+- [ ] Dropdown không bị crop ngoài viewport
+- [ ] Plotly charts scale đúng (width: 100%)
+- [ ] Hero title readable (`clamp(1.6rem, 3.5vw, 2.6rem)`)
