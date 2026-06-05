@@ -2480,6 +2480,10 @@ button.secondary:hover, button.gr-button-secondary:hover {
 #sidebar-col .block, #sidebar-col .gr-block {
     background: transparent !important; border: none !important; box-shadow: none !important; padding: 0 !important;
 }
+#sidebar-col .block:focus-within {
+    z-index: 1000 !important;
+    position: relative !important;
+}
 
 /* ===== ACCORDION ===== */
 .gr-accordion { background-color: var(--accordion-bg) !important; border: 1px solid var(--input-border) !important; border-radius: 12px !important; margin-bottom: 12px !important; transition: all 0.3s ease !important; }
