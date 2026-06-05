@@ -1914,12 +1914,12 @@ def handle_fetch_url(url: str, max_comments: int) -> Tuple[str, gr.update, gr.up
 
 
 def handle_send_to_batch(batch_text_str: str) -> Tuple[str, gr.update]:
-    """Send fetched texts to batch textbox and open accordion."""
+    """Send fetched texts to batch textbox and select batch tab."""
     try:
         gr.Info("🚀 Đã sao chép toàn bộ bài viết/comments vào ô Phân tích Batch! Vui lòng cuộn xuống dưới để thực hiện phân tích hàng loạt.")
     except:
         pass
-    return batch_text_str, gr.update(open=True)
+    return batch_text_str, gr.update(selected="batch_tab")
 
 
 def handle_upload_data(file) -> Tuple[str, gr.update]:
@@ -1974,7 +1974,7 @@ def handle_upload_data(file) -> Tuple[str, gr.update]:
                     f"(từ {n_total} dòng · bỏ {n_empty} rỗng · gộp {n_dup} trùng lặp).")
         except Exception:
             pass
-        return "\n\n---\n\n".join(cleaned), gr.update(open=True)
+        return "\n\n---\n\n".join(cleaned), gr.update(selected="batch_tab")
     except Exception as e:
         logger.error(f"Upload data failed: {e}")
         try:
@@ -3369,40 +3369,41 @@ def build_app():
                     with gr.Tab("🔧 CÔNG CỤ NÂNG CAO"):
                         gr.Markdown("## 📋 Batch Mode & So sánh mô hình")
 
-                        with gr.Accordion("📋 Batch Mode (phân tích nhiều mẫu cùng lúc)", open=True) as batch_accordion:
-                            upload_data_file = gr.File(
-                                label="📤 Nạp lại file .xlsx/.csv đã cào (để phân tích Batch)",
-                                file_types=[".xlsx", ".csv"],
-                                visible=True,
-                            )
-                            batch_input = gr.Textbox(
-                                label="Mỗi mẫu ngăn cách bằng dòng chứa --- (tối đa 50). Đoạn văn nhiều dòng giữ nguyên là 1 mẫu.",
-                                placeholder="Mẫu 1 nhiều dòng...\n---\nMẫu 2...\n---\nMẫu 3...",
-                                lines=6,
-                            )
-                            batch_btn = gr.Button("🚀 Phân tích Batch", variant="primary")
-                            batch_out = gr.Markdown()
-                            batch_btn.click(fn=handle_batch, inputs=[batch_input, model_choice], outputs=[batch_out], api_name=False)
+                        with gr.Tabs() as tool_tabs:
+                            with gr.Tab("📋 Batch Mode (phân tích nhiều mẫu cùng lúc)", id="batch_tab"):
+                                upload_data_file = gr.File(
+                                    label="📤 Nạp lại file .xlsx/.csv đã cào (để phân tích Batch)",
+                                    file_types=[".xlsx", ".csv"],
+                                    visible=True,
+                                )
+                                batch_input = gr.Textbox(
+                                    label="Mỗi mẫu ngăn cách bằng dòng chứa --- (tối đa 50). Đoạn văn nhiều dòng giữ nguyên là 1 mẫu.",
+                                    placeholder="Mẫu 1 nhiều dòng...\n---\nMẫu 2...\n---\nMẫu 3...",
+                                    lines=6,
+                                )
+                                batch_btn = gr.Button("🚀 Phân tích Batch", variant="primary")
+                                batch_out = gr.Markdown()
+                                batch_btn.click(fn=handle_batch, inputs=[batch_input, model_choice], outputs=[batch_out], api_name=False)
+
+                            with gr.Tab("🔬 So sánh PhoBERT-v2 vs XLM-R-v1", id="compare_tab"):
+                                cmp_input = gr.Textbox(label="Văn bản", lines=4)
+                                cmp_btn = gr.Button("So sánh")
+                                cmp_out = gr.Markdown()
+                                cmp_btn.click(fn=handle_compare, inputs=[cmp_input], outputs=[cmp_out], api_name=False)
 
                         # Send to batch click
                         send_to_batch_btn.click(
                             fn=handle_send_to_batch,
                             inputs=[fetched_raw_state],
-                            outputs=[batch_input, batch_accordion],
+                            outputs=[batch_input, tool_tabs],
                             api_name=False
                         )
                         upload_data_file.change(
                             fn=handle_upload_data,
                             inputs=[upload_data_file],
-                            outputs=[batch_input, batch_accordion],
+                            outputs=[batch_input, tool_tabs],
                             api_name=False,
                         )
-
-                        with gr.Accordion("🔬 So sánh PhoBERT-v2 vs XLM-R-v1", open=False):
-                            cmp_input = gr.Textbox(label="Văn bản", lines=4)
-                            cmp_btn = gr.Button("So sánh")
-                            cmp_out = gr.Markdown()
-                            cmp_btn.click(fn=handle_compare, inputs=[cmp_input], outputs=[cmp_out], api_name=False)
 
                     # ================================================================
                     # TAB 2: BENCHMARK & BÁO CÁO KHOA HỌC
