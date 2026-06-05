@@ -2903,27 +2903,30 @@ footer, .gradio-container > footer { display: none !important; height: 0 !import
 /* ===== COMPACT DROPDOWNS & SELECTION BOXES ===== */
 .gradio-dropdown, .select-wrap {
     min-height: 28px !important;
-    font-size: 0.76rem !important;
+    font-size: 0.72rem !important;
 }
 .select-wrap input,
 .select-wrap .token,
 .select-wrap .single-select,
 .select-wrap .item,
 .select-wrap .control {
-    font-size: 0.76rem !important;
+    font-size: 0.72rem !important;
     padding-top: 2px !important;
     padding-bottom: 2px !important;
     min-height: 26px !important;
 }
+/* Dropdown list items: smaller text, flush to left edge */
 .gradio-container .options .option,
 .gradio-container .options .item,
 .gradio-container .select-options .option,
 .gradio-container .select-options .item,
 .gradio-container .dropdown-menu .option,
-.gradio-container .dropdown-menu .item {
-    padding: 4px 6px !important;
-    font-size: 0.76rem !important;
-    margin: 1px 0 !important;
+.gradio-container .dropdown-menu .item,
+ul.options > li,
+.options li {
+    padding: 3px 4px 3px 6px !important;
+    font-size: 0.70rem !important;
+    margin: 0 !important;
     line-height: 1.2 !important;
     white-space: nowrap !important;
     overflow: hidden !important;
@@ -4298,11 +4301,7 @@ def build_app():
                     with gr.Tab("📜 PHƯƠNG PHÁP LUẬN"):
                         gr.HTML(METHODOLOGY_HTML)
 
-                    # ================================================================
-                    # TAB 6: ĐỀ CƯƠNG
-                    # ================================================================
-                    with gr.Tab("📑 ĐỀ CƯƠNG"):
-                        gr.HTML(THESIS_HTML)
+
 
                 gr.HTML(get_footer_html())
 
