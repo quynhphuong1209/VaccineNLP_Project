@@ -2602,9 +2602,11 @@ body:not(.dark) .theme-dark-btn { background-color: var(--tab-button-bg) !import
 .dropdown-menu { background-color: var(--input-bg) !important; border: 1px solid var(--input-border) !important; }
 .reset-btn-layout { background: transparent !important; border: 1.5px solid var(--input-border) !important; color: var(--text-color) !important; transition: all 0.2s ease !important; }
 .reset-btn-layout:hover { border-color: var(--accent-color) !important; color: var(--accent-color) !important; background-color: var(--accent-bg) !important; }
-#sidebar-col .form { display: flex !important; flex-direction: column !important; gap: var(--layout-gap) !important; height: auto !important; overflow: visible !important; }
+#sidebar-col .form { display: flex !important; flex-direction: column !important; gap: 18px !important; height: auto !important; overflow: visible !important; }
 #sidebar-col .form > * { width: 100% !important; box-sizing: border-box !important; flex-shrink: 0 !important; }
-.sidebar-divider { height: 1px; background: linear-gradient(90deg, transparent 0%, rgba(0,184,148,0.2) 50%, transparent 100%) !important; margin: 18px 0 14px 0 !important; border: none !important; }
+#sidebar-col hr { margin: 28px 0 20px 0 !important; opacity: 0.85; }
+#sidebar-col h5 { margin-top: 4px !important; margin-bottom: 10px !important; }
+.sidebar-divider { height: 1px; background: linear-gradient(90deg, transparent 0%, rgba(0,184,148,0.2) 50%, transparent 100%) !important; margin: 28px 0 20px 0 !important; border: none !important; }
 .dark .sidebar-divider { background: linear-gradient(90deg, rgba(0,212,170,0) 0%, rgba(0,212,170,0.3) 50%, rgba(0,212,170,0) 100%) !important; }
 .sidebar-scroll-btn { display: none !important; }
 footer, .gradio-container > footer { display: none !important; height: 0 !important; margin: 0 !important; padding: 0 !important; }
