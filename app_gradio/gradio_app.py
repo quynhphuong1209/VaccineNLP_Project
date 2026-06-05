@@ -2456,8 +2456,21 @@ def get_sidebar_header_html() -> str:
 
 
 def get_header_html() -> str:
-    return """
+    logo_src = get_huph_logo_base64()
+    return f"""
+    <style>
+    @keyframes header-glow-pulse {{
+        0%, 100% {{ box-shadow: 0 0 18px rgba(0,212,170,0.4), 0 0 40px rgba(0,212,170,0.15); border-color: rgba(0,212,170,0.7); }}
+        50%       {{ box-shadow: 0 0 30px rgba(0,212,170,0.7), 0 0 60px rgba(0,255,200,0.9); }}
+    }}
+    </style>
     <div style="text-align: center; padding: 15px 10px 30px 10px; margin-bottom: 15px; font-family: 'Inter', sans-serif; color: var(--text-color);">
+      <!-- Animated Logo Ring in Header -->
+      <div style="position: relative; width: 95px; height: 95px; margin: 0 auto 20px auto;">
+          <div style="width: 95px; height: 95px; border-radius: 50%; border: 2.5px solid rgba(0,212,170,0.7); display: flex; align-items: center; justify-content: center; background: rgba(0,212,170,0.06); animation: header-glow-pulse 3s ease-in-out infinite;">
+              <img src="{logo_src}" style="width: 72px; height: 72px; object-fit: contain; border-radius: 50%;" alt="HUPH Logo">
+          </div>
+      </div>
       <h1 style="margin: 0; font-size: clamp(1.8rem, 4.2vw, 2.7rem); font-weight: 800; color: var(--header-text); line-height: 1.35; text-transform: uppercase; letter-spacing: 0.02em;">
         PHÁT HIỆN TIN GIẢ VÀ PHÂN TÍCH THÁI ĐỘ VỀ VACCINE TẠI VIỆT NAM 💉
       </h1>
