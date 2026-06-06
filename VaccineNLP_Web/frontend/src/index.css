@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', Arial, Helvetica, sans-serif;
+}
+
+html {
+  font-size: 18px; /* Giảm nhỏ hơn tí so với 21px để nhìn vừa mắt hơn */
+}
+
+body {
+  background-color: #0b0f19;
+  background-image: linear-gradient(160deg, #0b0f19 0%, #0f172a 40%, #0b0f19 100%);
+  background-attachment: fixed;
+  color: #ccd6f6;
+  font-family: 'Inter', Arial, Helvetica, sans-serif;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html.light body {
+  background-color: #f8f9fa !important;
+  background-image: none !important;
+  color: #0f172a !important;
+}
+
+/* Ensure all elements inherit Inter font */
+*, *::before, *::after {
+  font-family: inherit;
+}
+
+/* Fix: Light mode tab bar should be pure white with black text */
+.tab-bar-light {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+}
+
+/* Fix: Ensure inactive tabs in light mode show black text clearly */
+.tab-btn-inactive-light {
+  color: #000000 !important;
+  font-weight: 800 !important;
+}
+
+/* Fix: Input and select text always black in light mode */
+.light-mode-text {
+  color: #000000 !important;
+}

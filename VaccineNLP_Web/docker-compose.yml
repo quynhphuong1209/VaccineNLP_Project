@@ -1,0 +1,70 @@
+services:
+  db:
+    image: postgres:15
+    container_name: vaccinenlp_db
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "5432:5432"
+    mem_limit: 1g
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api_service:
+    build: ./api_service
+    container_name: vaccinenlp_api
+    restart: unless-stopped
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    mem_limit: 3g
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      - XAI_SERVICE_URL=http://xai_service:8001
+      - PHOBERT_PATH=/models/phobert_multitask.pt
+    volumes:
+      - ./api_service:/app
+      - ./models:/models:ro
+
+  xai_service:
+    build: ./xai_service
+    container_name: vaccinenlp_xai
+    restart: unless-stopped
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8001
+    ports:
+      - "8001:8001"
+    mem_limit: 6g
+    environment:
+      - GGUF_MODEL_PATH=/models/gemma-4-4b-Q4_K_M.gguf
+      - LLM_THREADS=4
+    volumes:
+      - ./xai_service:/app
+      - ./models:/models:ro
+
+  frontend:
+    build: ./frontend
+    container_name: vaccinenlp_frontend
+    ports:
+      - "5173:5173"
+    mem_limit: 1g
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - api_service
+
+volumes:
+  postgres_data:
