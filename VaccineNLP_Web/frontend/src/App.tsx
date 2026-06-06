@@ -1726,55 +1726,74 @@ Báo cáo được sinh tự động bởi Hệ thống VaccineNLP Web Platform 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   
                   {/* Kim Manh Hung resources */}
-                  <div className={`border p-4 rounded-xl space-y-3 ${isLightMode ? 'border-slate-200 bg-slate-50' : 'border-slate-800 bg-[#0a142d]/20'}`}>
-                    <h4 className={`font-semibold border-b pb-1.5 text-sm ${isLightMode ? 'text-slate-900 border-slate-200' : 'text-slate-200 border-slate-850'}`}>
+                  <div className={`border p-5 rounded-xl space-y-4 ${isLightMode ? 'border-slate-200 bg-slate-50' : 'border-slate-800 bg-[#0a142d]/20'}`}>
+                    <h4 className={`font-extrabold border-b pb-1.5 text-base ${isLightMode ? 'text-slate-900 border-slate-200' : 'text-slate-200 border-slate-850'}`}>
                       👨‍💻 1. Kim Mạnh Hưng (MSSV: 2211090016)
                     </h4>
-                    <div className="space-y-2">
-                      <p className={`font-semibold text-xs ${isLightMode ? 'text-slate-700' : 'text-purple-400'}`}>Kaggle Notebooks:</p>
-                      <ul className={`list-none pl-0 space-y-1.5 ${isLightMode ? 'text-slate-800 font-semibold' : 'text-slate-400'}`}>
-                        <li>• <a href="https://www.kaggle.com/code/kimmnhhng/vaccinenlp-phobert-v2-multitask" target="_blank" className="text-[#00b894] hover:underline font-bold">PhoBERT Multitask Classifier</a></li>
-                        <li>• <a href="https://www.kaggle.com/code/kimmnhhng/vaccinenlp-xlm-r-v1-multitask-classifier" target="_blank" className="text-[#00b894] hover:underline font-bold">XLM-R Multitask Classifier</a></li>
-                        <li>• <a href="https://www.kaggle.com/code/kimmnhhng/vaccinenlp-gemma-4-training" target="_blank" className="text-[#00b894] hover:underline font-bold">Gemma QLoRA Training</a></li>
-                        <li>• <a href="https://www.kaggle.com/code/kimmnhhng/vaccinenlp-model-benchmark-report" target="_blank" className="text-[#00b894] hover:underline font-bold">Model Benchmark Report</a></li>
-                      </ul>
+                    
+                    <div className="space-y-3">
+                      <div>
+                        <p className={`font-extrabold text-xs mb-1 uppercase tracking-wider ${isLightMode ? 'text-slate-700' : 'text-purple-400'}`}>📘 I. KAGGLE NOTEBOOKS:</p>
+                        <ul className={`list-none pl-0 space-y-1 ${isLightMode ? 'text-slate-800 font-semibold' : 'text-slate-400'}`}>
+                          <li>• <a href="https://www.kaggle.com/code/kimmnhhng/vaccinenlp-phobert-v2-multitask" target="_blank" className="text-[#00b894] hover:underline font-bold">PhoBERT Multitask Classifier</a></li>
+                          <li>• <a href="https://www.kaggle.com/code/kimmnhhng/vaccinenlp-xlm-r-v1-multitask-classifier" target="_blank" className="text-[#00b894] hover:underline font-bold">XLM-R Multitask Classifier</a></li>
+                          <li>• <a href="https://www.kaggle.com/code/kimmnhhng/vaccinenlp-gemma-4-training" target="_blank" className="text-[#00b894] hover:underline font-bold">Gemma QLoRA Training (03A)</a></li>
+                          <li>• <a href="https://www.kaggle.com/code/kimmnhhng/vaccinenlp-gemma-4-inference" target="_blank" className="text-[#00b894] hover:underline font-bold">Gemma XAI Inference (03B)</a></li>
+                          <li>• <a href="https://www.kaggle.com/code/kimmnhhng/vaccinenlp-model-benchmark-report" target="_blank" className="text-[#00b894] hover:underline font-bold">Model Benchmark Report (04)</a></li>
+                        </ul>
+                      </div>
+                      
+                      <div>
+                        <p className={`font-extrabold text-xs mb-1 uppercase tracking-wider ${isLightMode ? 'text-slate-700' : 'text-purple-400'}`}>🤗 II. HUGGINGFACE:</p>
+                        <ul className={`list-none pl-0 space-y-1 ${isLightMode ? 'text-slate-800 font-semibold' : 'text-slate-400'}`}>
+                          <li>• <a href="https://huggingface.co/spaces/hung2903/vaccinenlp-demo" target="_blank" className="text-[#00b894] hover:underline font-bold">Gradio Demo App Space</a></li>
+                          <li>• <a href="https://huggingface.co/hung2903/gemma-4-E4B-vaccine-xai-merged" target="_blank" className="text-[#00b894] hover:underline font-bold">Gemma GGUF Merged Model</a></li>
+                          <li>• <a href="https://huggingface.co/hung2903/phobert-vaccine-multitask" target="_blank" className="text-[#00b894] hover:underline font-bold">PhoBERT Multitask Model</a></li>
+                          <li>• <a href="https://huggingface.co/hung2903/xlmr-vaccine-multitask" target="_blank" className="text-[#00b894] hover:underline font-bold">XLM-R Multitask Model</a></li>
+                          <li>• <a href="https://huggingface.co/hung2903/gemma-4-E4B-unsloth-vaccine-xai" target="_blank" className="text-[#00b894] hover:underline font-bold">Gemma QLoRA Adapter</a></li>
+                        </ul>
+                      </div>
+
+                      <div>
+                        <p className={`font-extrabold text-xs mb-1 uppercase tracking-wider ${isLightMode ? 'text-slate-700' : 'text-purple-400'}`}>💻 III. GITHUB:</p>
+                        <ul className={`list-none pl-0 space-y-1 ${isLightMode ? 'text-slate-800 font-semibold' : 'text-slate-400'}`}>
+                          <li>• <a href="https://github.com/hwngkm/VaccineNLP-Thesis/tree/feat/gradio-migration" target="_blank" className="text-[#00b894] hover:underline font-bold">VaccineNLP Thesis Repo</a></li>
+                        </ul>
+                      </div>
                     </div>
                   </div>
 
                   {/* Dinh Le Quynh Phuong resources */}
-                  <div className={`border p-4 rounded-xl space-y-3 ${isLightMode ? 'border-slate-200 bg-slate-50' : 'border-slate-800 bg-[#0a142d]/20'}`}>
-                    <h4 className={`font-semibold border-b pb-1.5 text-sm ${isLightMode ? 'text-slate-900 border-slate-200' : 'text-slate-200 border-slate-855'}`}>
+                  <div className={`border p-5 rounded-xl space-y-4 ${isLightMode ? 'border-slate-200 bg-slate-50' : 'border-slate-800 bg-[#0a142d]/20'}`}>
+                    <h4 className={`font-extrabold border-b pb-1.5 text-base ${isLightMode ? 'text-slate-900 border-slate-200' : 'text-slate-200 border-slate-855'}`}>
                       👩‍💻 2. Đinh Lê Quỳnh Phương (MSSV: 2211090031)
                     </h4>
-                    <div className="space-y-2">
-                      <p className={`font-semibold text-xs ${isLightMode ? 'text-slate-700' : 'text-purple-400'}`}>Kaggle &amp; GitHub:</p>
-                      <ul className={`list-none pl-0 space-y-1.5 ${isLightMode ? 'text-slate-800 font-semibold' : 'text-slate-400'}`}>
-                        <li>• <a href="https://www.kaggle.com/code/inhlqunhphng/vaccinenlp-phobert-v2-multitask-classifier" target="_blank" className="text-[#00b894] hover:underline font-bold">PhoBERT Classifier Page</a></li>
-                        <li>• <a href="https://www.kaggle.com/code/inhlqunhphng/vaccinenlp-gemma-4-inference" target="_blank" className="text-[#00b894] hover:underline font-bold">Gemma XAI Inference Notebook</a></li>
-                        <li>• <a href="https://github.com/quynhphuong1209/VaccineNLP_Project" target="_blank" className="text-[#00b894] hover:underline font-bold">VaccineNLP GitHub Repository</a></li>
-                        <li>• <a href="https://huggingface.co/spaces/quynhphuong1209/VaccineNLP_demo" target="_blank" className="text-[#00b894] hover:underline font-bold">Gradio Spaces Live Demo</a></li>
-                      </ul>
-                    </div>
-                  </div>
-
-                  {/* Hugging Face Checkpoints */}
-                  <div className={`border p-4 rounded-xl space-y-3 md:col-span-2 ${isLightMode ? 'border-slate-200 bg-slate-50/50' : 'border-slate-800 bg-[#0a142d]/20'}`}>
-                    <h4 className={`font-bold border-b pb-1.5 text-sm flex items-center gap-1.5 ${isLightMode ? 'text-slate-900 border-slate-200' : 'text-slate-200 border-slate-850'}`}>
-                      🤗 II. HUGGINGFACE MODEL CHECKPOINTS & EXPERIMENTAL WEIGHTS
-                    </h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    
+                    <div className="space-y-3">
                       <div>
-                        <p className={`font-semibold text-xs ${isLightMode ? 'text-slate-700' : 'text-purple-400'}`}>PhoBERT & XLM-R Multitask Models:</p>
-                        <ul className={`list-none pl-0 space-y-1.5 ${isLightMode ? 'text-slate-850 font-semibold' : 'text-slate-400'}`}>
-                          <li>• <a href="https://huggingface.co/quynhphuong1209/vaccinenlp-phobert-v2" target="_blank" className="text-[#00b894] hover:underline font-bold">PhoBERT-v2 Multitask Model</a></li>
-                          <li>• <a href="https://huggingface.co/quynhphuong1209/vaccinenlp-xlm-r-v1" target="_blank" className="text-[#00b894] hover:underline font-bold">XLM-R-v1 Multitask Model</a></li>
+                        <p className={`font-extrabold text-xs mb-1 uppercase tracking-wider ${isLightMode ? 'text-slate-700' : 'text-purple-400'}`}>📘 I. KAGGLE NOTEBOOKS:</p>
+                        <ul className={`list-none pl-0 space-y-1 ${isLightMode ? 'text-slate-800 font-semibold' : 'text-slate-400'}`}>
+                          <li>• <a href="https://www.kaggle.com/code/inhlqunhphng/vaccinenlp-phobert-v2-multitask-classifier" target="_blank" className="text-[#00b894] hover:underline font-bold">PhoBERT Multitask Classifier</a></li>
+                          <li>• <a href="https://www.kaggle.com/code/inhlqunhphng/vaccinenlp-xlm-r-v1-multitask-classifier" target="_blank" className="text-[#00b894] hover:underline font-bold">XLM-R Multitask Classifier</a></li>
+                          <li>• <a href="https://www.kaggle.com/code/inhlqunhphng/vaccinenlp-gemma-4-training" target="_blank" className="text-[#00b894] hover:underline font-bold">Gemma QLoRA Training (03A)</a></li>
+                          <li>• <a href="https://www.kaggle.com/code/inhlqunhphng/vaccinenlp-gemma-4-inference" target="_blank" className="text-[#00b894] hover:underline font-bold">Gemma XAI Inference (03B)</a></li>
                         </ul>
                       </div>
+                      
                       <div>
-                        <p className={`font-semibold text-xs ${isLightMode ? 'text-slate-700' : 'text-purple-400'}`}>Gemma XAI Generative Models:</p>
-                        <ul className={`list-none pl-0 space-y-1.5 ${isLightMode ? 'text-slate-855 font-semibold' : 'text-slate-400'}`}>
-                          <li>• <a href="https://huggingface.co/quynhphuong1209/vaccinenlp-gemma-4b-qlora" target="_blank" className="text-[#00b894] hover:underline font-bold">Gemma QLoRA Adapter Checkpoint</a></li>
-                          <li>• <a href="https://huggingface.co/quynhphuong1209/vaccinenlp-gemma-4b-merged" target="_blank" className="text-[#00b894] hover:underline font-bold">Gemma-4B GGUF Merged Model</a></li>
+                        <p className={`font-extrabold text-xs mb-1 uppercase tracking-wider ${isLightMode ? 'text-slate-700' : 'text-purple-400'}`}>🤗 II. HUGGINGFACE:</p>
+                        <ul className={`list-none pl-0 space-y-1 ${isLightMode ? 'text-slate-800 font-semibold' : 'text-slate-400'}`}>
+                          <li>• <a href="https://huggingface.co/spaces/quynhphuong1209/VaccineNLP_demo" target="_blank" className="text-[#00b894] hover:underline font-bold">Gradio Demo App Space</a></li>
+                          <li>• <a href="https://huggingface.co/quynhphuong1209/phobert-multitask" target="_blank" className="text-[#00b894] hover:underline font-bold">PhoBERT Multitask Model</a></li>
+                          <li>• <a href="https://huggingface.co/quynhphuong1209/xlmr-multitask" target="_blank" className="text-[#00b894] hover:underline font-bold">XLM-R Multitask Model</a></li>
+                          <li>• <a href="https://huggingface.co/quynhphuong1209/gemma-4-E4B-unsloth-vaccine-xai" target="_blank" className="text-[#00b894] hover:underline font-bold">Gemma QLoRA Adapter</a></li>
+                        </ul>
+                      </div>
+
+                      <div>
+                        <p className={`font-extrabold text-xs mb-1 uppercase tracking-wider ${isLightMode ? 'text-slate-700' : 'text-purple-400'}`}>💻 III. GITHUB:</p>
+                        <ul className={`list-none pl-0 space-y-1 ${isLightMode ? 'text-slate-800 font-semibold' : 'text-slate-400'}`}>
+                          <li>• <a href="https://github.com/quynhphuong1209/VaccineNLP_Project/tree/feat/gradio-migration" target="_blank" className="text-[#00b894] hover:underline font-bold">VaccineNLP Project Repo</a></li>
                         </ul>
                       </div>
                     </div>
