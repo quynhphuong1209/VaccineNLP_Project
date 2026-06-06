@@ -1886,13 +1886,14 @@ Báo cáo được sinh tự động bởi Hệ thống VaccineNLP Web Platform 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-start text-sm sm:text-base leading-relaxed">
               
               {/* Footer Col 1 */}
-              <div className="text-center md:text-left space-y-3 md:border-r md:border-slate-800/50 pr-4">
-                <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center border-2 border-[#00b894] mx-auto md:mx-0 shadow-lg">
-                  <img src="/huph_logo.png" alt="HUPH Logo" className="w-16 h-16 object-contain" />
+              <div className="text-center space-y-3 md:border-r md:border-slate-800/50 pr-4 flex flex-col items-center">
+                <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center border-2 border-[#00b894] mx-auto shadow-lg relative overflow-hidden header-logo-container">
+                  <img src="/huph_logo.png" alt="HUPH Logo" className="w-16 h-16 object-contain rounded-full" />
+                  <div className="shimmer-bar w-1/2" />
                 </div>
                 <h4 className={`font-extrabold tracking-wider text-sm uppercase ${isLightMode ? 'text-slate-900' : 'text-[#ccd6f6]'}`}>Trường Đại học Y tế Công cộng</h4>
                 <p className={`text-sm ${isLightMode ? 'text-slate-800 font-semibold' : ''}`}>📍 Số 1A, Đức Thắng, Bắc Từ Liêm, Hà Nội</p>
-                <a href="https://huph.edu.vn/" target="_blank" className="text-[#00b894] hover:underline font-bold text-xs flex items-center justify-center md:justify-start gap-1">
+                <a href="https://huph.edu.vn/" target="_blank" className="text-[#00b894] hover:underline font-bold text-xs flex items-center justify-center gap-1">
                   huph.edu.vn <ExternalLink className="w-3.5 h-3.5" />
                 </a>
               </div>
