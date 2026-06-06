@@ -571,30 +571,49 @@ Báo cáo được sinh tự động bởi Hệ thống VaccineNLP Web Platform 
         <div className={`border rounded-xl p-5 flex flex-col items-center justify-center ${
           isLightMode ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/40 border-slate-850'
         }`}>
-          <span className={`text-xs font-bold mb-3 uppercase tracking-wider ${isLightMode ? 'text-slate-800' : 'text-slate-400'}`}>
-            📐 Radar — Độ tin cậy nhãn dự đoán
+          <span className={`text-xs sm:text-sm font-extrabold mb-4 block uppercase tracking-wider ${isLightMode ? 'text-slate-800' : 'text-slate-400'}`}>
+            📐 RADAR — ĐỘ TIN CẬY NHÃN DỰ ĐOÁN
           </span>
           <svg width="280" height="260" viewBox="0 0 300 280" className="overflow-visible">
-            {/* Grid circles */}
+            {/* Grid circles (3 concentric rings matching the HF space demo) */}
             <circle cx="150" cy="150" r="100" fill="none" stroke={isLightMode ? '#cbd5e1' : '#2a3347'} strokeWidth="1" strokeDasharray="3,3" />
-            <circle cx="150" cy="150" r="75" fill="none" stroke={isLightMode ? '#cbd5e1' : '#2a3347'} strokeWidth="1" strokeDasharray="3,3" />
-            <circle cx="150" cy="150" r="50" fill="none" stroke={isLightMode ? '#cbd5e1' : '#2a3347'} strokeWidth="1" strokeDasharray="3,3" />
-            <circle cx="150" cy="150" r="25" fill="none" stroke={isLightMode ? '#cbd5e1' : '#2a3347'} strokeWidth="1" strokeDasharray="3,3" />
+            <circle cx="150" cy="150" r="66" fill="none" stroke={isLightMode ? '#cbd5e1' : '#2a3347'} strokeWidth="1" strokeDasharray="3,3" />
+            <circle cx="150" cy="150" r="33" fill="none" stroke={isLightMode ? '#cbd5e1' : '#2a3347'} strokeWidth="1" strokeDasharray="3,3" />
             
-            {/* Axis grid lines */}
-            <line x1="150" y1="150" x2="150" y2="40" stroke={isLightMode ? '#94a3b8' : '#3d4a66'} strokeWidth="1.5" />
-            <line x1="150" y1="150" x2={150 + 110 * Math.cos(Math.PI / 6)} y2={150 + 110 * Math.sin(Math.PI / 6)} stroke={isLightMode ? '#94a3b8' : '#3d4a66'} strokeWidth="1.5" />
-            <line x1="150" y1="150" x2={150 + 110 * Math.cos(5 * Math.PI / 6)} y2={150 + 110 * Math.sin(5 * Math.PI / 6)} stroke={isLightMode ? '#94a3b8' : '#3d4a66'} strokeWidth="1.5" />
+            {/* Axis grid lines (Ending exactly at the outer circle r=100) */}
+            <line x1="150" y1="150" x2="150" y2="50" stroke={isLightMode ? '#94a3b8' : '#3d4a66'} strokeWidth="1.5" />
+            <line x1="150" y1="150" x2={150 + 100 * Math.cos(Math.PI / 6)} y2={150 + 100 * Math.sin(Math.PI / 6)} stroke={isLightMode ? '#94a3b8' : '#3d4a66'} strokeWidth="1.5" />
+            <line x1="150" y1="150" x2={150 + 100 * Math.cos(5 * Math.PI / 6)} y2={150 + 100 * Math.sin(5 * Math.PI / 6)} stroke={isLightMode ? '#94a3b8' : '#3d4a66'} strokeWidth="1.5" />
             
-            {/* Labels */}
-            <text x="150" y="25" textAnchor="middle" fill={isLightMode ? '#007d58' : '#00b894'} className="text-sm font-black font-sans">
-              Tính xác thực ({res.misinfo_label === 'Fake' ? 'Tin giả' : 'Chính xác'} - {Math.round(res.misinfo_score * 100)}%)
+            {/* Labels (Bold, crisp sans-serif with proper vertical alignment next to the vertices) */}
+            <text 
+              x="150" 
+              y="25" 
+              textAnchor="middle" 
+              fill={isLightMode ? '#007d58' : '#00b894'} 
+              style={{ fontSize: '13.5px', fontWeight: 800, fontFamily: 'Inter, system-ui, sans-serif' }}
+            >
+              Tính xác thực ({res.misinfo_label === 'Fake' ? 'Tin giả' : 'Chính xác'})
             </text>
-            <text x={160 + 100 * Math.cos(Math.PI / 6)} y={150 + 100 * Math.sin(Math.PI / 6)} textAnchor="start" fill={isLightMode ? '#005ea5' : '#0984e3'} className="text-sm font-black font-sans">
-              Lập trường ({res.stance_label === 'Favor' ? 'Ủng hộ' : res.stance_label === 'Against' ? 'Phản đối' : 'Trung lập'} - {Math.round(res.stance_score * 100)}%)
+            <text 
+              x={160 + 100 * Math.cos(Math.PI / 6)} 
+              y={150 + 100 * Math.sin(Math.PI / 6)} 
+              textAnchor="start" 
+              dominantBaseline="middle"
+              fill={isLightMode ? '#005ea5' : '#0984e3'} 
+              style={{ fontSize: '13.5px', fontWeight: 800, fontFamily: 'Inter, system-ui, sans-serif' }}
+            >
+              Lập trường ({res.stance_label === 'Favor' ? 'Ủng hộ' : res.stance_label === 'Against' ? 'Phản đối' : 'Trung lập'})
             </text>
-            <text x={140 + 100 * Math.cos(5 * Math.PI / 6)} y={150 + 100 * Math.sin(5 * Math.PI / 6)} textAnchor="end" fill={isLightMode ? '#4f3fb5' : '#6c5ce7'} className="text-sm font-black font-sans">
-              Cảm xúc ({res.sentiment_label === 'Positive' ? 'Tích cực' : res.sentiment_label === 'Negative' ? 'Tiêu cực' : 'Trung tính'} - {Math.round(res.sentiment_score * 100)}%)
+            <text 
+              x={140 + 100 * Math.cos(5 * Math.PI / 6)} 
+              y={150 + 100 * Math.sin(5 * Math.PI / 6)} 
+              textAnchor="end" 
+              dominantBaseline="middle"
+              fill={isLightMode ? '#4f3fb5' : '#6c5ce7'} 
+              style={{ fontSize: '13.5px', fontWeight: 800, fontFamily: 'Inter, system-ui, sans-serif' }}
+            >
+              Cảm xúc ({res.sentiment_label === 'Positive' ? 'Tích cực' : res.sentiment_label === 'Negative' ? 'Tiêu cực' : 'Trung tính'})
             </text>
 
             {/* Filled polygon */}
@@ -604,17 +623,6 @@ Báo cáo được sinh tự động bởi Hệ thống VaccineNLP Web Platform 
             <circle cx="150" cy={my} r="5.5" fill="#00b894" />
             <circle cx={stx} cy={sty} r="5.5" fill="#0984e3" />
             <circle cx={sex} cy={sey} r="5.5" fill="#6c5ce7" />
-
-            {/* Numerical annotations next to dots */}
-            <text x="162" y={my + 4} fill={isLightMode ? '#007d58' : '#00b894'} className="text-[10px] font-black font-sans">
-              {Math.round(res.misinfo_score * 100)}%
-            </text>
-            <text x={stx + 10} y={sty + 4} fill={isLightMode ? '#005ea5' : '#0984e3'} className="text-[10px] font-black font-sans">
-              {Math.round(res.stance_score * 100)}%
-            </text>
-            <text x={sex - 32} y={sey + 4} fill={isLightMode ? '#4f3fb5' : '#6c5ce7'} className="text-[10px] font-black font-sans">
-              {Math.round(res.sentiment_score * 100)}%
-            </text>
           </svg>
         </div>
 
