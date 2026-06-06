@@ -588,13 +588,13 @@ Báo cáo được sinh tự động bởi Hệ thống VaccineNLP Web Platform 
             
             {/* Labels */}
             <text x="150" y="25" textAnchor="middle" fill={isLightMode ? '#007d58' : '#00b894'} className="text-sm font-black font-sans">
-              Tính xác thực ({res.misinfo_label === 'Fake' ? 'Tin giả' : 'Chính xác'})
+              Tính xác thực ({res.misinfo_label === 'Fake' ? 'Tin giả' : 'Chính xác'} - {Math.round(res.misinfo_score * 100)}%)
             </text>
             <text x={160 + 100 * Math.cos(Math.PI / 6)} y={150 + 100 * Math.sin(Math.PI / 6)} textAnchor="start" fill={isLightMode ? '#005ea5' : '#0984e3'} className="text-sm font-black font-sans">
-              Lập trường ({res.stance_label === 'Favor' ? 'Ủng hộ' : res.stance_label === 'Against' ? 'Phản đối' : 'Trung lập'})
+              Lập trường ({res.stance_label === 'Favor' ? 'Ủng hộ' : res.stance_label === 'Against' ? 'Phản đối' : 'Trung lập'} - {Math.round(res.stance_score * 100)}%)
             </text>
             <text x={140 + 100 * Math.cos(5 * Math.PI / 6)} y={150 + 100 * Math.sin(5 * Math.PI / 6)} textAnchor="end" fill={isLightMode ? '#4f3fb5' : '#6c5ce7'} className="text-sm font-black font-sans">
-              Cảm xúc ({res.sentiment_label === 'Positive' ? 'Tích cực' : res.sentiment_label === 'Negative' ? 'Tiêu cực' : 'Trung tính'})
+              Cảm xúc ({res.sentiment_label === 'Positive' ? 'Tích cực' : res.sentiment_label === 'Negative' ? 'Tiêu cực' : 'Trung tính'} - {Math.round(res.sentiment_score * 100)}%)
             </text>
 
             {/* Filled polygon */}
@@ -604,6 +604,17 @@ Báo cáo được sinh tự động bởi Hệ thống VaccineNLP Web Platform 
             <circle cx="150" cy={my} r="5.5" fill="#00b894" />
             <circle cx={stx} cy={sty} r="5.5" fill="#0984e3" />
             <circle cx={sex} cy={sey} r="5.5" fill="#6c5ce7" />
+
+            {/* Numerical annotations next to dots */}
+            <text x="162" y={my + 4} fill={isLightMode ? '#007d58' : '#00b894'} className="text-[10px] font-black font-sans">
+              {Math.round(res.misinfo_score * 100)}%
+            </text>
+            <text x={stx + 10} y={sty + 4} fill={isLightMode ? '#005ea5' : '#0984e3'} className="text-[10px] font-black font-sans">
+              {Math.round(res.stance_score * 100)}%
+            </text>
+            <text x={sex - 32} y={sey + 4} fill={isLightMode ? '#4f3fb5' : '#6c5ce7'} className="text-[10px] font-black font-sans">
+              {Math.round(res.sentiment_score * 100)}%
+            </text>
           </svg>
         </div>
 
@@ -1757,7 +1768,8 @@ Báo cáo được sinh tự động bởi Hệ thống VaccineNLP Web Platform 
                       <div>
                         <p className={`font-extrabold text-xs mb-1 uppercase tracking-wider ${isLightMode ? 'text-slate-700' : 'text-purple-400'}`}>💻 III. GITHUB:</p>
                         <ul className={`list-none pl-0 space-y-1 ${isLightMode ? 'text-slate-800 font-semibold' : 'text-slate-400'}`}>
-                          <li>• <a href="https://github.com/hwngkm/VaccineNLP-Thesis/tree/feat/gradio-migration" target="_blank" className="text-[#00b894] hover:underline font-bold">VaccineNLP Thesis Repo</a></li>
+                          <li>• <a href="https://github.com/hwngkm/VaccineNLP-Thesis" target="_blank" className="text-[#00b894] hover:underline font-bold">VaccineNLP Thesis Repo (Main)</a></li>
+                          <li>• <a href="https://github.com/hwngkm/VaccineNLP-Thesis/tree/feat/gradio-migration" target="_blank" className="text-[#00b894] hover:underline font-bold">VaccineNLP Thesis Branch (Gradio Migration)</a></li>
                         </ul>
                       </div>
                     </div>
@@ -1793,7 +1805,8 @@ Báo cáo được sinh tự động bởi Hệ thống VaccineNLP Web Platform 
                       <div>
                         <p className={`font-extrabold text-xs mb-1 uppercase tracking-wider ${isLightMode ? 'text-slate-700' : 'text-purple-400'}`}>💻 III. GITHUB:</p>
                         <ul className={`list-none pl-0 space-y-1 ${isLightMode ? 'text-slate-800 font-semibold' : 'text-slate-400'}`}>
-                          <li>• <a href="https://github.com/quynhphuong1209/VaccineNLP_Project/tree/feat/gradio-migration" target="_blank" className="text-[#00b894] hover:underline font-bold">VaccineNLP Project Repo</a></li>
+                          <li>• <a href="https://github.com/quynhphuong1209/VaccineNLP_Project" target="_blank" className="text-[#00b894] hover:underline font-bold">VaccineNLP Project Repo (Main)</a></li>
+                          <li>• <a href="https://github.com/quynhphuong1209/VaccineNLP_Project/tree/feat/gradio-migration" target="_blank" className="text-[#00b894] hover:underline font-bold">VaccineNLP Project Branch (Gradio Migration)</a></li>
                         </ul>
                       </div>
                     </div>
