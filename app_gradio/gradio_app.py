@@ -1466,6 +1466,31 @@ def get_huph_logo_base64():
     return "https://huph.edu.vn/uploads/logo/logo-huph.png"
 
 
+def get_data_science_logo_base64():
+    # 1. HuggingFace Space root (app.py and logo_data_science_huph.jpg in the same directory)
+    path1 = Path(__file__).resolve().parent / "logo_data_science_huph.jpg"
+    # 2. Local workspace (running from app_gradio/ directory, logo_data_science_huph.jpg is in parent directory)
+    path2 = Path(__file__).resolve().parent.parent / "logo_data_science_huph.jpg"
+    # 3. Current working directory fallback
+    path3 = Path.cwd() / "logo_data_science_huph.jpg"
+    # 4. Nested app_gradio directory fallback
+    path4 = Path.cwd() / "app_gradio" / "logo_data_science_huph.jpg"
+    
+    logo_path = None
+    for p in [path1, path2, path3, path4]:
+        if p.exists():
+            logo_path = p
+            break
+            
+    if logo_path:
+        try:
+            with open(logo_path, "rb") as f:
+                return f"data:image/jpeg;base64,{base64.b64encode(f.read()).decode()}"
+        except Exception:
+            pass
+    return ""
+
+
 def render_result_cards_html(result: Dict, elapsed: float, model_choice: str) -> str:
     """Render premium glassmorphism HTML cards with glow progress bars."""
     AXES = [("misinfo", "Tính xác thực"), ("stance", "Quan điểm"), ("sentiment", "Cảm xúc")]
@@ -2457,18 +2482,43 @@ def get_sidebar_header_html() -> str:
 
 def get_header_html() -> str:
     logo_src = get_huph_logo_base64()
+    ds_logo_src = get_data_science_logo_base64()
     return f"""
     <style>
     @keyframes header-glow-pulse {{
         0%, 100% {{ box-shadow: 0 0 18px rgba(0,212,170,0.4), 0 0 40px rgba(0,212,170,0.15); border-color: rgba(0,212,170,0.7); }}
         50%       {{ box-shadow: 0 0 30px rgba(0,212,170,0.7), 0 0 60px rgba(0,255,200,0.9); }}
     }}
+    @keyframes logo-flash-shimmer {{
+        0%, 100% {{
+            filter: brightness(1) drop-shadow(0 0 2px rgba(0, 212, 170, 0.3));
+            box-shadow: 0 0 18px rgba(0, 212, 170, 0.4), 0 0 40px rgba(0, 212, 170, 0.15);
+            border-color: rgba(0, 212, 170, 0.7);
+        }}
+        50% {{
+            filter: brightness(1.25) drop-shadow(0 0 18px rgba(0, 255, 200, 0.9));
+            box-shadow: 0 0 35px rgba(0, 255, 200, 0.9), 0 0 70px rgba(0, 255, 200, 0.45);
+            border-color: rgba(0, 255, 200, 1);
+        }}
+    }}
+    @keyframes logo-shimmer-sweep {{
+        0% {{ left: -150%; }}
+        20% {{ left: 150%; }}
+        100% {{ left: 150%; }}
+    }}
     </style>
     <div style="text-align: center; padding: 15px 10px 30px 10px; margin-bottom: 15px; font-family: 'Inter', sans-serif; color: var(--text-color);">
-      <!-- Animated Logo Ring in Header -->
-      <div style="position: relative; width: 95px; height: 95px; margin: 0 auto 20px auto;">
-          <div style="width: 95px; height: 95px; border-radius: 50%; border: 2.5px solid rgba(0,212,170,0.7); display: flex; align-items: center; justify-content: center; background: rgba(0,212,170,0.06); animation: header-glow-pulse 3s ease-in-out infinite;">
+      <!-- Animated Logo Rings in Header -->
+      <div style="display: flex; justify-content: center; align-items: center; gap: 25px; margin: 0 auto 20px auto;">
+          <!-- HUPH Logo -->
+          <div style="position: relative; width: 95px; height: 95px; border-radius: 50%; border: 2.5px solid rgba(0,212,170,0.7); display: flex; align-items: center; justify-content: center; background: rgba(0,212,170,0.06); animation: logo-flash-shimmer 3s ease-in-out infinite; overflow: hidden;">
               <img src="{logo_src}" style="width: 72px; height: 72px; object-fit: contain; border-radius: 50%;" alt="HUPH Logo">
+              <div style="position: absolute; top: 0; left: -150%; width: 50%; height: 100%; background: linear-gradient(to right, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.65) 50%, rgba(255, 255, 255, 0) 100%); transform: skewX(-25deg); animation: logo-shimmer-sweep 3s infinite;"></div>
+          </div>
+          <!-- Data Science Logo -->
+          <div style="position: relative; width: 95px; height: 95px; border-radius: 50%; border: 2.5px solid rgba(0,212,170,0.7); display: flex; align-items: center; justify-content: center; background: rgba(0,212,170,0.06); animation: logo-flash-shimmer 3s ease-in-out infinite; animation-delay: 0.5s; overflow: hidden;">
+              <img src="{ds_logo_src}" style="width: 72px; height: 72px; object-fit: contain; border-radius: 50%;" alt="Data Science HUPH Logo">
+              <div style="position: absolute; top: 0; left: -150%; width: 50%; height: 100%; background: linear-gradient(to right, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.65) 50%, rgba(255, 255, 255, 0) 100%); transform: skewX(-25deg); animation: logo-shimmer-sweep 3s infinite; animation-delay: 0.5s;"></div>
           </div>
       </div>
       <h1 style="margin: 0; font-size: clamp(1.8rem, 4.2vw, 2.7rem); font-weight: 800; color: var(--header-text); line-height: 1.35; text-transform: uppercase; letter-spacing: 0.02em;">
