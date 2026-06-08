@@ -2193,116 +2193,199 @@ body, html {
 
 /* ============ LAYOUT GRID ============ */
 #main-layout-row {
-    display: grid !important;
-    grid-template-columns: 256px 1fr !important;
+    display: block !important;
     min-height: 100vh !important;
     width: 100% !important;
     margin: 0 !important;
     gap: 0 !important;
 }
 
-@media (max-width: 1024px) {
-    #main-layout-row {
-        grid-template-columns: 1fr !important;
-    }
-}
-
-#sidebar-col {
-    background: var(--surface) !important;
-    border-right: 1px solid var(--line) !important;
-    padding: 0 !important;
-    position: sticky !important;
-    top: 0 !important;
-    height: 100vh !important;
-    overflow-y: auto !important;
-    z-index: 100 !important;
-    width: 256px !important;
-    min-width: 256px !important;
-    max-width: 256px !important;
-}
-
-@media (max-width: 1024px) {
-    #sidebar-col {
-        display: none !important;
-    }
-}
-
 #content-col {
     padding: 0 !important;
-    overflow-y: auto !important;
+    width: 100% !important;
 }
 
-/* ============ SIDEBAR REDESIGN ============ */
-.sidebar-redesign {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    padding: 22px 16px;
-    height: 100%;
+/* ============ NAVBAR REDESIGN ============ */
+.navbar-redesign {
+    background: var(--surface) !important;
+    border-bottom: 1px solid var(--line) !important;
+    padding: 12px clamp(15px, 3vw, 40px) !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 1000 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    box-shadow: var(--shadow-sm) !important;
 }
-.sidebar-redesign .brand {
+
+.navbar-redesign .brand {
     display: flex;
     align-items: center;
-    gap: 11px;
-    padding: 6px 8px 18px;
-    border-bottom: 1px solid var(--line);
-    margin-bottom: 10px;
+    gap: 10px;
 }
-.sidebar-redesign .brand .logo {
-    width: 38px;
-    height: 38px;
-    border-radius: 11px;
-    flex-shrink: 0;
+.navbar-redesign .brand .logo {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
     background: linear-gradient(150deg, var(--teal), var(--teal-strong));
     display: grid;
     place-items: center;
     color: #fff;
     box-shadow: var(--shadow-sm);
 }
-.dark .sidebar-redesign .brand .logo {
+.dark .navbar-redesign .brand .logo {
     color: #07120f;
 }
-.sidebar-redesign .brand .name {
+.navbar-redesign .brand .name {
     font-weight: 700;
-    font-size: 16px;
+    font-size: 18px;
     letter-spacing: -.2px;
-    line-height: 1.1;
     color: var(--ink);
+    line-height: 1;
 }
-.sidebar-redesign .brand .name span {
+.navbar-redesign .brand .name span {
     color: var(--teal);
 }
-.sidebar-redesign .brand .tag {
+.navbar-redesign .brand .tag {
     font-size: 11px;
     color: var(--ink-3);
     font-weight: 500;
-    margin-top: 2px;
+    margin-left: 8px;
+    padding-left: 8px;
+    border-left: 1px solid var(--line);
 }
-.sidebar-redesign .nav-group {
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: .5px;
-    text-transform: uppercase;
-    color: var(--ink-3);
-    padding: 14px 10px 6px;
+@media (max-width: 768px) {
+    .navbar-redesign .brand .tag {
+        display: none;
+    }
 }
-.sidebar-redesign .nav-item {
+
+.navbar-redesign .nav-menu {
     display: flex;
     align-items: center;
-    gap: 11px;
-    padding: 9px 11px;
+    gap: 6px;
+}
+@media (max-width: 992px) {
+    .navbar-redesign .nav-menu {
+        overflow-x: auto;
+        white-space: nowrap;
+        max-width: 50%;
+        padding-bottom: 2px;
+    }
+}
+.navbar-redesign .nav-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
     border-radius: var(--r-sm);
     color: var(--ink-2);
     font-weight: 500;
-    font-size: 14px;
+    font-size: 13.5px;
     cursor: pointer;
     border: none;
     background: none;
-    width: 100%;
-    text-align: left;
     transition: background .16s, color .16s;
     position: relative;
+    white-space: nowrap;
 }
+.navbar-redesign .nav-item .icon {
+    width: 16px;
+    height: 16px;
+}
+.navbar-redesign .nav-item:hover {
+    background: var(--bg-2);
+    color: var(--ink);
+}
+.navbar-redesign .nav-item.active {
+    background: var(--teal-50);
+    color: var(--teal-strong);
+    font-weight: 600;
+}
+
+.navbar-redesign .nav-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.navbar-redesign .status-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: var(--r-sm);
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    font-size: 11.5px;
+    color: var(--ink-2);
+    white-space: nowrap;
+}
+@media (max-width: 860px) {
+    .navbar-redesign .status-chip {
+        display: none;
+    }
+}
+.navbar-redesign .status-chip .pulse {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--teal);
+    animation: pulse 2.4s infinite;
+}
+
+.navbar-redesign .theme-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: var(--r-sm);
+    border: 1px solid var(--line);
+    background: var(--surface-2);
+    color: var(--ink-2);
+    font-size: 12.5px;
+    font-weight: 500;
+    cursor: pointer;
+}
+.navbar-redesign .theme-toggle span {
+    font-size: 11.5px;
+}
+@media (max-width: 600px) {
+    .navbar-redesign .theme-toggle span {
+        display: none;
+    }
+}
+.navbar-redesign .theme-toggle .sw {
+    width: 34px;
+    height: 18px;
+    border-radius: 20px;
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    position: relative;
+    transition: background .2s;
+}
+.navbar-redesign .theme-toggle .sw i {
+    position: absolute;
+    top: 1px;
+    left: 1px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--teal);
+    transition: transform .22s cubic-bezier(.4,1.3,.6,1);
+    display: grid;
+    place-items: center;
+    color: #fff;
+}
+.dark .navbar-redesign .theme-toggle .sw i {
+    transform: translateX(16px);
+    color: #07120f;
+}
+
 /* Global icon base — applies to every inline SVG using the .icon class.
    Without this, SVGs default to fill:black and a 300x150 intrinsic size,
    rendering as large solid black blobs (empty-states, section labels, logo). */
@@ -2319,100 +2402,6 @@ body, html {
 }
 .icon.sm { width: 16px; height: 16px; }
 .icon.lg { width: 24px; height: 24px; }
-.sidebar-redesign .nav-item .icon {
-    width: 18px;
-    height: 18px;
-    stroke: currentColor;
-    stroke-width: 1.7;
-    fill: none;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-}
-.sidebar-redesign .nav-item:hover {
-    background: var(--bg-2);
-    color: var(--ink);
-}
-.sidebar-redesign .nav-item.active {
-    background: var(--teal-50);
-    color: var(--teal-strong);
-    font-weight: 600;
-}
-.sidebar-redesign .nav-item.active::before {
-    content: "";
-    position: absolute;
-    left: -16px;
-    top: 8px;
-    bottom: 8px;
-    width: 3px;
-    border-radius: 0 3px 3px 0;
-    background: var(--teal);
-}
-.sidebar-redesign .side-foot {
-    margin-top: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-.sidebar-redesign .status-chip {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    padding: 10px 12px;
-    border-radius: var(--r-sm);
-    background: var(--surface-2);
-    border: 1px solid var(--line);
-    font-size: 12px;
-    color: var(--ink-2);
-}
-.sidebar-redesign .status-chip .pulse {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: var(--teal);
-    box-shadow: 0 0 0 0 var(--teal);
-    animation: pulse 2.4s infinite;
-}
-.sidebar-redesign .theme-toggle {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    padding: 9px 12px;
-    border-radius: var(--r-sm);
-    border: 1px solid var(--line);
-    background: var(--surface-2);
-    color: var(--ink-2);
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    width: 100%;
-}
-.sidebar-redesign .theme-toggle .sw {
-    width: 38px;
-    height: 22px;
-    border-radius: 20px;
-    background: var(--bg-2);
-    border: 1px solid var(--line);
-    position: relative;
-    transition: background .2s;
-}
-.sidebar-redesign .theme-toggle .sw i {
-    position: absolute;
-    top: 2px;
-    left: 2px;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background: var(--teal);
-    transition: transform .22s cubic-bezier(.4,1.3,.6,1);
-    display: grid;
-    place-items: center;
-    color: #fff;
-}
-.dark .sidebar-redesign .theme-toggle .sw i {
-    transform: translateX(16px);
-    color: #07120f;
-}
 
 /* Hidden buttons used for python callbacks */
 .hidden-btn {
@@ -2999,9 +2988,9 @@ def get_svg_sprite_html() -> str:
     </svg>
     """
 
-def get_sidebar_html() -> str:
+def get_navbar_html() -> str:
     return f"""
-    <div class="sidebar-redesign">
+    <div class="navbar-redesign">
         <div class="brand">
             <div class="logo">
                 <svg class="icon lg"><use href="#i-shield"></use></svg>
@@ -3012,47 +3001,41 @@ def get_sidebar_html() -> str:
             </div>
         </div>
         
-        <div class="nav-group">Phân tích</div>
-        <button id="nav-btn-analyze" class="nav-item active" onclick="clickHidden('analyze')">
-            <svg class="icon"><use href="#i-analyze"></use></svg>
-            <span>Phân tích văn bản</span>
-        </button>
-        <button id="nav-btn-advanced" class="nav-item" onclick="clickHidden('advanced')">
-            <svg class="icon"><use href="#i-advanced"></use></svg>
-            <span>Công cụ nâng cao</span>
-        </button>
+        <div class="nav-menu">
+            <button id="nav-btn-analyze" class="nav-item active" onclick="clickHidden('analyze')">
+                <svg class="icon"><use href="#i-analyze"></use></svg>
+                <span>Phân tích văn bản</span>
+            </button>
+            <button id="nav-btn-advanced" class="nav-item" onclick="clickHidden('advanced')">
+                <svg class="icon"><use href="#i-advanced"></use></svg>
+                <span>Công cụ nâng cao</span>
+            </button>
+            <button id="nav-btn-benchmark" class="nav-item" onclick="clickHidden('benchmark')">
+                <svg class="icon"><use href="#i-bench"></use></svg>
+                <span>Benchmark hiệu năng</span>
+            </button>
+            <button id="nav-btn-docs" class="nav-item" onclick="clickHidden('docs')">
+                <svg class="icon"><use href="#i-docs"></use></svg>
+                <span>Tài liệu hệ thống</span>
+            </button>
+            <button id="nav-btn-method" class="nav-item" onclick="clickHidden('method')">
+                <svg class="icon"><use href="#i-method"></use></svg>
+                <span>Phương pháp luận</span>
+            </button>
+            <button id="nav-btn-thesis" class="nav-item" onclick="clickHidden('thesis')">
+                <svg class="icon"><use href="#i-docs"></use></svg>
+                <span>Đề cương nghiên cứu</span>
+            </button>
+        </div>
         
-        <div class="nav-group">Đánh giá &amp; Tài liệu</div>
-        <button id="nav-btn-benchmark" class="nav-item" onclick="clickHidden('benchmark')">
-            <svg class="icon"><use href="#i-bench"></use></svg>
-            <span>Benchmark hiệu năng</span>
-        </button>
-        <button id="nav-btn-docs" class="nav-item" onclick="clickHidden('docs')">
-            <svg class="icon"><use href="#i-docs"></use></svg>
-            <span>Tài liệu hệ thống</span>
-        </button>
-        <button id="nav-btn-method" class="nav-item" onclick="clickHidden('method')">
-            <svg class="icon"><use href="#i-method"></use></svg>
-            <span>Phương pháp luận</span>
-        </button>
-        <button id="nav-btn-thesis" class="nav-item" onclick="clickHidden('thesis')">
-            <svg class="icon"><use href="#i-docs"></use></svg>
-            <span>Đề cương nghiên cứu</span>
-        </button>
-        
-        <div class="side-foot">
-            <div style="background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 10px; padding: 10px; margin-bottom: 12px; font-size: 0.8rem; line-height: 1.45; color: var(--text-color);">
-                <div style="font-weight: bold; font-size: 0.75rem; color: var(--accent-color); margin-bottom: 4px; text-transform: uppercase;">🎓 Đồ án tốt nghiệp 2026</div>
-                Hưng (2211090016) &amp; Phương (2211090031)<br>
-                <span style="font-size: 0.75rem; color: var(--card-text-muted);">GVHD: TS. Trần Lâm Quân</span>
-            </div>
+        <div class="nav-right">
             <div class="status-chip">
                 <span class="pulse"></span> 
                 <span>Mô hình: <b>PhoBERT-v2</b> · trực tuyến</span>
             </div>
             
             <button class="theme-toggle" onclick="toggleDarkMode()">
-                <span>Giao diện sáng / tối</span>
+                <span>Giao diện</span>
                 <span class="sw"><i><svg class="icon sm"><use href="#i-sun"></use></svg></i></span>
             </button>
         </div>
@@ -3475,7 +3458,7 @@ def build_app():
            this, the sidebar buttons' inline onclick="clickHidden(...)" reference an
            undefined function and navigation/theme toggle silently do nothing. */
         window.clickHidden = function(target) {
-            document.querySelectorAll('.sidebar-redesign .nav-item').forEach(function(el) { el.classList.remove('active'); });
+            document.querySelectorAll('.navbar-redesign .nav-item').forEach(function(el) { el.classList.remove('active'); });
             var activeBtn = document.getElementById('nav-btn-' + target);
             if (activeBtn) activeBtn.classList.add('active');
             /* In Gradio 4.x elem_id is on the <button> itself (not a wrapper). */
@@ -3658,16 +3641,16 @@ def build_app():
         btn_hidden_method = gr.Button("nav_method", elem_id="btn-hidden-method", elem_classes=["hidden-btn"])
         btn_hidden_thesis = gr.Button("nav_thesis", elem_id="btn-hidden-thesis", elem_classes=["hidden-btn"])
         
+        # Top Navbar (Full Width)
+        gr.HTML(get_navbar_html())
+        
         with gr.Row(elem_id="main-layout-row"):
-            # Left Sidebar Column (using get_sidebar_html)
-            with gr.Column(scale=1, min_width=256, elem_id="sidebar-col"):
-                gr.HTML(get_sidebar_html())
+            # Content Column
+            with gr.Column(scale=1, elem_id="content-col"):
                 # Hidden actual cache button that is triggered programmatically if needed
                 clear_cache_btn = gr.Button("🗑️ Xóa Cache & Khởi động lại", elem_classes=["hidden-btn"], size="sm")
                 clear_cache_status = gr.Markdown(value="", visible=False)
                 
-            # Right Content Column
-            with gr.Column(scale=5, elem_id="content-col"):
                 session_state = gr.State([])
                 report_state = gr.State("")
                 fetched_raw_state = gr.State("")
