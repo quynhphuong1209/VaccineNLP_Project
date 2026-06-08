@@ -30,12 +30,19 @@ graph TD
 
 ---
 
-## ⚡ Mô hình UX 2 Nhịp (2-Phase Asynchronous Flow)
+## ⚡ Mô hình UX 2 Nhịp & Chế độ Streaming (EventStream Flow)
 
-Để giải quyết vấn đề độ trễ cao khi sinh văn bản của các mô hình LLM lớn, hệ thống áp dụng luồng xử lý 2 pha:
+Để tối ưu hóa trải nghiệm người dùng trước độ trễ sinh văn bản của LLM, hệ thống hỗ trợ 2 luồng hoạt động:
 
-- **Pha 1 (Nhịp 1 - Tức thời):** Người dùng gửi văn bản -> `api_service` dùng PhoBERT-v2 phân loại trong mili-giây -> Trả về ngay 3 nhãn phân loại kèm điểm tin cậy -> Giao diện lập tức hiển thị nhãn và chuyển trạng thái XAI sang `pending`.
-- **Pha 2 (Nhịp 2 - Chạy ngầm & Polling):** `api_service` đẩy task sinh giải thích sang `xai_service` ở chế độ background -> `frontend` thực hiện tự động polling mỗi 2 giây -> Khi Gemma-4B sinh xong lời giải thích CoT, trạng thái được cập nhật thành `done` -> Frontend hiển thị đầy đủ lời giải thích lý luận và so khớp bất đồng thuận (nếu có).
+### 1. Luồng truyền thống (Asynchronous Polling Flow)
+* **Pha 1 (Nhịp 1 - Tức thời):** Người dùng gửi văn bản -> `api_service` dùng PhoBERT-v2 phân loại trong mili-giây -> Trả về ngay 3 nhãn phân loại kèm điểm tin cậy -> Giao diện lập tức hiển thị nhãn và chuyển trạng thái XAI sang `pending`.
+* **Pha 2 (Nhịp 2 - Chạy ngầm & Polling):** `api_service` đẩy task sinh giải thích sang `xai_service` ở chế độ background -> `frontend` thực hiện tự động polling mỗi 2 giây -> Khi Gemma-4B sinh xong lời giải thích CoT, trạng thái được cập nhật thành `done` -> Frontend hiển thị đầy đủ lời giải thích lý luận và so khớp bất đồng thuận.
+
+### 2. Luồng Streaming trực tiếp (EventStream Live-Token Flow - MỚI)
+* Người dùng gửi văn bản tới đầu cuối `/api/analyze-stream`.
+* Nhãn phân loại từ PhoBERT và cờ nhất quán của nhãn (`plausible` / `unusual` / `high_risk`) được trả về lập tức dưới dạng sự kiện đầu tiên (`type: "phobert"`).
+* Ngay sau đó, lời giải thích lý luận CoT từ Gemma-4B (chạy qua LM Studio trên GPU host) được stream trực tiếp tới giao diện từng token một (`type: "token"`).
+* Khi quá trình sinh kết thúc, sự kiện cuối cùng (`type: "final"`) trả về kết quả parse nhãn Gemma và bảng đối chiếu bất đồng thuận giữa PhoBERT và Gemma.
 
 ---
 
@@ -73,11 +80,15 @@ graph TD
      ```bash
      copy .env.example .env
      ```
-4. Tiến hành build và khởi chạy các containers bằng Docker Compose:
+   - Đảm bảo thêm khóa `LM_API_TOKEN` của bạn vào file `.env` (lấy từ settings LM Studio hoặc dùng token mặc định của hệ thống) để `xai_service` có thể xác thực khi gọi API của LM Studio trên host.
+4. Chạy LM Studio trên máy chủ:
+   - Đảm bảo Local Server trong LM Studio đã được bật (mặc định chạy tại cổng `1234`).
+   - Nạp mô hình `gemma-4-e4b-vaccine-xai-merged` vào bộ nhớ.
+5. Tiến hành build và khởi chạy các containers bằng Docker Compose:
    ```bash
    docker compose up --build -d
    ```
-4. Kiểm tra trạng thái các container đang chạy:
+6. Kiểm tra trạng thái các container đang chạy:
    ```bash
    docker compose ps
    ```

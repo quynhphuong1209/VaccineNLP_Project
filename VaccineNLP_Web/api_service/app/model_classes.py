@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from transformers import AutoConfig, AutoModel
+from transformers import AutoModel, AutoConfig
 
 class VaccineMultitaskModel(nn.Module):
     """
@@ -8,6 +8,7 @@ class VaccineMultitaskModel(nn.Module):
     """
     def __init__(self, model_name='vinai/phobert-base-v2', num_misinfo=2, num_stance=3, num_sentiment=3):
         super(VaccineMultitaskModel, self).__init__()
+        # Note: Using class-based numbers from taxonomy.json
         self.config = AutoConfig.from_pretrained(model_name)
         self.encoder = AutoModel.from_pretrained(model_name)
         
@@ -30,3 +31,4 @@ class VaccineMultitaskModel(nn.Module):
 
 # Alias for user-configured class name
 PhoBERTMultitaskClassifier = VaccineMultitaskModel
+

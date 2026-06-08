@@ -45,9 +45,22 @@ services:
     ports:
       - "8001:8001"
     mem_limit: 6g
+    depends_on:
+      db:
+        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    env_file:
+      - .env
     environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       - GGUF_MODEL_PATH=/models/gemma-4-4b-Q4_K_M.gguf
       - LLM_THREADS=4
+      - LMSTUDIO_URL=${LMSTUDIO_URL}
+      - LMSTUDIO_MODEL=${LMSTUDIO_MODEL}
+      - LOCAL_FALLBACK=${LOCAL_FALLBACK}
+      - XAI_BACKEND=${XAI_BACKEND}
+      - LM_API_TOKEN=${LM_API_TOKEN}
     volumes:
       - ./xai_service:/app
       - ./models:/models:ro

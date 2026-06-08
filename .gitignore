@@ -61,3 +61,12 @@ temp/*
 
 # --- Temporary & Scratch ---
 scratch/
+
+# --- Logs, DBs & Temp Files ---
+*.log
+*.db
+VaccineNLP_Web/api_service/test_output.txt
+VaccineNLP_Web/api_service/test_output_tokenized.txt
+VaccineNLP_Web/frontend/err.log
+VaccineNLP_Web/frontend/out.log
+
