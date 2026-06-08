@@ -1383,7 +1383,7 @@ def get_huph_logo_base64():
 
 def render_result_cards_html(result: Dict, elapsed: float, model_choice: str) -> str:
     """Render beautiful HTML cards with progress bars for multi-task predictions."""
-    html = '<div style="display: flex; flex-wrap: wrap; gap: 20px; width: 100%; font-family: \'Times New Roman\', Times, serif; margin-bottom: 10px;">'
+    html = '<div class="result-cards-grid" style="font-family: \'Times New Roman\', Times, serif;">'
     for axis, axis_name in [("misinfo", "Tin giả / Xác thực"), ("stance", "Quan điểm"), ("sentiment", "Cảm xúc")]:
         r = result[axis]
         pred_id = r["pred"]
@@ -1447,7 +1447,7 @@ def render_result_cards_html(result: Dict, elapsed: float, model_choice: str) ->
                 """
 
         html += f"""
-        <div class="result-card-hover" style="flex: 1; min-width: 240px; background: var(--card-bg); border: 1px solid {color}60; border-radius: 16px; padding: 22px; text-align: center; box-shadow: 0 8px 24px var(--shadow-color), 0 0 15px {color}10; backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border-bottom: 4px solid {color};">
+        <div class="result-card-hover" style="background: var(--card-bg); border: 1px solid {color}60; border-radius: 16px; padding: 22px; text-align: center; box-shadow: 0 8px 24px var(--shadow-color), 0 0 15px {color}10; backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border-bottom: 4px solid {color};">
             <div style="font-size: 40px; margin-bottom: 5px;">{icon}</div>
             <div style="font-size: 0.8rem; color: var(--card-text-muted); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 5px; font-family: 'Times New Roman', Times, serif; font-weight: 600;">{axis_name}</div>
             <div style="font-size: 1.6rem; font-weight: bold; color: {color}; margin-bottom: 8px; font-family: 'Times New Roman', Times, serif;">{label}</div>
@@ -2206,6 +2206,16 @@ body, html {
 }
 
 /* ============ NAVBAR REDESIGN ============ */
+#navbar-html-wrapper {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
 .navbar-redesign {
     background: var(--surface) !important;
     border-bottom: 1px solid var(--line) !important;
@@ -2226,6 +2236,7 @@ body, html {
     display: flex;
     align-items: center;
     gap: 10px;
+    flex-shrink: 0;
 }
 .navbar-redesign .brand .logo {
     width: 32px;
@@ -2258,30 +2269,20 @@ body, html {
     padding-left: 8px;
     border-left: 1px solid var(--line);
 }
-@media (max-width: 768px) {
-    .navbar-redesign .brand .tag {
-        display: none;
-    }
-}
 
 .navbar-redesign .nav-menu {
     display: flex;
     align-items: center;
-    gap: 6px;
-}
-@media (max-width: 992px) {
-    .navbar-redesign .nav-menu {
-        overflow-x: auto;
-        white-space: nowrap;
-        max-width: 50%;
-        padding-bottom: 2px;
-    }
+    gap: clamp(4px, 0.6vw, 10px);
+    flex-grow: 1;
+    justify-content: center;
+    margin: 0 15px;
 }
 .navbar-redesign .nav-item {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 14px;
+    padding: 8px clamp(10px, 1vw, 16px);
     border-radius: var(--r-sm);
     color: var(--ink-2);
     font-weight: 500;
@@ -2311,6 +2312,7 @@ body, html {
     display: flex;
     align-items: center;
     gap: 12px;
+    flex-shrink: 0;
 }
 
 .navbar-redesign .status-chip {
@@ -2324,11 +2326,6 @@ body, html {
     font-size: 11.5px;
     color: var(--ink-2);
     white-space: nowrap;
-}
-@media (max-width: 860px) {
-    .navbar-redesign .status-chip {
-        display: none;
-    }
 }
 .navbar-redesign .status-chip .pulse {
     width: 6px;
@@ -2353,11 +2350,6 @@ body, html {
 }
 .navbar-redesign .theme-toggle span {
     font-size: 11.5px;
-}
-@media (max-width: 600px) {
-    .navbar-redesign .theme-toggle span {
-        display: none;
-    }
 }
 .navbar-redesign .theme-toggle .sw {
     width: 34px;
@@ -2386,6 +2378,48 @@ body, html {
     color: #07120f;
 }
 
+/* Responsive Navbar */
+@media (max-width: 1024px) {
+    .navbar-redesign {
+        flex-wrap: wrap !important;
+        padding: 10px 20px !important;
+        gap: 10px !important;
+    }
+    .navbar-redesign .brand {
+        order: 1 !important;
+    }
+    .navbar-redesign .nav-right {
+        order: 2 !important;
+    }
+    .navbar-redesign .nav-menu {
+        order: 3 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 5px 0 0 0 !important;
+        justify-content: flex-start !important;
+        overflow-x: auto !important;
+        white-space: nowrap !important;
+        gap: 6px !important;
+        padding: 4px 0 !important;
+        scrollbar-width: none !important; /* Firefox */
+        -webkit-overflow-scrolling: touch !important;
+    }
+    .navbar-redesign .nav-menu::-webkit-scrollbar {
+        display: none !important; /* Chrome, Safari, Opera */
+    }
+    .navbar-redesign .brand .tag {
+        display: none !important;
+    }
+}
+@media (max-width: 600px) {
+    .navbar-redesign .theme-toggle span {
+        display: none !important;
+    }
+    .navbar-redesign .status-chip {
+        display: none !important;
+    }
+}
+
 /* Global icon base — applies to every inline SVG using the .icon class.
    Without this, SVGs default to fill:black and a 300x150 intrinsic size,
    rendering as large solid black blobs (empty-states, section labels, logo). */
@@ -2406,6 +2440,20 @@ body, html {
 /* Hidden buttons used for python callbacks */
 .hidden-btn {
     display: none !important;
+}
+
+/* Responsive Grid for Result Cards */
+.result-cards-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: clamp(12px, 1.5vw, 20px) !important;
+    width: 100% !important;
+    margin-bottom: 10px !important;
+}
+@media (max-width: 768px) {
+    .result-cards-grid {
+        grid-template-columns: 1fr !important;
+    }
 }
 
 /* ============ CONTENT & TOPBAR ============ */
@@ -3642,7 +3690,7 @@ def build_app():
         btn_hidden_thesis = gr.Button("nav_thesis", elem_id="btn-hidden-thesis", elem_classes=["hidden-btn"])
         
         # Top Navbar (Full Width)
-        gr.HTML(get_navbar_html())
+        gr.HTML(get_navbar_html(), elem_id="navbar-html-wrapper")
         
         with gr.Row(elem_id="main-layout-row"):
             # Content Column
