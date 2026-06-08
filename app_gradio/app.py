@@ -2460,8 +2460,8 @@ body, html {
 .screen-container {
     padding: 30px clamp(20px, 3vw, 40px) !important;
     animation: rise .42s cubic-bezier(.2,.7,.3,1);
-    max-width: 1320px !important;
-    width: 100% !important;
+    max-width: 96% !important;
+    width: 96% !important;
     margin: 0 auto !important;
 }
 
@@ -2745,6 +2745,10 @@ button.secondary:hover {
 .mono {
     font-family: var(--mono) !important;
     font-variant-numeric: tabular-nums;
+}
+
+.results-section {
+    margin-top: 25px !important;
 }
 
 .svg-sprite {
@@ -3716,18 +3720,10 @@ def build_app():
                             btn_guide_dummy = gr.Button("📚 Hướng dẫn", elem_classes=["btn", "ghost", "sm"])
                     
                     with gr.Row(elem_id="analyze-grid-row"):
-                        # Left Input Card
-                        with gr.Column(scale=1, min_width=380):
+                        # Left Config Column
+                        with gr.Column(scale=1, min_width=350):
                             with gr.Group(elem_classes=["card", "card-pad"]):
-                                gr.HTML("<div class='field-label' style='font-weight:600;margin-bottom:8px;'>Nội dung cần đối soát <span style='font-size:11px;color:var(--ink-3);font-weight:normal;'>tiếng Việt</span></div>")
-                                text_input = gr.Textbox(
-                                    label="",
-                                    placeholder="Dán bình luận, bài viết hoặc tin nhắn về vaccine…",
-                                    lines=8,
-                                    show_label=False
-                                )
-                                
-                                gr.HTML("<div class='field-label' style='font-weight:600;margin:18px 0 6px;'>Bộ ví dụ mẫu</div>")
+                                gr.HTML("<div class='field-label' style='font-weight:600;margin:0 0 6px;'>Bộ ví dụ mẫu</div>")
                                 sample_category = gr.Dropdown(
                                     choices=["Tự nhập", "🚨 Nhóm Tin giả cực đoan", "🟢 Nhóm phân tích Thái độ", "✅ Nhóm Thông tin chuẩn", "💬 Nhóm Từ lóng MXH"],
                                     value="Tự nhập",
@@ -3775,39 +3771,50 @@ def build_app():
                                     value=False,
                                     elem_classes=["captum-cb"]
                                 )
+
+                        # Right Input Column
+                        with gr.Column(scale=1.6, min_width=380):
+                            with gr.Group(elem_classes=["card", "card-pad"]):
+                                gr.HTML("<div class='field-label' style='font-weight:600;margin-bottom:8px;'>Nội dung cần đối soát <span style='font-size:11px;color:var(--ink-3);font-weight:normal;'>tiếng Việt</span></div>")
+                                text_input = gr.Textbox(
+                                    label="",
+                                    placeholder="Dán bình luận, bài viết hoặc tin nhắn về vaccine…",
+                                    lines=8,
+                                    show_label=False
+                                )
                                 analyze_btn = gr.Button("🔬 Tiến hành phân tích đa nhiệm", variant="primary", size="lg")
 
-                        # Right Results Stack
-                        with gr.Column(scale=1, min_width=380):
-                            summary_out = gr.HTML(value="""
-                            <div class="card card-pad" style="text-align:center;">
-                                <div class="empty-state" style="padding:40px 20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;">
-                                    <div class="ring" style="width:56px;height:56px;border-radius:50%;background:var(--bg-2);display:grid;place-items:center;color:var(--ink-3);"><svg class="icon lg"><use href="#i-analyze"></use></svg></div>
-                                    <h3 style="margin:0;font-size:16px;font-weight:700;">Chưa có phân tích</h3>
-                                    <div class="muted" style="font-size:13px;max-width:320px;line-height:1.4;">Nhập văn bản và bấm “Tiến hành phân tích đa nhiệm” để chạy PhoBERT-v2 trên 3 trục nhãn.</div>
-                                </div>
+                    # Below Results Section (Full-width)
+                    with gr.Column(elem_classes=["results-section"]):
+                        summary_out = gr.HTML(value="""
+                        <div class="card card-pad" style="text-align:center;">
+                            <div class="empty-state" style="padding:40px 20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;">
+                                <div class="ring" style="width:56px;height:56px;border-radius:50%;background:var(--bg-2);display:grid;place-items:center;color:var(--ink-3);"><svg class="icon lg"><use href="#i-analyze"></use></svg></div>
+                                <h3 style="margin:0;font-size:16px;font-weight:700;">Chưa có phân tích</h3>
+                                <div class="muted" style="font-size:13px;max-width:320px;line-height:1.4;">Nhập văn bản và bấm “Tiến hành phân tích đa nhiệm” để chạy PhoBERT-v2 trên 3 trục nhãn.</div>
                             </div>
-                            """)
+                        </div>
+                        """)
+                        
+                        radar_out = gr.Plot(visible=False)
+                        
+                        # XAI Block Card
+                        with gr.Group(elem_classes=["card", "card-pad"], visible=False) as xai_group:
+                            gr.HTML("<div class='section-label'><svg class='icon sm ic'><use href='#i-spark'></use></svg> Giải thích của mô hình (XAI)</div>")
+                            gr.HTML("<p class='muted' style='font-size:12px;margin:2px 0 12px;'>Nhịp 1 · PhoBERT trả nhãn tức thời → Nhịp 2 · Gemma-4B lý giải CoT</p>")
+                            with gr.Tabs():
+                                with gr.Tab("💭 Chain-of-Thought Reasoning"):
+                                    reasoning_out = gr.Markdown()
+                                    disagreement_out = gr.HTML(value="")
+                                    audio_out = gr.HTML(value="")
+                                with gr.Tab("🎯 Token Attribution (Captum IG)"):
+                                    saliency_out = gr.HTML(value="<p style='color:#888;'><em>💡 Bật checkbox <b>Captum IG</b> ở trên rồi nhấn Phân tích</em></p>")
+                        
+                        with gr.Row():
+                            export_btn = gr.Button("📥 Tải báo cáo phân tích (.md)", variant="secondary", visible=False)
+                            export_file = gr.File(label="Báo cáo", visible=False)
                             
-                            radar_out = gr.Plot(visible=False)
-                            
-                            # XAI Block Card
-                            with gr.Group(elem_classes=["card", "card-pad"], visible=False) as xai_group:
-                                gr.HTML("<div class='section-label'><svg class='icon sm ic'><use href='#i-spark'></use></svg> Giải thích của mô hình (XAI)</div>")
-                                gr.HTML("<p class='muted' style='font-size:12px;margin:2px 0 12px;'>Nhịp 1 · PhoBERT trả nhãn tức thời → Nhịp 2 · Gemma-4B lý giải CoT</p>")
-                                with gr.Tabs():
-                                    with gr.Tab("💭 Chain-of-Thought Reasoning"):
-                                        reasoning_out = gr.Markdown()
-                                        disagreement_out = gr.HTML(value="")
-                                        audio_out = gr.HTML(value="")
-                                    with gr.Tab("🎯 Token Attribution (Captum IG)"):
-                                        saliency_out = gr.HTML(value="<p style='color:#888;'><em>💡 Bật checkbox <b>Captum IG</b> ở trên rồi nhấn Phân tích</em></p>")
-                            
-                            with gr.Row():
-                                export_btn = gr.Button("📥 Tải báo cáo phân tích (.md)", variant="secondary", visible=False)
-                                export_file = gr.File(label="Báo cáo", visible=False)
-                                
-                            history_display = gr.Markdown(value="*Chưa có lượt phân tích nào trong phiên này*")
+                        history_display = gr.Markdown(value="*Chưa có lượt phân tích nào trong phiên này*")
 
                 # --------------------------------------------------------
                 # SCREEN 2: ADVANCED SCREEN
