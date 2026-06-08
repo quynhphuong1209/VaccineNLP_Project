@@ -1,0 +1,104 @@
+{
+  "phobert": {
+    "name": "phobert",
+    "misinfo": 0.6996,
+    "stance": 0.664,
+    "sentiment": 0.7266,
+    "per_class_misinfo": [
+      0.5075,
+      0.8918
+    ],
+    "per_class_stance": [
+      0.5934,
+      0.6612,
+      0.7375
+    ],
+    "per_class_sentiment": [
+      0.8,
+      0.7917,
+      0.5882
+    ],
+    "support_misinfo": [
+      28,
+      158
+    ],
+    "support_stance": [
+      54,
+      48,
+      84
+    ],
+    "support_sentiment": [
+      71,
+      75,
+      40
+    ]
+  },
+  "xlmr": {
+    "name": "xlmr",
+    "misinfo": 0.7038,
+    "stance": 0.6224,
+    "sentiment": 0.6866,
+    "per_class_misinfo": [
+      0.5079,
+      0.8997
+    ],
+    "per_class_stance": [
+      0.5495,
+      0.6387,
+      0.679
+    ],
+    "per_class_sentiment": [
+      0.7682,
+      0.7162,
+      0.5753
+    ],
+    "support_misinfo": [
+      28,
+      158
+    ],
+    "support_stance": [
+      54,
+      48,
+      84
+    ],
+    "support_sentiment": [
+      71,
+      75,
+      40
+    ]
+  },
+  "gemma": {
+    "name": "gemma",
+    "misinfo": 0.6377,
+    "stance": 0.6264,
+    "sentiment": 0.77,
+    "per_class_misinfo": [
+      0.4444,
+      0.8309
+    ],
+    "per_class_stance": [
+      0.4528,
+      0.6905,
+      0.736
+    ],
+    "per_class_sentiment": [
+      0.8039,
+      0.8034,
+      0.7027
+    ],
+    "support_misinfo": [
+      22,
+      113
+    ],
+    "support_stance": [
+      32,
+      40,
+      59
+    ],
+    "support_sentiment": [
+      56,
+      52,
+      20
+    ]
+  }
+}
