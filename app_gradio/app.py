@@ -2521,12 +2521,32 @@ body, html {
 }
 
 /* ============ CARDS & UI COMPONENTS ============ */
-.block, .gr-box, .gr-panel {
+.gradio-container .card,
+.gradio-container .card.padded,
+.gradio-container .card.border,
+.gradio-container .gr-box, 
+.gradio-container .gr-panel {
     background: var(--surface) !important;
     border: 1px solid var(--line) !important;
     border-radius: var(--r-lg) !important;
     box-shadow: var(--shadow-sm) !important;
-    padding: 16px !important;
+    padding: 22px !important;
+}
+
+.gradio-container .block:not(.card), 
+.gradio-container .form:not(.card), 
+.gradio-container .gr-group:not(.card), 
+.gradio-container .gr-box:not(.card),
+.gradio-container .padded:not(.card),
+.gradio-container .border:not(.card) {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.gradio-container details,
+.gradio-container summary {
+    background: transparent !important;
 }
 
 .card-pad {
@@ -2546,20 +2566,22 @@ body, html {
     color: var(--teal);
 }
 
-/* Textarea & inputs */
+/* Textarea, inputs & dropdowns */
 .gradio-container textarea, 
-.gradio-container input[type="text"] {
+.gradio-container input[type="text"],
+.gradio-container .wrap {
     background: var(--surface-2) !important;
     color: var(--ink) !important;
     border: 1px solid var(--line) !important;
-    border-radius: var(--r-sm) !important;
+    border-radius: var(--r) !important;
     padding: 10px 15px !important;
     font-size: 14.5px !important;
     transition: all .2s !important;
 }
 
 .gradio-container textarea:focus, 
-.gradio-container input[type="text"]:focus {
+.gradio-container input[type="text"]:focus,
+.gradio-container .wrap:focus-within {
     border-color: var(--teal) !important;
     box-shadow: 0 0 0 2px var(--teal-50) !important;
 }
@@ -2570,7 +2592,7 @@ button.primary, button.gr-button-primary {
     border: 1px solid var(--teal) !important;
     color: #fff !important;
     font-weight: 600 !important;
-    border-radius: var(--r-sm) !important;
+    border-radius: var(--r) !important;
     box-shadow: 0 4px 12px var(--teal-50) !important;
     text-transform: none !important;
     font-size: 14px !important;
@@ -2587,7 +2609,7 @@ button.secondary, button.gr-button-secondary {
     background: var(--surface) !important;
     border: 1px solid var(--line) !important;
     color: var(--ink-2) !important;
-    border-radius: var(--r-sm) !important;
+    border-radius: var(--r) !important;
 }
 button.secondary:hover {
     border-color: var(--ink-3) !important;
@@ -3048,7 +3070,7 @@ def get_svg_sprite_html() -> str:
       <symbol id="i-advanced" viewBox="0 0 24 24"><path d="M12 3 3 8l9 5 9-5-9-5Z" /><path d="m3 13 9 5 9-5M3 18l9 5 9-5" /></symbol>
       <symbol id="i-bench" viewBox="0 0 24 24"><path d="M3 21h18" /><rect x="5" y="11" width="4" height="7" /><rect x="14" y="6" width="4" height="12" /></symbol>
       <symbol id="i-docs" viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h9l5 5v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z" /><path d="M14 3v5h5M8 13h8M8 17h6" /></symbol>
-      <symbol id="i-method" viewBox="0 0 24 24"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3" /><path d="M7.5 15h9" /></symbol>
+      <symbol id="i-method" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="8.5" width="7" height="7" rx="1.5" /><path d="M10 6.5h3a2 2 0 0 1 2 2v0.5M10 17.5h3a2 2 0 0 0 2-2v-0.5" /></symbol>
       <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 4.5 3 7.5 7 9 4-1.5 7-4.5 7-9V6Z" /><path d="M12 8v4M12 15.5h.01" /></symbol>
       <symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="m8.5 12 2.5 2.5L16 9.5" /></symbol>
       <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4" /><path d="M5 19h14" /></symbol>
@@ -3066,11 +3088,12 @@ def get_svg_sprite_html() -> str:
     """
 
 def get_navbar_html() -> str:
+    logo_src = get_huph_logo_base64()
     return f"""
     <div class="navbar-redesign">
         <div class="brand">
-            <div class="logo">
-                <svg class="icon lg"><use href="#i-shield"></use></svg>
+            <div style="width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: #ffffff; border: 1px solid var(--line); overflow: hidden; box-shadow: var(--shadow-sm); flex-shrink: 0;">
+                <img src="{logo_src}" style="width: 26px; height: 26px; object-fit: contain;" alt="HUPH Logo">
             </div>
             <div>
                 <div class="name">Vaccine<span>NLP</span></div>
