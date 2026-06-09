@@ -20,7 +20,7 @@
 * [![Model: XLMR-Multitask](https://img.shields.io/badge/Small_Model-XLMR--Multitask-red?style=flat-square)](https://huggingface.co/hung2903/xlmr-vaccine-multitask) — *Mô hình phân loại Baseline đa ngôn ngữ.*
 
 ### 🌐 Ứng dụng Demo trực tuyến (Spaces Demo)
-* **Hùng Space (Official Demo):** [hung2903/vaccinenlp-demo](https://huggingface.co/spaces/hung2903/vaccinenlp-demo)
+* **Hưng Space (Official Demo):** [hung2903/vaccinenlp-demo](https://huggingface.co/spaces/hung2903/vaccinenlp-demo)
 * **Phương Space (Redesigned Interface):** [quynhphuong1209/VaccineNLP_demo](https://huggingface.co/spaces/quynhphuong1209/VaccineNLP_demo), (https://huggingface.co/spaces/quynhphuong1209/VaccineNLP_Ban_chinh_thuc)
 
 ---
