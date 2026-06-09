@@ -2383,7 +2383,7 @@ body, html {
     .navbar-redesign {
         flex-wrap: wrap !important;
         padding: 10px 20px !important;
-        gap: 10px !important;
+        gap: 8px !important;
     }
     .navbar-redesign .brand {
         order: 1 !important;
@@ -2395,28 +2395,53 @@ body, html {
         order: 3 !important;
         width: 100% !important;
         max-width: 100% !important;
-        margin: 5px 0 0 0 !important;
+        margin: 4px 0 0 0 !important;
         justify-content: flex-start !important;
-        overflow-x: auto !important;
-        white-space: nowrap !important;
-        gap: 6px !important;
+        flex-wrap: wrap !important;
+        overflow-x: visible !important;
+        white-space: normal !important;
+        gap: 5px !important;
         padding: 4px 0 !important;
-        scrollbar-width: none !important; /* Firefox */
-        -webkit-overflow-scrolling: touch !important;
     }
-    .navbar-redesign .nav-menu::-webkit-scrollbar {
-        display: none !important; /* Chrome, Safari, Opera */
+    .navbar-redesign .nav-item {
+        font-size: 12.5px !important;
+        padding: 7px clamp(8px, 1vw, 13px) !important;
     }
     .navbar-redesign .brand .tag {
         display: none !important;
     }
 }
+@media (max-width: 768px) {
+    .navbar-redesign .nav-menu {
+        gap: 4px !important;
+    }
+    .navbar-redesign .nav-item {
+        font-size: 11.5px !important;
+        padding: 6px 10px !important;
+        gap: 5px !important;
+    }
+    .navbar-redesign .nav-item .icon {
+        width: 14px !important;
+        height: 14px !important;
+    }
+}
 @media (max-width: 600px) {
+    .navbar-redesign {
+        padding: 8px 12px !important;
+    }
+    .navbar-redesign .nav-menu {
+        gap: 3px !important;
+    }
+    .navbar-redesign .nav-item {
+        font-size: 11px !important;
+        padding: 5px 8px !important;
+    }
     .navbar-redesign .theme-toggle span {
         display: none !important;
     }
     .navbar-redesign .status-chip {
-        display: none !important;
+        font-size: 10.5px !important;
+        padding: 4px 7px !important;
     }
 }
 
