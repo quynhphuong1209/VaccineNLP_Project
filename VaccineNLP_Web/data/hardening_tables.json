@@ -1,0 +1,73 @@
+{
+  "confusables": {
+    "а": "a",
+    "с": "c",
+    "е": "e",
+    "о": "o",
+    "р": "p",
+    "х": "x",
+    "у": "y",
+    "ԁ": "d",
+    "һ": "h",
+    "і": "i",
+    "ј": "j",
+    "ѕ": "s",
+    "А": "A",
+    "В": "B",
+    "С": "C",
+    "Е": "E",
+    "Н": "H",
+    "І": "I",
+    "Ј": "J",
+    "К": "K",
+    "М": "M",
+    "О": "O",
+    "Р": "P",
+    "Ѕ": "S",
+    "Т": "T",
+    "Х": "X",
+    "ο": "o",
+    "ρ": "p"
+  },
+  "zero_width": [
+    "\u200b",
+    "\u200c",
+    "\u200d",
+    "\u200e",
+    "\u200f",
+    "\u2060",
+    "\ufeff"
+  ],
+  "leet_map": {
+    "4": "a",
+    "1": "i",
+    "3": "e",
+    "0": "o",
+    "5": "s"
+  },
+  "intra_word_separators": [
+    ".",
+    "-",
+    "_",
+    "·",
+    "•",
+    "*",
+    "~"
+  ],
+  "_meta": {
+    "sources": [
+      "Unicode Technical Standard #39 (UTS #39) — Confusables / confusablesSummary.txt",
+      "Unicode TR15 — Normalization Forms (NFKC/NFC)"
+    ],
+    "vietnamese_test_cases": [
+      "v4cc1n3 g4y v0 s1nh",
+      "t\u200bi\u200bê\u200bm",
+      "bả0 vệ",
+      "v.a.c.c.i.n.e",
+      "v_a_c_c_i_n_e",
+      "c\u200bv\u200b1\u200b9",
+      "đ\u200bộ\u200bc t\u200bố",
+      "vаccine"
+    ]
+  }
+}

@@ -8,7 +8,11 @@ gradio==4.44.1
 torch==2.1.2
 transformers==4.44.2
 tokenizers>=0.19,<0.21
-huggingface-hub>=0.23.0
+# Pin upper bound: gradio 4.44.1 imports `HfFolder`, REMOVED in huggingface-hub
+# >= 0.26. An unbounded `>=0.23.0` lets a fresh HF Spaces build pull the latest
+# hub and crash gradio on import. 0.24.x keeps HfFolder and satisfies
+# transformers 4.44.2 (which needs >=0.23.2,<1.0).
+huggingface-hub>=0.24.0,<0.25.0
 accelerate>=0.27.0
 
 # ---- Vietnamese NLP ----

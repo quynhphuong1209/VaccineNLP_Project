@@ -1,0 +1,470 @@
+[
+  {
+    "id": "myth_001",
+    "myth": "Vaccine MMR (sởi - quai bị - rubella) gây ra bệnh tự kỷ ở trẻ em.",
+    "fact": "Các nghiên cứu quy mô lớn trên hàng triệu trẻ em toàn cầu đã khẳng định không có mối liên hệ nào giữa vaccine và bệnh tự kỷ. Bài báo khoa học duy nhất nêu giả thuyết này vào năm 1998 đã bị hội đồng y khoa rút lại vì gian lận dữ liệu.",
+    "topic": "Tự kỷ",
+    "sources": [
+      {
+        "org": "CDC",
+        "title": "Vaccines Do Not Cause Autism",
+        "url": ""
+      },
+      {
+        "org": "WHO",
+        "title": "Q&A: Autism spectrum disorders",
+        "url": "https://www.who.int/news-room/questions-and-answers/item/autism-spectrum-disorders-(asd)"
+      }
+    ],
+    "lang": "vi"
+  },
+  {
+    "id": "myth_002",
+    "myth": "Tiêm quá nhiều vaccine cùng lúc sẽ làm hệ miễn dịch của trẻ bị quá tải.",
+    "fact": "Hệ miễn dịch của trẻ em (kể cả trẻ sơ sinh) tiếp xúc với hàng nghìn kháng nguyên mỗi ngày từ môi trường. Lượng kháng nguyên trong toàn bộ lịch tiêm chủng là rất nhỏ và hoàn toàn nằm trong khả năng xử lý an toàn của hệ miễn dịch.",
+    "topic": "Miễn dịch",
+    "sources": [
+      {
+        "org": "CDC",
+        "title": "Multiple Vaccines and the Immune System",
+        "url": ""
+      }
+    ],
+    "lang": "vi"
+  },
+  {
+    "id": "myth_003",
+    "myth": "Vaccine COVID-19 gây vô sinh hoặc ảnh hưởng đến khả năng sinh sản ở nam và nữ.",
+    "fact": "Không có bằng chứng khoa học nào cho thấy bất kỳ loại vaccine nào, bao gồm vaccine COVID-19, gây ra các vấn đề về khả năng sinh sản ở nam giới hay nữ giới.",
+    "topic": "Vô sinh",
+    "sources": [
+      {
+        "org": "CDC",
+        "title": "COVID-19 Vaccines for People Who Would Like to Have a Baby",
+        "url": ""
+      }
+    ],
+    "lang": "vi"
+  },
+  {
+    "id": "myth_004",
+    "myth": "Phụ nữ mang thai không nên tiêm vaccine vì có thể gây sảy thai hoặc dị tật.",
+    "fact": "Phụ nữ mang thai được khuyến cáo tiêm một số loại vaccine nhất định (như cúm, uốn ván, bạch hầu, ho gà, COVID-19) để bảo vệ cả mẹ và truyền kháng thể cho thai nhi. Các cơ quan y tế theo dõi sát sao và chưa phát hiện sự gia tăng nguy cơ sảy thai do vaccine.",
+    "topic": "Thai kỳ",
+    "sources": [
+      {
+        "org": "ACOG",
+        "title": "Vaccinating During Pregnancy",
+        "url": ""
+      },
+      {
+        "org": "CDC",
+        "title": "Pregnancy and Vaccination",
+        "url": "https://www.cdc.gov/vaccines/pregnancy/index.html"
+      }
+    ],
+    "lang": "vi"
+  },
+  {
+    "id": "myth_005",
+    "myth": "Vaccine COVID-19 chứa vi mạch (microchip) siêu nhỏ để theo dõi con người.",
+    "fact": "Vaccine không chứa bất kỳ thiết bị điện tử, vi mạch, phần mềm hay bất kỳ công nghệ theo dõi nào. Thành phần của vaccine được công khai minh bạch.",
+    "topic": "Thuyết âm mưu / Vi mạch",
+    "sources": [
+      {
+        "org": "CDC",
+        "title": "Myths and Facts about COVID-19 Vaccines",
+        "url": ""
+      }
+    ],
+    "lang": "vi"
+  },
+  {
+    "id": "myth_006",
+    "myth": "Mạng 5G phát tán virus SARS-CoV-2 gây ra đại dịch COVID-19.",
+    "fact": "Virus không thể lây truyền qua sóng vô tuyến hoặc mạng viễn thông di động. COVID-19 lây lan ở nhiều quốc gia không hề có mạng di động 5G.",
+    "topic": "Thuyết âm mưu / 5G",
+    "sources": [
+      {
+        "org": "WHO",
+        "title": "Coronavirus disease (COVID-19) advice for the public: Mythbusters",
+        "url": "https://www.who.int/emergencies/diseases/novel-coronavirus-2019/advice-for-public/myth-busters"
+      }
+    ],
+    "lang": "vi"
+  },
+  {
+    "id": "myth_007",
+    "myth": "Thimerosal (một dạng thuỷ ngân) trong vaccine gây độc cho não và hệ thần kinh.",
+    "fact": "Thimerosal chứa ethylmercury, một chất được cơ thể đào thải rất nhanh và không tích tụ gây độc như methylmercury (có trong một số loài cá). Hơn nữa, Thimerosal đã được loại bỏ hoặc giảm xuống mức rất nhỏ trong hầu hết vaccine trẻ em từ những năm 2000.",
+    "topic": "Thành phần độc hại",
+    "sources": [
+      {
+        "org": "CDC",
+        "title": "Thimerosal in Vaccines",
+        "url": ""
+      }
+    ],
+    "lang": "vi"
+  },
+  {
+    "id": "myth_008",
+    "myth": "Nhôm (Aluminum) được thêm vào vaccine là chất cực độc đối với cơ thể.",
+    "fact": "Nhôm được sử dụng làm chất bổ trợ trong một số vaccine để tăng cường phản ứng miễn dịch. Lượng nhôm trong vaccine rất nhỏ, thậm chí ít hơn lượng nhôm tự nhiên mà trẻ sơ sinh hấp thụ hàng ngày thông qua sữa mẹ hoặc sữa công thức.",
+    "topic": "Thành phần độc hại",
+    "sources": [
+      {
+        "org": "CHOP",
+        "title": "Vaccine Ingredients - Aluminum",
+        "url": "https://www.chop.edu/centers-programs/vaccine-education-center/vaccine-ingredients/aluminum"
+      }
+    ],
+    "lang": "vi"
+  },
+  {
+    "id": "myth_009",
+    "myth": "Chất bảo quản Formaldehyde trong vaccine là chất hóa học gây ung thư.",
+    "fact": "Cơ thể con người tự sản xuất tự nhiên một lượng formaldehyde trong quá trình trao đổi chất, cao gấp nhiều lần lượng cực nhỏ (chỉ để làm bất hoạt virus) có trong một liều vaccine.",
+    "topic": "Thành phần độc hại",
+    "sources": [
+      {
+        "org": "FDA",
+        "title": "Common Ingredients in U.S. Licensed Vaccines",
+        "url": "https://www.fda.gov/vaccines-blood-biologics/safety-availability-biologics/common-ingredients-us-licensed-vaccines"
+      }
+    ],
+    "lang": "vi"
+  },
+  {
+    "id": "myth_010",
+    "myth": "Miễn dịch tự nhiên (do mắc bệnh thật) tốt và an toàn hơn miễn dịch từ vaccine.",
+    "fact": "Mắc bệnh tự nhiên mang lại nguy cơ biến chứng nghiêm trọng và tử vong cao (ví dụ: viêm phổi do sởi, dị tật bẩm sinh do rubella). Vaccine kích thích hệ miễn dịch sinh ra kháng thể tương tự nhưng không gây ra bệnh lý nguy hiểm.",
+    "topic": "Miễn dịch tự nhiên",
+    "sources": [
+      {
+        "org": "WHO",
+        "title": "Vaccines and immunization: What is vaccination?",
+        "url": "https://www.who.int/news-room/questions-and-answers/item/vaccines-and-immunization-what-is-vaccination"
+      }
+    ],
+    "lang": "vi"
+  },
+  {
+    "id": "myth_011",
+    "myth": "Trẻ em khỏe mạnh, được ăn uống đầy đủ dinh dưỡng thì không cần tiêm vaccine.",
+    "fact": "Dinh dưỡng tốt giúp tăng cường sức khỏe tổng thể, nhưng không thể tạo ra kháng thể đặc hiệu để ngăn chặn các loại vi khuẩn/virus nguy hiểm xâm nhập. Vaccine là lá chắn đặc hiệu cần thiết cho mọi trẻ em.",
+    "topic": "Cần thiết",
+    "sources": [
+      {
+        "org": "UNICEF",
+        "title": "Immunization",
+        "url": "https://www.unicef.org/immunization"
+      }
+    ],
+    "lang": "vi"
+  },
+  {
+    "id": "myth_012",
+    "myth": "Vaccine công nghệ mRNA (như Pfizer, Moderna) sẽ làm biến đổi ADN của con người.",
+    "fact": "mRNA từ vaccine không bao giờ xâm nhập vào nhân tế bào (nơi chứa ADN). Nó chỉ mang \"mã lệnh\" để tế bào tạo ra protein gai, sau đó bị tế bào phân hủy và loại bỏ nhanh chóng khỏi cơ thể.",
+    "topic": "COVID-19 / mRNA",
+    "sources": [
+      {
+        "org": "CDC",
+        "title": "Understanding How COVID-19 Vaccines Work",
+        "url": "https://www.cdc.gov/coronavirus/2019-ncov/vaccines/different-vaccines/how-they-work.html"
+      }
+    ],
+    "lang": "vi"
+  },
+  {
+    "id": "myth_013",
+    "myth": "Vaccine COVID-19 được phát triển quá nhanh nên chưa được kiểm chứng độ an toàn.",
+    "fact": "Vaccine COVID-19 được phát triển nhanh nhờ nguồn tài trợ lớn chưa từng có, việc tiến hành song song các giai đoạn thử nghiệm lâm sàng và nền tảng công nghệ mRNA đã được nghiên cứu nhiều thập kỷ. Chúng vẫn vượt qua mọi tiêu chuẩn an toàn khắt khe của WHO.",
+    "topic": "COVID-19",
+    "sources": [
+      {
+        "org": "WHO",
+        "title": "How are vaccines developed?",
+        "url": "https://www.who.int/news-room/feature-stories/detail/how-are-vaccines-developed"
+      }
+    ],
+    "lang": "vi"
+  },
+  {
+    "id": "myth_014",
+    "myth": "Tiêm vaccine COVID-19 sẽ khiến bạn bị nhiễm bệnh COVID-19.",
+    "fact": "Không có vaccine COVID-19 nào chứa virus SARS-CoV-2 sống có khả năng gây bệnh. Các triệu chứng như sốt, mệt mỏi sau tiêm là dấu hiệu bình thường cho thấy hệ miễn dịch đang phản ứng và học cách bảo vệ cơ thể.",
+    "topic": "COVID-19 / Vaccine gây bệnh",
+    "sources": [
+      {
+        "org": "CDC",
+        "title": "Myths and Facts about COVID-19 Vaccines",
+        "url": ""
+      }
+    ],
+    "lang": "vi"
+  },
+  {
+    "id": "myth_015",
+    "myth": "Vaccine COVID-19 khiến cơ thể mang từ tính, có thể hút được nam châm.",
+    "fact": "Vaccine COVID-19 không chứa bất kỳ thành phần kim loại, vi mạch hay vật liệu có từ tính nào. Việc nam châm dính vào da thường do mồ hôi hoặc dầu tự nhiên trên cơ thể.",
+    "topic": "COVID-19 / Từ tính",
+    "sources": [
+      {
+        "org": "CDC",
+        "title": "Myths and Facts about COVID-19 Vaccines",
+        "url": ""
+      }
+    ],
+    "lang": "vi"
+  },
+  {
+    "id": "myth_016",
+    "myth": "Tiêm vaccine HPV (ngừa ung thư cổ tử cung) sẽ khuyến khích thanh thiếu niên quan hệ tình dục sớm.",
+    "fact": "Nghiên cứu kéo dài nhiều năm trên hàng nghìn thanh thiếu niên cho thấy việc tiêm vaccine HPV không làm tăng tỷ lệ hay làm giảm độ tuổi bắt đầu quan hệ tình dục. Nó chỉ đơn thuần bảo vệ họ khỏi virus gây ung thư.",
+    "topic": "HPV",
+    "sources": [
+      {
+        "org": "PubMed",
+        "title": "Effect of human papillomavirus (HPV) vaccination on sexual behaviour",
+        "url": ""
+      },
+      {
+        "org": "CDC",
+        "title": "HPV Vaccine Safety and Effectiveness",
+        "url": "https://www.cdc.gov/vaccines/vpd/hpv/hcp/safety-effectiveness.html"
+      }
+    ],
+    "lang": "vi"
+  },
+  {
+    "id": "myth_017",
+    "myth": "Bệnh sởi chỉ là một bệnh lý ngoài da nhẹ ở trẻ em, không cần tiêm phòng.",
+    "fact": "Sởi là một căn bệnh truyền nhiễm cực kỳ nguy hiểm, có thể dẫn đến các biến chứng đe dọa tính mạng như viêm phổi, viêm màng não, mù lòa, và gây ức chế hệ miễn dịch kéo dài.",
+    "topic": "Sởi",
+    "sources": [
+      {
+        "org": "WHO",
+        "title": "Measles",
+        "url": "https://www.who.int/news-room/fact-sheets/detail/measles"
+      }
+    ],
+    "lang": "vi"
+  },
+  {
+    "id": "myth_018",
+    "myth": "Bệnh bại liệt đã bị tiêu diệt nên trẻ em không cần phải uống/tiêm vaccine bại liệt nữa.",
+    "fact": "Miễn là vẫn còn 1 ca nhiễm virus bại liệt hoang dã ở bất kỳ đâu trên thế giới, trẻ em chưa được tiêm chủng ở mọi quốc gia vẫn có nguy cơ nhiễm bệnh. Tiêm chủng phải được duy trì cho đến khi căn bệnh bị xóa sổ toàn cầu.",
+    "topic": "Bại liệt",
+    "sources": [
+      {
+        "org": "WHO",
+        "title": "Poliomyelitis",
+        "url": "https://www.who.int/news-room/fact-sheets/detail/poliomyelitis"
+      }
+    ],
+    "lang": "vi"
+  },
+  {
+    "id": "myth_019",
+    "myth": "Càng tiêm phòng cúm thì càng dễ bị mắc cúm.",
+    "fact": "Vaccine cúm (dạng tiêm) chứa virus đã bị bất hoạt nên không thể gây bệnh cúm. Đôi khi mọi người bị ốm sau khi tiêm do nhiễm một loại virus viêm đường hô hấp khác có trùng thời điểm, hoặc chưa kịp có kháng thể.",
+    "topic": "Cúm / Vaccine gây bệnh",
+    "sources": [
+      {
+        "org": "CDC",
+        "title": "Misconceptions about Seasonal Flu and Flu Vaccines",
+        "url": ""
+      }
+    ],
+    "lang": "vi"
+  },
+  {
+    "id": "myth_020",
+    "myth": "Chính việc tiêm vaccine hàng loạt đã tạo ra các biến thể virus mới nguy hiểm hơn.",
+    "fact": "Virus đột biến ngẫu nhiên khi chúng nhân lên trong cơ thể người mắc bệnh. Càng có nhiều người không tiêm chủng bị nhiễm, virus càng có nhiều cơ hội sao chép và đột biến. Vaccine hạn chế sự lây lan, qua đó giảm nguy cơ xuất hiện biến thể.",
+    "topic": "Biến thể virus",
+    "sources": [
+      {
+        "org": "WHO",
+        "title": "Coronavirus disease (COVID-19): Vaccines",
+        "url": "https://www.who.int/news-room/questions-and-answers/item/coronavirus-disease-(covid-19)-vaccines"
+      }
+    ],
+    "lang": "vi"
+  },
+  {
+    "id": "myth_021",
+    "myth": "Những người đã tiêm đủ vaccine vẫn mắc bệnh (nhiễm đột phá), chứng tỏ vaccine vô dụng.",
+    "fact": "Không có loại vaccine nào đạt hiệu quả 100% trong việc ngăn ngừa nhiễm bệnh. Tuy nhiên, vaccine giúp giảm đáng kể nguy cơ bệnh chuyển biến nặng, giảm tỷ lệ nhập viện và ngăn ngừa tử vong một cách hiệu quả.",
+    "topic": "Hiệu quả",
+    "sources": [
+      {
+        "org": "CDC",
+        "title": "The Possibility of COVID-19 Illness after Vaccination",
+        "url": ""
+      }
+    ],
+    "lang": "vi"
+  },
+  {
+    "id": "myth_022",
+    "myth": "Sự cải thiện về vệ sinh môi trường và nước sạch là đủ để chấm dứt dịch bệnh, không phải nhờ vaccine.",
+    "fact": "Vệ sinh tốt giúp giảm một số bệnh tiêu hóa, nhưng không thể ngăn chặn các bệnh lây qua đường hô hấp như sởi, ho gà. Lịch sử cho thấy khi độ bao phủ vaccine giảm, các dịch bệnh này ngay lập tức bùng phát mạnh mẽ dù điều kiện vệ sinh không đổi.",
+    "topic": "Vệ sinh vs Vaccine",
+    "sources": [
+      {
+        "org": "WHO",
+        "title": "Vaccines and immunization: What is vaccination?",
+        "url": "https://www.who.int/news-room/questions-and-answers/item/vaccines-and-immunization-what-is-vaccination"
+      }
+    ],
+    "lang": "vi"
+  },
+  {
+    "id": "myth_023",
+    "myth": "Tiêm vaccine là nguyên nhân gây ra Hội chứng đột tử ở trẻ sơ sinh (SIDS).",
+    "fact": "Nhiều nghiên cứu và phân tích y khoa quy mô lớn đã xác nhận không có bất kỳ mối liên hệ nhân quả nào giữa việc tiêm vaccine và hội chứng đột tử ở trẻ sơ sinh (SIDS).",
+    "topic": "Tác dụng phụ phóng đại / SIDS",
+    "sources": [
+      {
+        "org": "CDC",
+        "title": "Sudden Infant Death Syndrome (SIDS) and Vaccines",
+        "url": ""
+      }
+    ],
+    "lang": "vi"
+  },
+  {
+    "id": "myth_024",
+    "myth": "Tác dụng phụ của vaccine nguy hiểm và có tỷ lệ cao hơn chính căn bệnh mà nó phòng ngừa.",
+    "fact": "Vaccine cực kỳ an toàn. Hầu hết các phản ứng chỉ là nhẹ và tạm thời (đau tại chỗ tiêm, sốt nhẹ). Ngược lại, tổn thương não, tê liệt, hoặc tử vong do mắc các bệnh có thể phòng ngừa bằng vaccine cao hơn gấp hàng nghìn lần so với rủi ro từ vaccine.",
+    "topic": "Tác dụng phụ phóng đại",
+    "sources": [
+      {
+        "org": "WHO",
+        "title": "Vaccines and immunization: Vaccine safety",
+        "url": "https://www.who.int/news-room/questions-and-answers/item/vaccines-and-immunization-vaccine-safety"
+      }
+    ],
+    "lang": "vi"
+  },
+  {
+    "id": "myth_025",
+    "myth": "Hàng loạt trẻ em Việt Nam bị sốc phản vệ và tử vong ngay sau khi tiêm vaccine 5 trong 1 (Quinvaxem/ComBE Five).",
+    "fact": "Sốc phản vệ sau tiêm chủng là trường hợp cực kỳ hiếm gặp (tỷ lệ khoảng 1 trên 1 triệu liều). Hầu hết các ca phản ứng nặng có nguyên nhân từ bệnh lý nền trùng hợp. Hệ thống y tế dự phòng luôn tuân thủ quy trình khám sàng lọc và cấp cứu khắt khe.",
+    "topic": "Tác dụng phụ phóng đại",
+    "sources": [
+      {
+        "org": "Bộ Y tế Việt Nam / VNCDC",
+        "title": "Thông পাশ tin về an toàn tiêm chủng mở rộng",
+        "url": ""
+      }
+    ],
+    "lang": "vi"
+  },
+  {
+    "id": "myth_026",
+    "myth": "Tự bản thân không cần tiêm chủng vẫn an toàn, vì dựa vào miễn dịch cộng đồng do người khác đã tiêm.",
+    "fact": "Nếu quá nhiều người phụ thuộc vào người khác và không tiêm chủng, độ bao phủ vaccine sẽ giảm xuống dưới ngưỡng an toàn, phá vỡ 'miễn dịch cộng đồng' và làm dịch bệnh lập tức bùng phát tấn công những người yếu thế.",
+    "topic": "Miễn dịch cộng đồng",
+    "sources": [
+      {
+        "org": "WHO",
+        "title": "Herd immunity, lockdowns and COVID-19",
+        "url": "https://www.who.int/news-room/questions-and-answers/item/herd-immunity-lockdowns-and-covid-19"
+      }
+    ],
+    "lang": "vi"
+  },
+  {
+    "id": "myth_027",
+    "myth": "Vaccine được sản xuất từ tế bào của thai nhi bị nạo phá.",
+    "fact": "Các dòng tế bào (như HEK-293) dùng để sản xuất một số vaccine được phân lập từ thập niên 60 và 70, sau đó được nuôi cấy trong phòng thí nghiệm. Không có bất kỳ mô thai nhi mới nào được sử dụng để sản xuất vaccine.",
+    "topic": "Thành phần vaccine / Tôn giáo",
+    "sources": [
+      {
+        "org": "CHOP",
+        "title": "Vaccine Ingredients - Fetal Tissues",
+        "url": "https://www.chop.edu/centers-programs/vaccine-education-center/vaccine-ingredients/fetal-tissues"
+      }
+    ],
+    "lang": "vi"
+  },
+  {
+    "id": "myth_028",
+    "myth": "Tiêm vaccine sẽ làm suy yếu sức khỏe lâu dài và làm giảm tuổi thọ trung bình.",
+    "fact": "Tiêm chủng là một trong những thành tựu y tế công cộng vĩ đại nhất, đóng vai trò cốt lõi trong việc tăng tuổi thọ trung bình toàn cầu bằng cách cứu sống hàng triệu người khỏi các căn bệnh truyền nhiễm nguy hiểm mỗi năm.",
+    "topic": "Tuổi thọ",
+    "sources": [
+      {
+        "org": "WHO",
+        "title": "Vaccines and immunization",
+        "url": "https://www.who.int/health-topics/vaccines-and-immunization"
+      }
+    ],
+    "lang": "vi"
+  },
+  {
+    "id": "myth_029",
+    "myth": "Người đã từng mắc COVID-19 rồi thì không bao giờ cần tiêm vaccine COVID-19 nữa.",
+    "fact": "Lượng kháng thể sinh ra sau khi mắc bệnh tự nhiên có thể không đồng đều và suy giảm theo thời gian. Tiêm vaccine sau khi đã hồi phục giúp tạo ra \"miễn dịch lai\", cung cấp sự bảo vệ mạnh mẽ và lâu dài hơn trước sự tái nhiễm.",
+    "topic": "Miễn dịch tự nhiên / COVID-19",
+    "sources": [
+      {
+        "org": "WHO",
+        "title": "Science in 5: Do I still need the vaccine if I have COVID-19?",
+        "url": "https://www.who.int/emergencies/diseases/novel-coronavirus-2019/media-resources/science-in-5/episode-50---do-i-still-need-the-vaccine-if-i-have-covid-19"
+      }
+    ],
+    "lang": "vi"
+  },
+  {
+    "id": "myth_030",
+    "myth": "Vaccine phòng bạch hầu - ho gà - uốn ván (DTP) có thể gây tổn thương não vĩnh viễn.",
+    "fact": "Các đánh giá khoa học uy tín, bao gồm của Viện Y học Mỹ (IOM), kết luận không có bằng chứng cho thấy vaccine DTP hoặc DTaP gây ra bệnh lý não mãn tính (tổn thương não vĩnh viễn).",
+    "topic": "Tác dụng phụ phóng đại",
+    "sources": [
+      {
+        "org": "CDC",
+        "title": "Historical Vaccine Safety Concerns",
+        "url": ""
+      }
+    ],
+    "lang": "vi"
+  },
+  {
+    "id": "myth_031",
+    "myth": "Tất cả các chất phụ gia và hóa chất trong vaccine đều mang tính chất đầu độc con người.",
+    "fact": "Mọi thành phần trong vaccine đều có mục đích rõ ràng (như chất bảo quản, chất ổn định, hoặc chất bổ trợ để tăng kháng thể) và đều được kiểm duyệt ở liều lượng cực nhỏ, hoàn toàn an toàn đối với cơ thể con người.",
+    "topic": "Thành phần độc hại",
+    "sources": [
+      {
+        "org": "CDC",
+        "title": "Vaccine Excipients and Additives",
+        "url": ""
+      }
+    ],
+    "lang": "vi"
+  },
+  {
+    "id": "myth_032",
+    "myth": "Uống nước chanh sả gừng có thể diệt trừ được COVID-19, không cần dùng vaccine hay thuốc tây.",
+    "fact": "Mặc dù các thức uống thảo dược có thể làm dịu cổ họng hoặc tăng cường thể trạng, nhưng chưa có bất kỳ bằng chứng khoa học nào chứng minh chúng có khả năng tiêu diệt virus hay chữa khỏi COVID-19. Đây không phải là biện pháp thay thế cho vaccine và điều trị y tế.",
+    "topic": "Tin giả phương pháp chữa trị",
+    "sources": [
+      {
+        "org": "Bộ Y tế Việt Nam",
+        "title": "Khuyến cáo về các bài thuốc chữa COVID-19 lan truyền trên mạng",
+        "url": ""
+      },
+      {
+        "org": "WHO",
+        "title": "Mythbusters",
+        "url": "https://www.who.int/emergencies/diseases/novel-coronavirus-2019/advice-for-public/myth-busters"
+      }
+    ],
+    "lang": "vi"
+  }
+]

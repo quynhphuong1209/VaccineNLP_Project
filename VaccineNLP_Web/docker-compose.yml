@@ -61,9 +61,11 @@ services:
       - LOCAL_FALLBACK=${LOCAL_FALLBACK}
       - XAI_BACKEND=${XAI_BACKEND}
       - LM_API_TOKEN=${LM_API_TOKEN}
+      - XAI_CACHE_PATH=/xai_cache/xai_cache.json
     volumes:
       - ./xai_service:/app
       - ./models:/models:ro
+      - ../app_gradio/data/xai_cache.json:/xai_cache/xai_cache.json:ro
 
   frontend:
     build: ./frontend
@@ -72,7 +74,8 @@ services:
       - "5173:5173"
     mem_limit: 1g
     environment:
-      - VITE_API_URL=http://localhost:8000
+      - VITE_API_URL=
+      - VITE_API_PROXY_TARGET=http://api_service:8000
     volumes:
       - ./frontend:/app
       - /app/node_modules

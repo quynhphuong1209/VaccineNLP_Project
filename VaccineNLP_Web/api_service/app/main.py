@@ -1,10 +1,11 @@
-import os, hashlib, random, json
-from typing import Optional
+import datetime, os, hashlib, random, json, re
+from pathlib import Path
+from typing import Optional, List, Tuple
 from contextlib import asynccontextmanager
 import requests
 from fastapi import FastAPI, BackgroundTasks, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, Response
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -14,16 +15,115 @@ import torch
 from transformers import AutoTokenizer
 from .model_classes import PhoBERTMultitaskClassifier
 
-MODEL_PATH = os.environ.get("PHOBERT_PATH", "/models/phobert_multitask.pt")
+def _load_env_defaults():
+    """Load local .env files for dev runs without overriding real environment."""
+    here = Path(__file__).resolve()
+    candidates = [
+        Path.cwd() / ".env",
+        Path.cwd() / "VaccineNLP_Web" / ".env",
+        here.parents[2] / ".env",  # VaccineNLP_Web/.env
+        here.parents[3] / ".env",  # repo root .env
+    ]
+    seen = set()
+    for path in candidates:
+        if path in seen or not path.exists():
+            continue
+        seen.add(path)
+        try:
+            for raw in path.read_text(encoding="utf-8").splitlines():
+                line = raw.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                key, value = line.split("=", 1)
+                key = key.strip()
+                value = value.strip().strip('"').strip("'")
+                if key:
+                    os.environ.setdefault(key, value)
+        except OSError:
+            continue
+
+
+_load_env_defaults()
+
+def _resolve_phobert_path() -> str:
+    explicit = os.environ.get("PHOBERT_PATH", "").strip()
+    if explicit:
+        return explicit
+
+    here = Path(__file__).resolve()
+    candidates = [
+        Path("/models/phobert_multitask.pt"),                # Docker volume mount
+        here.parents[2] / "models" / "phobert_multitask.pt", # VaccineNLP_Web/models
+        Path.cwd() / "models" / "phobert_multitask.pt",
+        Path.cwd() / "VaccineNLP_Web" / "models" / "phobert_multitask.pt",
+    ]
+    for path in candidates:
+        if path.exists():
+            return str(path)
+    return str(candidates[0])
+
+
+def _running_in_container() -> bool:
+    return Path("/.dockerenv").exists() or os.environ.get("RUNNING_IN_DOCKER") == "1"
+
+
+def _resolve_xai_service_url() -> str:
+    explicit = os.environ.get("XAI_SERVICE_URL", "").strip()
+    if explicit:
+        return explicit.rstrip("/")
+    return "http://xai_service:8001" if _running_in_container() else "http://127.0.0.1:8001"
+
+
+MODEL_PATH = _resolve_phobert_path()
+XAI_SERVICE_URL = _resolve_xai_service_url()
 phobert = {}
 
 from .preprocess import prepare_text
+from .hardening import canonicalize, obfuscation_report
+from .semantic_norm import semantic_normalize, lexicon_hits
 
 ID2LABEL = {
     "misinfo":   {0: "Fake", 1: "Real"},
     "stance":    {0: "Favor", 1: "Against", 2: "Neutral"},
     "sentiment": {0: "Negative", 1: "Neutral", 2: "Positive"},
 }
+
+_LABEL_VI = {
+    "misinfo": {"Fake": "Có dấu hiệu tin giả", "Real": "Không phát hiện dấu hiệu sai lệch"},
+    "stance": {"Favor": "Ủng hộ", "Against": "Phản đối", "Neutral": "Trung lập"},
+    "sentiment": {"Positive": "Tích cực", "Negative": "Tiêu cực", "Neutral": "Trung tính"},
+}
+
+MISINFO_REVIEW_TAU = float(os.environ.get("MISINFO_REVIEW_TAU", "0.60"))
+MISINFO_DISCLAIMER = "Đây là tín hiệu tự động từ AI, không phải kết luận về tính đúng/sai. Vui lòng đối chiếu nguồn chính thống."
+
+def misinfo_display_label(label_internal: str, score: float) -> str:
+    if score < MISINFO_REVIEW_TAU:
+        return "Cần kiểm chứng"
+    return _LABEL_VI["misinfo"].get(label_internal, label_internal)
+
+# Dynamically bind properties to AnalysisHistory for Pydantic serialization
+@property
+def _display_label(self) -> str:
+    return misinfo_display_label(self.misinfo_label, self.misinfo_score)
+
+@property
+def _disclaimer(self) -> str:
+    return MISINFO_DISCLAIMER
+
+@property
+def _obfuscation(self) -> dict:
+    return obfuscation_report(self.source_text)
+
+@property
+def _coded_language(self) -> list:
+    return lexicon_hits(self.source_text)
+
+AnalysisHistory.display_label = _display_label
+AnalysisHistory.disclaimer = _disclaimer
+AnalysisHistory.obfuscation = _obfuscation
+AnalysisHistory.coded_language = _coded_language
+
 
 
 def compute_consistency(misinfo: str, stance: str, sentiment: str) -> str:
@@ -92,7 +192,7 @@ def call_gemma_explain(row_id: int, text: str, labels: dict):
     db = SessionLocal()
     try:
         try:
-            r = requests.post(os.environ["XAI_SERVICE_URL"] + "/api/explain",
+            r = requests.post(XAI_SERVICE_URL + "/api/explain",
                               json={"text": text, "predicted_labels": labels}, timeout=120)
             r.raise_for_status()
             data = r.json()
@@ -115,6 +215,14 @@ class AnalyzeRequest(BaseModel):
     text: str
     source_url: Optional[str] = None
 
+class BatchAnalyzeRequest(BaseModel):
+    texts: List[str]
+    source_url: Optional[str] = None
+
+class CrawlRequest(BaseModel):
+    url: str
+    max_items: int = 30
+
 class AnalysisResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
@@ -128,15 +236,40 @@ class AnalysisResponse(BaseModel):
     consistency_flag: str
     xai_status: str
     xai_explanation: Optional[dict] = None
+    display_label: str
+    disclaimer: str
+    obfuscation: Optional[dict] = None
+    coded_language: Optional[List[dict]] = None
+
+class HistoryItem(AnalysisResponse):
+    source_text: str
+    source_url: Optional[str] = None
+    created_at: Optional[datetime.datetime] = None
+
+class BatchAnalyzeResponse(BaseModel):
+    rows: List[HistoryItem]
+
+class CrawlResponse(BaseModel):
+    source_type: str
+    source_info: str
+    count: int
+    texts: List[str]
+    batch_text: str
 
 @torch.no_grad()
 def phobert_infer(text: str) -> dict:
     """
     Trả về: {"misinfo": (label, top_score), "stance": (...), "sentiment": (...),
-             "_probs": {"misinfo": {"Fake":p,"Real":p}, "stance": {...}, "sentiment": {...}}}
+             "_probs": {"misinfo": {"Fake":p,"Real":p}, "stance": {...}, "sentiment": {...}},
+             "obfuscation": dict, "coded_language": list, "raw_misinfo_label": str}
     - Tuple (label, score) GIỮ NGUYÊN để không vỡ các call-site cũ.
     - "_probs": phân phối softmax ĐẦY ĐỦ (thật) cho card phân phối ở frontend.
     """
+    canon = canonicalize(text)
+    sem = semantic_normalize(canon)
+    obf = obfuscation_report(text)
+    coded = lexicon_hits(text)
+
     if "model" not in phobert:
         # MOCK: tạo phân phối ngẫu nhiên nhưng HỢP LỆ (tổng=1, 1 lớp trội), tránh số bịa cố định.
         out, probs_all = {}, {}
@@ -150,45 +283,341 @@ def phobert_infer(text: str) -> dict:
             out[task] = (lab, pr[lab])
             probs_all[task] = pr
         out["_probs"] = probs_all
+        if obf["level"] == "high" and out["misinfo"][0] == "Fake":
+            out["raw_misinfo_label"] = "Real"
+        else:
+            out["raw_misinfo_label"] = out["misinfo"][0]
+        out["obfuscation"] = obf
+        out["coded_language"] = coded
         return out
 
-    text = prepare_text(text)
-    enc = phobert["tok"](text, return_tensors="pt", truncation=True, max_length=256)
-    # LƯU Ý: PhoBERTMultitaskClassifier trả về TUPLE (misinfo, stance, sentiment)
-    out_logits = phobert["model"](input_ids=enc["input_ids"], attention_mask=enc["attention_mask"])
-    logits = {"misinfo": out_logits[0], "stance": out_logits[1], "sentiment": out_logits[2]}
+    # Chạy trên bản semantic_normalize (MAIN result)
+    text_canon = prepare_text(sem)
+    enc_canon = phobert["tok"](text_canon, return_tensors="pt", truncation=True, max_length=256)
+    out_logits_canon = phobert["model"](input_ids=enc_canon["input_ids"], attention_mask=enc_canon["attention_mask"])
+    logits_canon = {"misinfo": out_logits_canon[0], "stance": out_logits_canon[1], "sentiment": out_logits_canon[2]}
 
     res, probs_all = {}, {}
     for task in ("misinfo", "stance", "sentiment"):
-        prob = torch.softmax(logits[task], dim=-1)[0]
+        prob = torch.softmax(logits_canon[task], dim=-1)[0]
         idx = int(prob.argmax())
         res[task] = (ID2LABEL[task][idx], round(float(prob[idx]), 4))
         probs_all[task] = {ID2LABEL[task][i]: round(float(prob[i]), 4) for i in range(prob.shape[0])}
     res["_probs"] = probs_all
+
+    # Chạy thêm trên bản raw để so nhãn misinfo (chỉ khi obf["level"] != "none")
+    if obf["level"] == "none":
+        res["raw_misinfo_label"] = res["misinfo"][0]
+    else:
+        text_raw = prepare_text(text)
+        enc_raw = phobert["tok"](text_raw, return_tensors="pt", truncation=True, max_length=256)
+        out_logits_raw = phobert["model"](input_ids=enc_raw["input_ids"], attention_mask=enc_raw["attention_mask"])
+        logits_raw_misinfo = out_logits_raw[0]
+        prob_raw_misinfo = torch.softmax(logits_raw_misinfo, dim=-1)[0]
+        raw_idx = int(prob_raw_misinfo.argmax())
+        res["raw_misinfo_label"] = ID2LABEL["misinfo"][raw_idx]
+    res["obfuscation"] = obf
+    res["coded_language"] = coded
+
     return res
 
-@app.post("/api/analyze", response_model=AnalysisResponse)
-def analyze(req: AnalyzeRequest, db: Session = Depends(get_db)):
-    h = hashlib.md5(req.text.encode("utf-8")).hexdigest()
+def _analyze_and_save(text: str, source_url: Optional[str], db: Session) -> AnalysisHistory:
+    text_clean = (text or "").strip()
+    if not text_clean:
+        raise HTTPException(status_code=400, detail="Text is empty")
+
+    h = hashlib.md5(text_clean.encode("utf-8")).hexdigest()
     cached = db.scalar(select(AnalysisHistory).where(AnalysisHistory.text_hash == h))
-    if cached:
+    if cached and cached.phobert_probs:
         return cached
 
-    p = phobert_infer(req.text)
-    labels = {k: v[0] for k, v in p.items() if k != "_probs"}
-    row = AnalysisHistory(
-        source_text=req.text, source_url=req.source_url, text_hash=h,
-        misinfo_label=p["misinfo"][0], misinfo_score=p["misinfo"][1],
-        stance_label=p["stance"][0], stance_score=p["stance"][1],
-        sentiment_label=p["sentiment"][0], sentiment_score=p["sentiment"][1],
-        phobert_probs=p["_probs"],
-        consistency_flag=compute_consistency(labels["misinfo"], labels["stance"], labels["sentiment"]),
-        xai_status="idle",
-    )
-    db.add(row)
+    p = phobert_infer(text_clean)
+    labels = {k: v[0] for k, v in p.items() if k in ("misinfo", "stance", "sentiment")}
+    
+    obf = p["obfuscation"]
+    if p["raw_misinfo_label"] != labels["misinfo"] or obf["level"] == "high":
+        consistency = "evasion_suspected"
+    else:
+        consistency = compute_consistency(labels["misinfo"], labels["stance"], labels["sentiment"])
+
+    if cached:
+        row = cached
+        row.source_url = row.source_url or source_url
+        row.misinfo_label = p["misinfo"][0]
+        row.misinfo_score = p["misinfo"][1]
+        row.stance_label = p["stance"][0]
+        row.stance_score = p["stance"][1]
+        row.sentiment_label = p["sentiment"][0]
+        row.sentiment_score = p["sentiment"][1]
+        row.phobert_probs = p["_probs"]
+        row.consistency_flag = consistency
+    else:
+        row = AnalysisHistory(
+            source_text=text_clean,
+            source_url=source_url,
+            text_hash=h,
+            misinfo_label=p["misinfo"][0],
+            misinfo_score=p["misinfo"][1],
+            stance_label=p["stance"][0],
+            stance_score=p["stance"][1],
+            sentiment_label=p["sentiment"][0],
+            sentiment_score=p["sentiment"][1],
+            phobert_probs=p["_probs"],
+            consistency_flag=consistency,
+            xai_status="idle",
+        )
+        db.add(row)
     db.commit()
     db.refresh(row)
     return row
+
+@app.post("/api/analyze", response_model=AnalysisResponse)
+def analyze(req: AnalyzeRequest, db: Session = Depends(get_db)):
+    return _analyze_and_save(req.text, req.source_url, db)
+
+@app.post("/api/batch-analyze", response_model=BatchAnalyzeResponse)
+def batch_analyze(req: BatchAnalyzeRequest, db: Session = Depends(get_db)):
+    texts = []
+    seen = set()
+    for raw in req.texts:
+        text_clean = (raw or "").strip()
+        if not text_clean:
+            continue
+        h = hashlib.md5(text_clean.encode("utf-8")).hexdigest()
+        if h in seen:
+            continue
+        seen.add(h)
+        texts.append(text_clean)
+    if not texts:
+        raise HTTPException(status_code=400, detail="No valid texts")
+    if len(texts) > 100:
+        texts = texts[:100]
+
+    rows = [_analyze_and_save(text, req.source_url, db) for text in texts]
+    return {"rows": rows}
+
+_NEWS_DOMAINS = [
+    "vnexpress", "tuoitre", "thanhnien", "dantri", "vietnamnet",
+    "suckhoedoisong", "laodong", "tienphong", "znews", "hanoimoi",
+    "baochinhphu", "nhandan", "vov", "vtv",
+]
+
+_SPAM_KEYWORDS = [
+    "inbox", "ib shop", "giá bao nhiêu", "mua ở đâu", "ship", "freeship",
+    "liên hệ zalo", "sđt", "tuyển dụng", "tuyển ctv", "sỉ lẻ", "giá rẻ",
+    "thanh lý", "chốt đơn", "nhận hàng", "uy tín", "đặt hàng", "zalo sđt",
+    "cam kết", "hiệu quả", "giá sỉ", "giá lẻ", "chuyên sỉ", "tuyển đại lý",
+]
+
+_VACCINE_KEYWORDS = [
+    "vaccine", "vắc xin", "vacxin", "tiêm", "mũi", "bác sĩ", "bệnh", "y tế",
+    "thuốc", "phòng dịch", "dịch bệnh", "cúm", "sởi", "hpv", "covid",
+    "tiêm chủng", "miễn dịch",
+]
+
+def _detect_source(url: str) -> str:
+    url_lower = url.lower()
+    if "youtube.com" in url_lower or "youtu.be" in url_lower:
+        return "youtube"
+    if any(d in url_lower for d in ["facebook.com", "tiktok.com", "threads.net"]):
+        return "apify"
+    if any(d in url_lower for d in _NEWS_DOMAINS):
+        return "news"
+    return "news"
+
+def _collect_apify_tokens() -> List[str]:
+    keys = [
+        "APIFY_TOKEN", "APIFY_API_TOKEN", "APIFY_TOKEN_1", "APIFY_API_TOKEN_1",
+        "APIFY_TOKEN_2", "APIFY_API_TOKEN_2", "APIFY_TOKEN_3", "APIFY_API_TOKEN_3",
+        "APIFY_TOKEN_4", "APIFY_API_TOKEN_4", "APIFY_TOKEN_5", "APIFY_API_TOKEN_5",
+    ]
+    tokens = []
+    for key in keys:
+        value = os.environ.get(key, "").strip()
+        if value and value not in tokens:
+            tokens.append(value)
+    return tokens
+
+def _is_valid_crawled_text(text: str) -> bool:
+    value = (text or "").strip()
+    if len(value) < 15 or len(value.split()) < 4:
+        return False
+    low = value.lower()
+    if any(keyword in low for keyword in _SPAM_KEYWORDS):
+        return False
+    return any(keyword in low for keyword in _VACCINE_KEYWORDS)
+
+def _clean_crawled_text(text: str) -> str:
+    return re.sub(r"\s+", " ", (text or "").strip())
+
+def _fetch_news_segments(url: str) -> Tuple[List[str], str]:
+    try:
+        import trafilatura
+    except ImportError as exc:
+        raise RuntimeError("api_service chưa cài trafilatura để đọc báo điện tử.") from exc
+
+    downloaded = trafilatura.fetch_url(url)
+    if not downloaded:
+        return [], "Không tải được nội dung bài viết."
+    content = trafilatura.extract(downloaded, favor_recall=True) or ""
+    content = content.strip()
+    if not content:
+        return [], "Không trích xuất được phần văn bản chính của bài viết."
+    return [content], "Báo điện tử"
+
+def _fetch_youtube_segments(url: str, max_items: int) -> Tuple[List[str], str]:
+    try:
+        import yt_dlp
+    except ImportError as exc:
+        raise RuntimeError("api_service chưa cài yt-dlp để đọc YouTube.") from exc
+
+    opts = {"quiet": True, "skip_download": True, "getcomments": True}
+    texts: List[str] = []
+    with yt_dlp.YoutubeDL(opts) as ydl:
+        info = ydl.extract_info(url, download=False)
+    title = _clean_crawled_text(info.get("title", ""))
+    desc = _clean_crawled_text((info.get("description") or "")[:700])
+    if title:
+        texts.append(f"[TIÊU ĐỀ VIDEO] {title}")
+    if desc:
+        texts.append(f"[MÔ TẢ VIDEO] {desc}")
+    for comment in info.get("comments") or []:
+        c_text = _clean_crawled_text(comment.get("text", ""))
+        if c_text and _is_valid_crawled_text(c_text):
+            texts.append(c_text)
+        if len(texts) >= max_items + 2:
+            break
+    return texts[: max_items + 2], "YouTube"
+
+def _apify_actor_config(kind: str, url: str, max_items: int) -> Tuple[str, dict, str]:
+    cap = min(max_items, 15)
+    low = url.lower()
+    if kind == "youtube_apify" or "youtube.com" in low or "youtu.be" in low:
+        return (
+            "streamers/youtube-comments-scraper",
+            {"startUrls": [{"url": url}], "maxComments": cap},
+            "YouTube qua Apify",
+        )
+    if "facebook.com" in low:
+        if "/groups/" in low:
+            return (
+                "apify/facebook-groups-scraper",
+                {
+                    "startUrls": [{"url": url}],
+                    "maxPosts": 3,
+                    "maxComments": cap,
+                    "maxCommentsPerPost": 5,
+                    "maxPostsPerGroup": 3,
+                    "resultsLimit": 15,
+                },
+                "Facebook Group qua Apify",
+            )
+        if any(marker in low for marker in ["/posts/", "/permalink/", "comment_id=", "/pfbid"]):
+            return (
+                "apify/facebook-comments-scraper",
+                {"startUrls": [{"url": url}], "maxComments": cap, "resultsLimit": cap},
+                "Facebook Post/Comments qua Apify",
+            )
+        return (
+            "apify/facebook-posts-scraper",
+            {"startUrls": [{"url": url}], "maxPosts": 3, "maxComments": cap, "maxCommentsPerPost": 5},
+            "Facebook Page/Profile qua Apify",
+        )
+    if "tiktok.com" in low:
+        return (
+            "clockworks/tiktok-comments-scraper",
+            {"postURLs": [url], "maxComments": cap},
+            "TikTok Comments qua Apify",
+        )
+    if "threads.net" in low:
+        return (
+            "thenetaji/threads-scraper",
+            {"startUrls": [{"url": url}], "maxItems": cap},
+            "Threads qua Apify",
+        )
+    raise RuntimeError("URL mạng xã hội này chưa được hỗ trợ.")
+
+def _extract_apify_text(item: dict) -> str:
+    for key in ("text", "message", "caption", "comment", "fullText", "description", "messageText", "title", "commentText", "body"):
+        value = item.get(key)
+        if isinstance(value, str) and value.strip():
+            return _clean_crawled_text(value)
+    return ""
+
+def _fetch_apify_segments(url: str, max_items: int, kind: str = "apify") -> Tuple[List[str], str]:
+    tokens = _collect_apify_tokens()
+    if not tokens:
+        return [], "Thiếu APIFY_TOKEN/APIFY_API_TOKEN trong .env hoặc môi trường chạy."
+    try:
+        from apify_client import ApifyClient
+    except ImportError as exc:
+        raise RuntimeError("api_service chưa cài apify-client để gọi Apify.") from exc
+
+    actor_id, run_input, source_info = _apify_actor_config(kind, url, max_items)
+    last_error = ""
+    for token in tokens:
+        try:
+            client = ApifyClient(token)
+            client.user().get()
+            run = client.actor(actor_id).call(run_input=run_input)
+            items = list(client.dataset(run["defaultDatasetId"]).iterate_items())
+            texts = []
+            for item in items:
+                text = _extract_apify_text(item)
+                if text and _is_valid_crawled_text(text):
+                    texts.append(text)
+                if len(texts) >= min(max_items, 15):
+                    break
+            if texts:
+                return texts, source_info
+            last_error = "Apify trả về dữ liệu nhưng không có nội dung vaccine hợp lệ."
+        except Exception as exc:
+            last_error = str(exc)
+            continue
+    return [], f"Không thu thập được dữ liệu từ Apify. {last_error}".strip()
+
+def _crawl_url_as_list(url: str, max_items: int = 30) -> Tuple[List[str], str, str]:
+    url = (url or "").strip()
+    if not url:
+        return [], "Vui lòng nhập URL.", "unknown"
+    if not url.startswith(("http://", "https://")):
+        return [], "URL không hợp lệ. URL phải bắt đầu bằng http:// hoặc https://.", "unknown"
+
+    max_items = max(1, min(int(max_items or 30), 50))
+    kind = _detect_source(url)
+    if kind == "news":
+        texts, info = _fetch_news_segments(url)
+        return texts[:max_items], info, kind
+    if kind == "youtube":
+        try:
+            texts, info = _fetch_youtube_segments(url, max_items)
+            if texts:
+                return texts, info, kind
+        except Exception:
+            texts, info = _fetch_apify_segments(url, max_items, kind="youtube_apify")
+            return texts, info, "youtube_apify"
+        return [], "Không thu thập được nội dung YouTube phù hợp.", kind
+    texts, info = _fetch_apify_segments(url, max_items, kind=kind)
+    return texts, info, kind
+
+@app.post("/api/crawl-url", response_model=CrawlResponse)
+def crawl_url(req: CrawlRequest):
+    try:
+        texts, info, kind = _crawl_url_as_list(req.url, req.max_items)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Crawler failed: {type(exc).__name__}") from exc
+    if not texts:
+        raise HTTPException(status_code=400, detail=info)
+    batch_text = "\n\n---\n\n".join(texts)
+    return {
+        "source_type": kind,
+        "source_info": info,
+        "count": len(texts),
+        "texts": texts,
+        "batch_text": batch_text,
+    }
 
 @app.post("/api/analyze-stream")
 def analyze_stream(req: AnalyzeRequest, db: Session = Depends(get_db)):
@@ -206,9 +635,13 @@ def analyze_stream(req: AnalyzeRequest, db: Session = Depends(get_db)):
                 "stance_score": cached.stance_score,
                 "sentiment_label": cached.sentiment_label,
                 "sentiment_score": cached.sentiment_score,
-                "probs": cached.phobert_probs,          # MỚI
+                "probs": cached.phobert_probs,
                 "consistency_flag": cached.consistency_flag,
-                "xai_status": cached.xai_status
+                "xai_status": cached.xai_status,
+                "display_label": misinfo_display_label(cached.misinfo_label, cached.misinfo_score),
+                "disclaimer": MISINFO_DISCLAIMER,
+                "obfuscation": cached.obfuscation,
+                "coded_language": cached.coded_language
             }
             yield _sse(phobert_data)
 
@@ -225,8 +658,13 @@ def analyze_stream(req: AnalyzeRequest, db: Session = Depends(get_db)):
                                  headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
     p = phobert_infer(req.text)
-    labels = {k: v[0] for k, v in p.items() if k != "_probs"}
-    consistency = compute_consistency(labels["misinfo"], labels["stance"], labels["sentiment"])
+    labels = {k: v[0] for k, v in p.items() if k in ("misinfo", "stance", "sentiment")}
+    
+    obf = p["obfuscation"]
+    if p["raw_misinfo_label"] != labels["misinfo"] or obf["level"] == "high":
+        consistency = "evasion_suspected"
+    else:
+        consistency = compute_consistency(labels["misinfo"], labels["stance"], labels["sentiment"])
 
     if cached:
         row = cached
@@ -268,11 +706,15 @@ def analyze_stream(req: AnalyzeRequest, db: Session = Depends(get_db)):
             "sentiment_score": p["sentiment"][1],
             "probs": probs_snapshot,                 # MỚI
             "consistency_flag": consistency,
-            "xai_status": "pending"
+            "xai_status": "pending",
+            "display_label": misinfo_display_label(p["misinfo"][0], p["misinfo"][1]),
+            "disclaimer": MISINFO_DISCLAIMER,
+            "obfuscation": p["obfuscation"],
+            "coded_language": p["coded_language"]
         }
         yield _sse(phobert_data)
 
-        xai_url = os.environ.get("XAI_SERVICE_URL", "http://xai_service:8001")
+        xai_url = XAI_SERVICE_URL
         try:
             final_data = None
             body = {"text": req.text, "predicted_labels": labels}
@@ -342,7 +784,69 @@ def analyze_stream(req: AnalyzeRequest, db: Session = Depends(get_db)):
 @app.get("/health")
 @app.get("/")
 def health_check():
-    return {"service": "API Core", "status": "Ready", "model_loaded": "model" in phobert}
+    return {"service": "API Core", "status": "Ready", "model_loaded": "model" in phobert, "model_path": MODEL_PATH}
+
+@app.get("/api/history", response_model=List[HistoryItem])
+def history(limit: int = 50, db: Session = Depends(get_db)):
+    limit = max(1, min(limit, 200))
+    return db.scalars(
+        select(AnalysisHistory)
+        .order_by(AnalysisHistory.created_at.desc(), AnalysisHistory.id.desc())
+        .limit(limit)
+    ).all()
+
+
+
+def _build_report_markdown(row: AnalysisHistory) -> str:
+    created = row.created_at.isoformat() if row.created_at else ""
+    explanation = row.xai_explanation or {}
+    reasoning = explanation.get("reasoning") or "Chưa sinh giải thích XAI."
+    return f"""# Báo cáo phân tích VaccineNLP
+
+**Mã phân tích:** #{row.id}
+**Thời gian:** {created}
+**Nguồn:** {row.source_url or "Không có"}
+
+## Văn bản
+
+> {row.source_text}
+
+## Kết quả PhoBERT-v2
+
+| Trục | Nhãn | Độ tin cậy |
+|---|---|---:|
+| Dấu hiệu sai lệch | {_LABEL_VI["misinfo"].get(row.misinfo_label, row.misinfo_label)} | {row.misinfo_score * 100:.1f}% |
+| Thái độ với vaccine | {_LABEL_VI["stance"].get(row.stance_label, row.stance_label)} | {row.stance_score * 100:.1f}% |
+| Cảm xúc tổng thể | {_LABEL_VI["sentiment"].get(row.sentiment_label, row.sentiment_label)} | {row.sentiment_score * 100:.1f}% |
+
+**Cờ nhất quán:** `{row.consistency_flag}`
+
+## Phân phối softmax
+
+```json
+{json.dumps(row.phobert_probs or {}, ensure_ascii=False, indent=2)}
+```
+
+## Giải thích XAI
+
+{reasoning}
+
+---
+
+*Báo cáo được tạo tự động bởi VaccineNLP Web.*
+"""
+
+@app.get("/api/report/{aid}.md")
+def download_report(aid: int, db: Session = Depends(get_db)):
+    row = db.get(AnalysisHistory, aid)
+    if not row:
+        raise HTTPException(status_code=404, detail="Not found")
+    content = _build_report_markdown(row)
+    return Response(
+        content=content,
+        media_type="text/markdown; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="VaccineNLP_Report_{aid}.md"'},
+    )
 
 @app.post("/api/explain-stream")
 def explain_stream(req: AnalyzeRequest, db: Session = Depends(get_db)):
@@ -352,14 +856,19 @@ def explain_stream(req: AnalyzeRequest, db: Session = Depends(get_db)):
     if row is None:
         # Text not yet analyzed — run PhoBERT first
         p = phobert_infer(req.text)
-        labels = {k: v[0] for k, v in p.items() if k != "_probs"}
+        labels = {k: v[0] for k, v in p.items() if k in ("misinfo", "stance", "sentiment")}
+        obf = p["obfuscation"]
+        if p["raw_misinfo_label"] != labels["misinfo"] or obf["level"] == "high":
+            consistency = "evasion_suspected"
+        else:
+            consistency = compute_consistency(labels["misinfo"], labels["stance"], labels["sentiment"])
         row = AnalysisHistory(
             source_text=req.text, source_url=req.source_url, text_hash=h,
             misinfo_label=p["misinfo"][0], misinfo_score=p["misinfo"][1],
             stance_label=p["stance"][0], stance_score=p["stance"][1],
             sentiment_label=p["sentiment"][0], sentiment_score=p["sentiment"][1],
             phobert_probs=p["_probs"], xai_status="pending",
-            consistency_flag=compute_consistency(labels["misinfo"], labels["stance"], labels["sentiment"]))
+            consistency_flag=consistency)
         db.add(row)
         db.commit()
         db.refresh(row)
@@ -370,7 +879,7 @@ def explain_stream(req: AnalyzeRequest, db: Session = Depends(get_db)):
     row_id = row.id
 
     def gen():
-        xai_url = os.environ.get("XAI_SERVICE_URL", "http://xai_service:8001")
+        xai_url = XAI_SERVICE_URL
         final_data = None
         try:
             with requests.post(f"{xai_url}/api/explain-stream",

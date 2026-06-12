@@ -79,6 +79,7 @@ VETERINARY_SIGNALS = [
     r'\bbò\b.*\btiêm\b', r'\btrại\s+nuôi\b', r'\bđàn\s+gà\b',
     r'\bthuốc\s+thú\s+y\b', r'\bkháng\s+sinh\b.*\bchăn\b',
     r'\bsản\s+xuất\s+trứng\b', r'\btrại\s+gà\b',
+    r'\bgà\b', r'\bvịt\b', r'\bnuôi\s+nhốt\b',
 ]
 
 # [NEW] Patterns nội dung không liên quan (Showbiz, Giải trí, Du lịch)

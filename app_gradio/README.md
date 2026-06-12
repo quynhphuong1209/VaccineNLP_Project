@@ -1,6 +1,6 @@
 ---
-title: VaccineNLP Demo
-emoji: 🦠
+title: HUPH NLP Demo
+emoji: 📊
 colorFrom: indigo
 colorTo: green
 sdk: gradio
@@ -9,41 +9,30 @@ app_file: app.py
 python_version: "3.10"
 pinned: false
 license: mit
-short_description: Phát hiện thông tin sai lệch về vaccine tiếng Việt
-models:
-  - hung2903/phobert-vaccine-multitask
-  - hung2903/xlmr-vaccine-multitask
-  - hung2903/gemma-4-E4B-vaccine-xai-merged
+short_description: Phân tích văn bản y tế công cộng tiếng Việt — đồ án HUPH
 ---
 
-# 🦠 VaccineNLP — Phát hiện Tin giả & Phân tích Thái độ Vaccine
+# HUPH NLP Demo
 
-**Đồ án tốt nghiệp HUPH 2026** · Kim Mạnh Hưng (2211090016) · Đinh Lê Quỳnh Phương (2211090031) · GVHD: TS. Trần Lâm Quân
+**Đồ án tốt nghiệp HUPH 2026** · Kim Mạnh Hưng · Đinh Lê Quỳnh Phương · GVHD: TS. Trần Lâm Quân
 
-## Kiến trúc Dual-Student Hybrid
-| Thành phần | Mô hình | Vai trò |
-|---|---|---|
-| Động cơ Phân loại | PhoBERT-v2 (multi-task, 3 heads) | Misinfo · Stance · Sentiment |
-| Động cơ Giải thích | Gemma-4 E4B-it (QLoRA) | Chain-of-Thought + cờ bất đồng thuận |
-| Baseline | XLM-RoBERTa-v1 | So sánh đa ngôn ngữ |
+Ứng dụng phân tích văn bản y tế công cộng tiếng Việt: phân loại đa nhiệm 3 trục
+(PhoBERT-v2 / XLM-R) kèm giải thích (XAI) bằng mô hình ngôn ngữ và Captum Integrated Gradients.
 
-## Benchmark — Macro F1, Gold Test Set (n=186)
-| Mô hình | Misinfo | Stance | Sentiment | Trung bình |
-|---|:---:|:---:|:---:|:---:|
-| PhoBERT-v2 | 0.6996 | **0.6640** | 0.7266 | **0.6967** |
-| Gemma-4 4B | 0.6377 | 0.6264 | **0.7700** | 0.6780 |
-| XLM-R-v1 | **0.7038** | 0.6224 | 0.6866 | 0.6709 |
+## Lưu ý triển khai
+- Dữ liệu nghiên cứu nhạy cảm (mẫu văn bản, cache giải thích) được lưu ở **kho dữ liệu
+  PRIVATE, gated** và nạp lúc chạy qua `HF_TOKEN`; **repo công khai không chứa nội dung thô**.
+- XAI: cache (kho private) → mô hình đám mây dự phòng → template. Có thể bật suy luận bằng
+  mô hình cục bộ qua tunnel (secret `ENABLE_REMOTE_LLM=1` + `LM_STUDIO_BRIDGE_URL`).
 
-## Secrets (HF Spaces → Settings → Repository secrets)
+## Secrets (HF Spaces → Settings)
 ```
-HF_TOKEN=hf_...            # nếu repo model ở chế độ private (model hiện public → có thể bỏ)
-APIFY_TOKEN_1=apify_...    # (tùy chọn) thu thập URL Facebook/TikTok/Threads
-GEMMA_ENDPOINT_URL=...     # (tùy chọn) trỏ tới Kaggle+ngrok đang chạy để bật Gemma "live"
+HF_TOKEN=hf_...            # đọc kho dữ liệu private + tải model
+GEMINI_API_KEY=...         # (+ _2.._5) XAI đám mây dự phòng
+# Tùy chọn bật suy luận mô hình cục bộ qua tunnel:
+# ENABLE_REMOTE_LLM=1
+# LM_STUDIO_BRIDGE_URL=https://<tunnel>/v1
+# LM_API_TOKEN=...   LM_STUDIO_MODEL=...
 ```
 
-## File cần có trong Space
-`app.py` · `requirements.txt` · `README.md` · `huph_logo.png` · thư mục `data/` (`xai_cache.json`, `benchmark_results.json`, `temperature_params.json`).
-
-> ⚠️ **XAI trên HF Spaces:** không có LM Studio (localhost:1234) trên Space, nên Gemma "live" không chạy. Hệ thống dùng **cache (`data/xai_cache.json`)** cho các mẫu mẫu + **fallback template** cho văn bản mới. Để demo hiện lý giải Gemma thật + bảng bất đồng thuận, **phải kèm `data/xai_cache.json`** (chứa reasoning Gold Test Set).
-
-*Powered by Gradio · HuggingFace Spaces (CPU Basic 16GB)*
+*Powered by Gradio · Hugging Face Spaces (CPU Basic)*

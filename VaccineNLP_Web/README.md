@@ -21,7 +21,7 @@ graph TD
    - Tương tác bất đồng bộ theo mô hình **UX 2 nhịp** để giữ trải nghiệm người dùng mượt mà nhất.
 2. **`api_service` (FastAPI + PhoBERT-v2):**
    - Đóng vai trò là API Gateway chính của hệ thống, quản lý CORS và kết nối trực tiếp đến PostgreSQL database.
-   - Sử dụng mô hình PhoBERT-v2 multi-task phân loại nhanh lập tức văn bản trên 3 trục: **Misinfo** (Tin giả/Chính xác), **Stance** (Ủng hộ/Phản đối/Trung lập), và **Sentiment** (Tích cực/Tiêu cực/Trung tính).
+   - Sử dụng mô hình PhoBERT-v2 multi-task phân loại nhanh lập tức văn bản trên 3 trục: **Misinfo** (Tin giả/Không phát hiện dấu hiệu sai lệch), **Stance** (Ủng hộ/Phản đối/Trung lập), và **Sentiment** (Tích cực/Tiêu cực/Trung tính).
 3. **`xai_service` (FastAPI + Gemma-4-4B GGUF):**
    - Đảm nhận tác vụ sinh lời giải thích lý luận (Chain-of-Thought) cho các nhãn đã phân loại.
    - Đóng vai trò như XAI Engine chạy ngầm thông qua hàng đợi bất đồng bộ (`BackgroundTasks`).
@@ -50,7 +50,7 @@ graph TD
 
 | Trục Phân Tích | Nhãn Phân Loại |
 |---|---|
-| **Misinfo** (Tin tức) | `Fake` (Tin giả), `Real` (Chính xác) |
+| **Misinfo** (Tin tức) | `Fake` (Tin giả), `Real` (Không phát hiện dấu hiệu sai lệch) |
 | **Stance** (Lập trường) | `Favor` (Ủng hộ), `Against` (Phản đối), `Neutral` (Trung lập) |
 | **Sentiment** (Cảm xúc) | `Positive` (Tích cực), `Negative` (Tiêu cực), `Neutral` (Trung tính) |
 

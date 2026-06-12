@@ -56,7 +56,7 @@ Thêm cột `phobert_probs` kiểu `JSONB` (cho phép `nullable=True` để tư�
 
 ### Ánh xạ nhãn (ID2LABEL) chuẩn xác từ luận văn
 Mảng phân phối xác suất được xuất ra theo đúng thứ tự nhãn huấn luyện trong luận văn:
-- **Misinfo (2 lớp):** `0: Fake` (Tin giả), `1: Real` (Chính xác)
+- **Misinfo (2 lớp):** `0: Fake` (Tin giả), `1: Real` (Không phát hiện dấu hiệu sai lệch)
 - **Stance (3 lớp):** `0: Favor` (Ủng hộ), `1: Against` (Phản đối), `2: Neutral` (Trung lập)
 - **Sentiment (3 lớp):** `0: Negative` (Tiêu cực), `1: Neutral` (Trung tính), `2: Positive` (Tích cực)
 

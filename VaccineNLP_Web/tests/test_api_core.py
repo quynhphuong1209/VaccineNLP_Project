@@ -50,6 +50,7 @@ class TestApiCore(unittest.TestCase):
         resp = self.client.get("/health")
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.json()["status"], "Ready")
+        self.assertIn("model_path", resp.json())
 
     def test_analyze_endpoint_new_text(self):
         """Verify /api/analyze classifies text, returns probs, and sets xai_status=idle (on-demand)."""
@@ -84,6 +85,95 @@ class TestApiCore(unittest.TestCase):
         id2 = resp2.json()["id"]
         
         self.assertEqual(id1, id2)
+
+    def test_analyze_endpoint_backfills_cached_row_without_probs(self):
+        """Verify old cached rows get phobert_probs backfilled for radar rendering."""
+        text = "Cảnh báo: vắc xin COVID gây vô sinh ở phụ nữ."
+        h = api_main.hashlib.md5(text.encode("utf-8")).hexdigest()
+        db = SessionLocal()
+        try:
+            row = AnalysisHistory(
+                source_text=text,
+                text_hash=h,
+                misinfo_label="Fake",
+                misinfo_score=0.9,
+                stance_label="Against",
+                stance_score=0.8,
+                sentiment_label="Negative",
+                sentiment_score=0.7,
+                phobert_probs=None,
+                consistency_flag="high_risk",
+                xai_status="done",
+            )
+            db.add(row)
+            db.commit()
+            row_id = row.id
+        finally:
+            db.close()
+
+        resp = self.client.post("/api/analyze", json={"text": text})
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertEqual(data["id"], row_id)
+        self.assertIsNotNone(data["phobert_probs"])
+        self.assertIn("misinfo", data["phobert_probs"])
+
+    def test_batch_analyze_saves_rows_and_history_lists_them(self):
+        """Verify batch analysis saves rows in DB and exposes them through history."""
+        payload = {
+            "texts": [
+                "Vắc xin giúp bảo vệ cộng đồng.",
+                "Tin đồn vắc xin làm biến đổi gen là nguy hiểm.",
+            ]
+        }
+        resp = self.client.post("/api/batch-analyze", json=payload)
+        self.assertEqual(resp.status_code, 200)
+        rows = resp.json()["rows"]
+        self.assertEqual(len(rows), 2)
+        self.assertTrue(all(r["id"] for r in rows))
+        self.assertTrue(all(r["phobert_probs"] for r in rows))
+
+        hist = self.client.get("/api/history?limit=10")
+        self.assertEqual(hist.status_code, 200)
+        history_rows = hist.json()
+        self.assertGreaterEqual(len(history_rows), 2)
+        self.assertIn("source_text", history_rows[0])
+
+    def test_crawl_url_news_success(self):
+        """Verify /api/crawl-url returns fetched segments and batch-ready text."""
+        with patch.object(api_main, "_fetch_news_segments", return_value=(
+            ["Vắc xin sởi giúp phòng bệnh cho trẻ nhỏ."],
+            "Báo điện tử",
+        )) as mock_fetch:
+            resp = self.client.post("/api/crawl-url", json={
+                "url": "https://vnexpress.net/vac-xin-soi",
+                "max_items": 5,
+            })
+
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertEqual(data["source_type"], "news")
+        self.assertEqual(data["count"], 1)
+        self.assertIn("Vắc xin sởi", data["batch_text"])
+        mock_fetch.assert_called_once()
+
+    def test_crawl_url_rejects_invalid_url(self):
+        """Verify crawler rejects non-URL input before external fetchers are called."""
+        resp = self.client.post("/api/crawl-url", json={"url": "not-a-url", "max_items": 5})
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn("URL", resp.json()["detail"])
+
+    def test_report_download_markdown(self):
+        """Verify markdown report endpoint returns a downloadable report."""
+        resp = self.client.post("/api/analyze", json={"text": "Vắc xin sởi an toàn."})
+        self.assertEqual(resp.status_code, 200)
+        aid = resp.json()["id"]
+
+        report = self.client.get(f"/api/report/{aid}.md")
+        self.assertEqual(report.status_code, 200)
+        self.assertIn("text/markdown", report.headers["content-type"])
+        self.assertIn("VaccineNLP_Report", report.headers["content-disposition"])
+        self.assertIn("Báo cáo", report.text)
 
     @patch('requests.post')
     def test_explain_stream_endpoint(self, mock_post):
