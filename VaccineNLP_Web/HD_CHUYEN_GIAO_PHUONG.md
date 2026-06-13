@@ -5,6 +5,24 @@
 
 ---
 
+## 🆕 CẬP NHẬT 2026-06-13 (đọc trước)
+
+Hệ thống đã nâng cấp thêm 3 trụ cột (**không train lại mô hình** — checkpoint gốc nguyên vẹn) + cứng hoá an ninh. Những điểm Phương cần biết:
+
+**1. Tính năng mới trên giao diện:**
+- **Nhãn liêm chính:** bỏ nhãn "Chính xác" → *"Không phát hiện dấu hiệu sai lệch"* + disclaimer cố định (AI chỉ báo *tín hiệu*, không phán đúng/sai). Có vùng *"Cần kiểm chứng"* khi độ tin cậy < 60%.
+- **Cảnh báo né tránh:** badge ⚠️ khi văn bản chèn ký tự lạ/uyển ngữ để lách bộ lọc.
+- **Panel "🔍 Đối chiếu bằng chứng":** tự truy hồi lầm tưởng↔đính chính từ nguồn WHO/CDC (RAG) để người dùng đối chiếu.
+- **Chip lệch ngữ nghĩa:** báo khi văn bản lệch xa diễn ngôn vaccine đã biết.
+
+**2. ⚠️ Vị trí file `.env` ĐÃ ĐỔI:** secret (Gemini key, token…) nay đặt ở **`%USERPROFILE%\.config\vaccinenlp\.env`** (ngoài thư mục dự án, để bảo mật) — KHÔNG còn ở gốc repo. Hệ thống tự tìm ở đó (vẫn chạy nếu để ở gốc repo như cũ — code dò cả 2). Anh Hưng gửi Phương file `.env` riêng, **không qua GitHub**.
+
+**3. An ninh đã cứng hoá:** Docker chạy non-root + healthcheck; PostgreSQL chỉ mở cổng nội bộ `127.0.0.1`; secret không nằm trong code/GitHub. Tài liệu `docs/` đã gắn nhãn *lịch sử/lỗi thời* — số liệu cũ phải kiểm chứng trước khi trích dẫn.
+
+**4. Chạy nhanh nhất:** đặt `.env` đúng chỗ (mục 2) → `cd VaccineNLP_Web ; docker compose up`. Kiến trúc & chi tiết bên dưới vẫn đúng.
+
+---
+
 ## 📐 1. KIẾN TRÚC HỆ THỐNG (PA4 ON-DEMAND)
 
 Hệ thống được nâng cấp lên kiến trúc **PA4 (On-Demand XAI)** nhằm giải quyết vấn đề nghẽn luồng xử lý trên CPU khi chạy mô hình Gemma-4B sinh lời giải thích (CoT).

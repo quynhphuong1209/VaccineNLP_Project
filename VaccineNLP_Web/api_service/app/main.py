@@ -19,6 +19,7 @@ def _load_env_defaults():
     """Load local .env files for dev runs without overriding real environment."""
     here = Path(__file__).resolve()
     candidates = [
+        Path.home() / ".config" / "vaccinenlp" / ".env",
         Path.cwd() / ".env",
         Path.cwd() / "VaccineNLP_Web" / ".env",
         here.parents[2] / ".env",  # VaccineNLP_Web/.env
@@ -456,7 +457,14 @@ def _fetch_news_segments(url: str) -> Tuple[List[str], str]:
     except ImportError as exc:
         raise RuntimeError("api_service chưa cài trafilatura để đọc báo điện tử.") from exc
 
-    downloaded = trafilatura.fetch_url(url)
+    try:
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+        response = requests.get(url, headers=headers, timeout=(10, 60))
+        response.raise_for_status()
+        downloaded = response.content
+    except Exception:
+        downloaded = None
+
     if not downloaded:
         return [], "Không tải được nội dung bài viết."
     content = trafilatura.extract(downloaded, favor_recall=True) or ""
@@ -471,7 +479,7 @@ def _fetch_youtube_segments(url: str, max_items: int) -> Tuple[List[str], str]:
     except ImportError as exc:
         raise RuntimeError("api_service chưa cài yt-dlp để đọc YouTube.") from exc
 
-    opts = {"quiet": True, "skip_download": True, "getcomments": True}
+    opts = {"quiet": True, "skip_download": True, "getcomments": True, "socket_timeout": 60}
     texts: List[str] = []
     with yt_dlp.YoutubeDL(opts) as ydl:
         info = ydl.extract_info(url, download=False)
@@ -557,9 +565,9 @@ def _fetch_apify_segments(url: str, max_items: int, kind: str = "apify") -> Tupl
     last_error = ""
     for token in tokens:
         try:
-            client = ApifyClient(token)
+            client = ApifyClient(token, timeout_secs=180)
             client.user().get()
-            run = client.actor(actor_id).call(run_input=run_input)
+            run = client.actor(actor_id).call(run_input=run_input, timeout_secs=180)
             items = list(client.dataset(run["defaultDatasetId"]).iterate_items())
             texts = []
             for item in items:
@@ -720,6 +728,7 @@ def analyze_stream(req: AnalyzeRequest, db: Session = Depends(get_db)):
             body = {"text": req.text, "predicted_labels": labels}
             with requests.post(f"{xai_url}/api/explain-stream", json=body, stream=True, timeout=(10, 120)) as r:
                 r.raise_for_status()
+                r.encoding = "utf-8"
                 for line in r.iter_lines(decode_unicode=True):
                     if not line:
                         continue
@@ -886,6 +895,7 @@ def explain_stream(req: AnalyzeRequest, db: Session = Depends(get_db)):
                                json={"text": req.text, "predicted_labels": labels},
                                stream=True, timeout=(10, 300)) as r:
                 r.raise_for_status()
+                r.encoding = "utf-8"
                 for line in r.iter_lines(decode_unicode=True):
                     if not line or not line.startswith("data:"): continue
                     payload = line[5:].strip()

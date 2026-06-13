@@ -52,6 +52,7 @@ def _load_env_defaults():
     """Load local .env files without overriding Docker/real environment."""
     here = Path(__file__).resolve()
     candidates = [
+        Path.home() / ".config" / "vaccinenlp" / ".env",
         Path.cwd() / ".env",
         Path.cwd() / "VaccineNLP_Web" / ".env",
         here.parents[2] / ".env",  # VaccineNLP_Web/.env
