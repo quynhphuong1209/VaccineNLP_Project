@@ -6,7 +6,7 @@ from zipfile import ZIP_DEFLATED, ZipFile
 
 from docx import Document
 from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT, WD_TABLE_ALIGNMENT
-from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_TAB_ALIGNMENT
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Cm, Inches, Pt, RGBColor
@@ -2106,6 +2106,74 @@ def add_institution_block(doc, use_template_styles=False):
         paragraph.add_run(f" {institution}")
 
 
+def clear_part_content(part):
+    element = part._element
+    for child in list(element):
+        element.remove(child)
+
+
+def add_page_field(paragraph, font_size=8.0):
+    begin = OxmlElement("w:fldChar")
+    begin.set(qn("w:fldCharType"), "begin")
+    begin_run = paragraph.add_run()
+    set_run_font(begin_run, size=font_size)
+    begin_run._r.append(begin)
+
+    instr = OxmlElement("w:instrText")
+    instr.set(qn("xml:space"), "preserve")
+    instr.text = " PAGE "
+    instr_run = paragraph.add_run()
+    set_run_font(instr_run, size=font_size)
+    instr_run._r.append(instr)
+
+    separate = OxmlElement("w:fldChar")
+    separate.set(qn("w:fldCharType"), "separate")
+    separate_run = paragraph.add_run()
+    set_run_font(separate_run, size=font_size)
+    separate_run._r.append(separate)
+
+    result_run = paragraph.add_run("1")
+    set_run_font(result_run, size=font_size)
+
+    end = OxmlElement("w:fldChar")
+    end.set(qn("w:fldCharType"), "end")
+    end_run = paragraph.add_run()
+    set_run_font(end_run, size=font_size)
+    end_run._r.append(end)
+
+
+def configure_running_headers(doc):
+    doc.settings.odd_and_even_pages_header_footer = True
+    for section in doc.sections:
+        section.different_first_page_header_footer = True
+        section.header_distance = Cm(1.25)
+        text_width = section.page_width - section.left_margin - section.right_margin
+
+        clear_part_content(section.first_page_header)
+
+        clear_part_content(section.even_page_header)
+        paragraph = section.even_page_header.add_paragraph()
+        paragraph.paragraph_format.space_before = Pt(0)
+        paragraph.paragraph_format.space_after = Pt(0)
+        paragraph.paragraph_format.line_spacing = 1.0
+        paragraph.paragraph_format.tab_stops.add_tab_stop(text_width, WD_TAB_ALIGNMENT.RIGHT)
+        add_page_field(paragraph)
+        paragraph.add_run("\t")
+        run = paragraph.add_run(AUTHOR_RUNNING)
+        set_run_font(run, size=8.0)
+
+        clear_part_content(section.header)
+        paragraph = section.header.add_paragraph()
+        paragraph.paragraph_format.space_before = Pt(0)
+        paragraph.paragraph_format.space_after = Pt(0)
+        paragraph.paragraph_format.line_spacing = 1.0
+        paragraph.paragraph_format.tab_stops.add_tab_stop(text_width, WD_TAB_ALIGNMENT.RIGHT)
+        run = paragraph.add_run(TITLE_RUNNING)
+        set_run_font(run, size=8.0)
+        paragraph.add_run("\t")
+        add_page_field(paragraph)
+
+
 def normalize_widths(widths):
     total = sum(widths)
     target = 6900
@@ -2336,6 +2404,7 @@ def build_docx(path, figure_paths):
     props.author = "VaccineNLP Project Team"
     props.subject = "FISAT full paper"
     props.keywords = ", ".join(KEYWORDS)
+    configure_running_headers(doc)
     doc.save(path)
 
 
