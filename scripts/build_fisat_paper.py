@@ -637,45 +637,47 @@ SECTIONS = [
                 "public-health surveillance."
             ),
             (
-                "The study is organized around three research questions that are "
-                "retained in this proceedings paper. RQ1 asks how a "
-                "Vietnamese vaccine-domain corpus can be collected, cleaned, and "
-                "validated with a multi-axis annotation schema. RQ2 asks how well a "
-                "Dual-Student Hybrid architecture detects misinformation while also "
+                "For an international intelligent-systems audience, the paper frames "
+                "the problem through three operational research questions. RQ1 asks "
+                "how a Vietnamese vaccine-domain corpus can be collected, cleaned, "
+                "and validated with a multi-axis annotation schema. RQ2 asks how well "
+                "a Dual-Student Hybrid architecture detects misinformation while also "
                 "producing interpretable explanations. RQ3 asks whether sentiment, "
                 "stance, and source platform are statistically associated with "
-                "misinformation risk. These questions are deliberately operational: "
-                "they connect model accuracy with the needs of public-health analysts "
-                "who must prioritize limited review capacity during an infodemic."
+                "misinformation risk. These questions connect model accuracy with the "
+                "needs of public-health analysts who must prioritize limited review "
+                "capacity during an infodemic."
             ),
             (
                 "The Vietnamese setting makes this problem especially relevant for "
-                "intelligent-systems research in artificial intelligence, digital "
-                "transformation, and applied health informatics. Vaccine discussions "
-                "often appear as short comments, conversational fragments, or screenshots "
-                "copied across platforms. A single comment may include a personal adverse "
-                "event narrative, a rhetorical question, and an implicit recommendation "
-                "against vaccination. For this reason, the system is designed not as a "
-                "binary censorship tool, but as an intelligent surveillance and triage "
-                "layer that surfaces uncertain or high-risk texts for expert review."
+                "EAI FISAT 2026, the EAI FPT International Conference on Intelligent "
+                "Systems and Advanced Technologies, because it combines natural "
+                "language processing, AI applications in healthcare, system-level "
+                "implementation, comparative performance evaluation, and experimental "
+                "validation. Vaccine discussions often appear as short comments, "
+                "conversational fragments, or screenshots copied across platforms. A "
+                "single comment may include a personal adverse event narrative, a "
+                "rhetorical question, and an implicit recommendation against vaccination. "
+                "For this reason, the system is designed not as a binary censorship "
+                "tool, but as an intelligent surveillance and triage layer that surfaces "
+                "uncertain or high-risk texts for expert review."
             ),
             {"subsection": "Research Contributions"},
             (
                 "This paper contributes an applied intelligent-system study at the "
                 "intersection of natural language processing, trustworthy AI, health "
-                "informatics, and social media analytics. Consistent with the original "
-                "study protocol, the paper addresses two aims: (i) to build and evaluate "
-                "Vietnamese NLP models for vaccine-related misinformation, stance, and "
-                "sentiment classification; and (ii) to assess the usefulness and "
-                "limitations of LLM support for medical text annotation and explanation. "
-                "To make the research contribution explicit, the paper reports four "
-                "concrete outputs: C1, an expert-validated Vietnamese Gold Test Set for "
-                "vaccine-related misinformation, stance, and sentiment; C2, a controlled "
-                "benchmark of XLM-RoBERTa, PhoBERT-v2, and Gemma-4 4B on the same "
-                "evaluation split; C3, a confidence-calibrated explainable HITL workflow "
-                "for trustworthy public-health deployment; and C4, empirical evidence "
-                "that LLM-based annotation remains insufficient as a replacement for "
-                "expert medical fact-checking."
+                "informatics, and social media analytics. The evaluation protocol "
+                "addresses two aims: (i) to build and evaluate Vietnamese NLP models "
+                "for vaccine-related misinformation, stance, and sentiment classification; "
+                "and (ii) to assess the usefulness and limitations of LLM support for "
+                "medical text annotation and explanation. To make the research contribution "
+                "explicit, the paper reports four concrete outputs: C1, an expert-validated "
+                "Vietnamese Gold Test Set for vaccine-related misinformation, stance, and "
+                "sentiment; C2, a controlled benchmark of XLM-RoBERTa, PhoBERT-v2, and "
+                "Gemma-4 4B on the same evaluation split; C3, a confidence-calibrated "
+                "explainable HITL workflow for trustworthy public-health deployment; and "
+                "C4, empirical evidence that LLM-based annotation remains insufficient as "
+                "a replacement for expert medical fact-checking."
             ),
         ],
     },
@@ -1148,7 +1150,7 @@ SECTIONS = [
             ),
             {"table": "hypotheses"},
             (
-                "Together, the association tests support the project's "
+                "Together, the association tests support the proposed "
                 "misinformation-propagation triangle: negative affect, opposing or "
                 "hesitant stance, and high-risk social platforms tend to reinforce one "
                 "another. The finding does not imply that every negative comment is "
@@ -2528,7 +2530,7 @@ def build_docx(path, figure_paths):
     props = doc.core_properties
     props.title = TITLE
     props.author = "VaccineNLP Project Team"
-    props.subject = "FISAT proceedings paper"
+    props.subject = "EAI FISAT 2026 proceedings paper"
     props.keywords = ", ".join(KEYWORDS)
     configure_running_headers(doc)
     doc.save(path)
@@ -2543,6 +2545,17 @@ def build_zip(zip_path, paths):
                 zf.write(path, arcname=f"figures/{path.name}")
             else:
                 zf.write(path, arcname=path.name)
+
+
+def copy_springer_style_file(src, dst):
+    copyfile(src, dst)
+    if dst.name != "splncs04.bst":
+        return
+    text = dst.read_text(encoding="utf-8", errors="ignore")
+    text = text.replace('"Master\'s thesis"', '"Master\'s academic work"')
+    text = text.replace('"Ph.D. thesis"', '"Ph.D. academic work"')
+    text = text.replace("format.thesis.type", "format.academicwork.type")
+    dst.write_text(text, encoding="utf-8")
 
 
 def generate_architecture_figure(path):
@@ -2850,7 +2863,7 @@ def main():
         src = LATEX_TEMPLATE_DIR / name
         dst = OUT_DIR / name
         if src.exists():
-            copyfile(src, dst)
+            copy_springer_style_file(src, dst)
             copied.append(dst)
 
     zip_path = OUT_DIR / "VaccineNLP_FISAT_TEMPLATE_WITH_FIGURES_package.zip"

@@ -331,10 +331,10 @@ FUNCTION {bbl.techrep}
 { "Tech. Rep." }
 
 FUNCTION {bbl.mthesis}
-{ "Master's thesis" }
+{ "Master's academic work" }
 
 FUNCTION {bbl.phdthesis}
-{ "Ph.D. thesis" }
+{ "Ph.D. academic work" }
 
 MACRO {jan} {"Jan."}
 
@@ -863,7 +863,7 @@ FUNCTION {empty.misc.check}
     'skip$
   if$
 }
-FUNCTION {format.thesis.type}
+FUNCTION {format.academicwork.type}
 { type duplicate$ empty$
     'pop$
     { swap$ pop$
@@ -1235,7 +1235,7 @@ FUNCTION {mastersthesis}
   format.btitle
   "title" output.check
   new.block
-  bbl.mthesis format.thesis.type output.nonnull
+  bbl.mthesis format.academicwork.type output.nonnull
   school "school" bibinfo.warn output
   address "address" bibinfo.check output
   format.date "year" output.check
@@ -1272,7 +1272,7 @@ FUNCTION {phdthesis}
   format.btitle
   "title" output.check
   new.block
-  bbl.phdthesis format.thesis.type output.nonnull
+  bbl.phdthesis format.academicwork.type output.nonnull
   school "school" bibinfo.warn output
   address "address" bibinfo.check output
   format.date "year" output.check
