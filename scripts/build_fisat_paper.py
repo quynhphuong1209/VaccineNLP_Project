@@ -28,7 +28,7 @@ AUTHORS = [
     {"name": "Lam Quan Tran", "inst": "2"},
     {"name": "Hang Nguyet Van Nguyen", "inst": "1"},
 ]
-AUTHOR_RUNNING = "M. H. Kim et al."
+AUTHOR_RUNNING = "Manh Hung Kim et al."
 INSTITUTIONS = [
     "Ha Noi University of Public Health, Ha Noi, Viet Nam",
     "Digital Health Center, Ha Noi University of Public Health, Ha Noi, Viet Nam",
@@ -2112,33 +2112,33 @@ def clear_part_content(part):
         element.remove(child)
 
 
-def add_page_field(paragraph, font_size=8.0):
+def add_page_field(paragraph, font_size=8.0, bold=False):
     begin = OxmlElement("w:fldChar")
     begin.set(qn("w:fldCharType"), "begin")
     begin_run = paragraph.add_run()
-    set_run_font(begin_run, size=font_size)
+    set_run_font(begin_run, size=font_size, bold=bold)
     begin_run._r.append(begin)
 
     instr = OxmlElement("w:instrText")
     instr.set(qn("xml:space"), "preserve")
     instr.text = " PAGE "
     instr_run = paragraph.add_run()
-    set_run_font(instr_run, size=font_size)
+    set_run_font(instr_run, size=font_size, bold=bold)
     instr_run._r.append(instr)
 
     separate = OxmlElement("w:fldChar")
     separate.set(qn("w:fldCharType"), "separate")
     separate_run = paragraph.add_run()
-    set_run_font(separate_run, size=font_size)
+    set_run_font(separate_run, size=font_size, bold=bold)
     separate_run._r.append(separate)
 
     result_run = paragraph.add_run("1")
-    set_run_font(result_run, size=font_size)
+    set_run_font(result_run, size=font_size, bold=bold)
 
     end = OxmlElement("w:fldChar")
     end.set(qn("w:fldCharType"), "end")
     end_run = paragraph.add_run()
-    set_run_font(end_run, size=font_size)
+    set_run_font(end_run, size=font_size, bold=bold)
     end_run._r.append(end)
 
 
@@ -2156,11 +2156,11 @@ def configure_running_headers(doc):
         paragraph.paragraph_format.space_before = Pt(0)
         paragraph.paragraph_format.space_after = Pt(0)
         paragraph.paragraph_format.line_spacing = 1.0
-        paragraph.paragraph_format.tab_stops.add_tab_stop(text_width, WD_TAB_ALIGNMENT.RIGHT)
-        add_page_field(paragraph)
+        paragraph.paragraph_format.tab_stops.add_tab_stop(Cm(0.7), WD_TAB_ALIGNMENT.LEFT)
+        add_page_field(paragraph, bold=True)
         paragraph.add_run("\t")
         run = paragraph.add_run(AUTHOR_RUNNING)
-        set_run_font(run, size=8.0)
+        set_run_font(run, size=8.0, bold=True)
 
         clear_part_content(section.header)
         paragraph = section.header.add_paragraph()
@@ -2169,9 +2169,9 @@ def configure_running_headers(doc):
         paragraph.paragraph_format.line_spacing = 1.0
         paragraph.paragraph_format.tab_stops.add_tab_stop(text_width, WD_TAB_ALIGNMENT.RIGHT)
         run = paragraph.add_run(TITLE_RUNNING)
-        set_run_font(run, size=8.0)
+        set_run_font(run, size=8.0, bold=True)
         paragraph.add_run("\t")
-        add_page_field(paragraph)
+        add_page_field(paragraph, bold=True)
 
 
 def normalize_widths(widths):
