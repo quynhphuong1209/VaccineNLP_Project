@@ -1833,6 +1833,12 @@ def set_table_width(table, widths_dxa):
         tbl_pr.append(tbl_w)
     tbl_w.set(qn("w:w"), str(sum(widths_dxa)))
     tbl_w.set(qn("w:type"), "dxa")
+    tbl_ind = tbl_pr.first_child_found_in("w:tblInd")
+    if tbl_ind is None:
+        tbl_ind = OxmlElement("w:tblInd")
+        tbl_pr.append(tbl_ind)
+    tbl_ind.set(qn("w:w"), "0")
+    tbl_ind.set(qn("w:type"), "dxa")
     tbl_layout = tbl_pr.first_child_found_in("w:tblLayout")
     if tbl_layout is None:
         tbl_layout = OxmlElement("w:tblLayout")
@@ -1918,10 +1924,18 @@ def mark_header_row(row):
 def clear_cell(cell):
     cell.text = ""
     paragraph = cell.paragraphs[0]
-    paragraph.paragraph_format.space_before = Pt(0)
-    paragraph.paragraph_format.space_after = Pt(0)
-    paragraph.paragraph_format.line_spacing = 1.0
+    reset_paragraph_spacing_and_indents(paragraph)
     return paragraph
+
+
+def reset_paragraph_spacing_and_indents(paragraph, space_before=0, space_after=0):
+    fmt = paragraph.paragraph_format
+    fmt.left_indent = Pt(0)
+    fmt.right_indent = Pt(0)
+    fmt.first_line_indent = Pt(0)
+    fmt.space_before = Pt(space_before)
+    fmt.space_after = Pt(space_after)
+    fmt.line_spacing = 1.0
 
 
 def set_cell_text(cell, text, bold=False, size=8.0, align="left"):
@@ -2058,11 +2072,9 @@ def add_caption(doc, number, caption, use_template_styles=False):
         if "tablecaption" in [s.name for s in doc.styles]
         else doc.add_paragraph()
     )
+    reset_paragraph_spacing_and_indents(paragraph, space_before=4, space_after=1)
     if not use_template_styles:
         paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
-        paragraph.paragraph_format.space_before = Pt(4)
-        paragraph.paragraph_format.space_after = Pt(1)
-        paragraph.paragraph_format.line_spacing = 1.0
     run_num = paragraph.add_run(f"Table {number}. ")
     if use_template_styles:
         run_num.bold = True
@@ -2079,9 +2091,7 @@ def add_caption(doc, number, caption, use_template_styles=False):
 def add_note(doc, note):
     paragraph = doc.add_paragraph()
     paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
-    paragraph.paragraph_format.space_before = Pt(1)
-    paragraph.paragraph_format.space_after = Pt(2)
-    paragraph.paragraph_format.line_spacing = 1.0
+    reset_paragraph_spacing_and_indents(paragraph, space_before=1, space_after=2)
     run_label = paragraph.add_run("Note. ")
     set_run_font(run_label, size=8, italic=True)
     run = paragraph.add_run(note)
@@ -2288,7 +2298,7 @@ def add_table(doc, table_key, number, use_template_styles=False):
         add_note(doc, table_def["note"])
     else:
         spacer = doc.add_paragraph()
-        spacer.paragraph_format.space_after = Pt(4)
+        reset_paragraph_spacing_and_indents(spacer, space_before=0, space_after=4)
 
 
 def sanitize_springer_docm_template():
