@@ -39,24 +39,25 @@ INSTITUTIONS = [
     ),
 ]
 CONTACT_SECTION_TITLE = "Correspondence and Author Contacts"
+ADDITIONAL_CONTACT_SECTION_TITLE = "Additional Author Contact Information"
 CONTACT_EMAILS = [
     "211090016@studenthuph.edu.vn",
     "quantl3@fpt.edu.vn",
     "thv79@gmail.com",
 ]
-CONTACT_PARAGRAPHS = [
+CORRESPONDENCE_PARAGRAPH = (
+    "Correspondence concerning this paper should be addressed to the first author, "
+    "Manh Hung Kim, Ha Noi University of Public Health, Ha Noi, Viet Nam. "
+    "Email: 211090016@studenthuph.edu.vn."
+)
+ADDITIONAL_CONTACT_PARAGRAPHS = [
     (
-        "Correspondence concerning this paper should be addressed to the first author, "
-        "Manh Hung Kim, Ha Noi University of Public Health, Ha Noi, Viet Nam. "
-        "Email: 211090016@studenthuph.edu.vn."
-    ),
-    (
-        "Additional author contact: Lam Quan Tran, Digital Health Center, Ha Noi "
+        "Lam Quan Tran, Digital Health Center, Ha Noi "
         "University of Public Health, Ha Noi, Viet Nam. "
         "Email: quantl3@fpt.edu.vn."
     ),
     (
-        "Additional author contact: Hong Viet Tran, Institute of Artificial Intelligence, "
+        "Hong Viet Tran, Institute of Artificial Intelligence, "
         "VNU University of Engineering and Technology, Vietnam National University, "
         "Hanoi, Vietnam. Email: thv79@gmail.com."
     ),
@@ -1792,7 +1793,12 @@ def build_latex():
             rf"\section*{{{latex_escape(CONTACT_SECTION_TITLE)}}}",
         ]
     )
-    for contact_paragraph in CONTACT_PARAGRAPHS:
+    contact_text = latex_escape(CORRESPONDENCE_PARAGRAPH)
+    for email in CONTACT_EMAILS:
+        contact_text = contact_text.replace(email, rf"\texttt{{{email}}}")
+    lines.extend([r"\noindent " + contact_text, ""])
+    lines.extend([rf"\section*{{{latex_escape(ADDITIONAL_CONTACT_SECTION_TITLE)}}}"])
+    for contact_paragraph in ADDITIONAL_CONTACT_PARAGRAPHS:
         contact_text = latex_escape(contact_paragraph)
         for email in CONTACT_EMAILS:
             contact_text = contact_text.replace(email, rf"\texttt{{{email}}}")
@@ -2459,7 +2465,20 @@ def build_docx(path, figure_paths):
         "heading1",
         use_template_styles=use_template_styles,
     )
-    for idx, paragraph_text in enumerate(CONTACT_PARAGRAPHS):
+    add_paragraph(
+        doc,
+        CORRESPONDENCE_PARAGRAPH,
+        style="p1a" if style_exists(doc, "p1a") else None,
+        first_line_indent=False,
+        use_template_styles=use_template_styles,
+    )
+    add_styled_text(
+        doc,
+        ADDITIONAL_CONTACT_SECTION_TITLE,
+        "heading1",
+        use_template_styles=use_template_styles,
+    )
+    for idx, paragraph_text in enumerate(ADDITIONAL_CONTACT_PARAGRAPHS):
         add_paragraph(
             doc,
             paragraph_text,
