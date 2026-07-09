@@ -26,21 +26,40 @@ AUTHORS = [
     {"name": "Manh Hung Kim", "inst": "1"},
     {"name": "Quynh Phuong Dinh Le", "inst": "1"},
     {"name": "Lam Quan Tran", "inst": "2"},
+    {"name": "Hong Viet Tran", "inst": "3"},
     {"name": "Hang Nguyet Van Nguyen", "inst": "1"},
 ]
 AUTHOR_RUNNING = "Manh Hung Kim et al."
 INSTITUTIONS = [
     "Ha Noi University of Public Health, Ha Noi, Viet Nam",
     "Digital Health Center, Ha Noi University of Public Health, Ha Noi, Viet Nam",
+    (
+        "Institute of Artificial Intelligence, VNU University of Engineering "
+        "and Technology, Vietnam National University, Hanoi, Vietnam"
+    ),
 ]
-CONTACT_SECTION_TITLE = "Correspondence"
+CONTACT_SECTION_TITLE = "Correspondence and Author Contacts"
+CONTACT_EMAILS = [
+    "211090016@studenthuph.edu.vn",
+    "quantl3@fpt.edu.vn",
+    "thv79@gmail.com",
+]
 CONTACT_PARAGRAPHS = [
     (
-        "Correspondence concerning this paper should be addressed to Lam Quan Tran, "
-        "Digital Health Center, Ha Noi University of Public Health, Ha Noi, Viet Nam. "
+        "Correspondence concerning this paper should be addressed to the first author, "
+        "Manh Hung Kim, Ha Noi University of Public Health, Ha Noi, Viet Nam. "
+        "Email: 211090016@studenthuph.edu.vn."
+    ),
+    (
+        "Additional author contact: Lam Quan Tran, Digital Health Center, Ha Noi "
+        "University of Public Health, Ha Noi, Viet Nam. "
         "Email: quantl3@fpt.edu.vn."
     ),
-    "Additional academic contact: Hong Viet Tran. Email: thv79@gmail.com.",
+    (
+        "Additional author contact: Hong Viet Tran, Institute of Artificial Intelligence, "
+        "VNU University of Engineering and Technology, Vietnam National University, "
+        "Hanoi, Vietnam. Email: thv79@gmail.com."
+    ),
 ]
 
 ABSTRACT = (
@@ -605,8 +624,8 @@ SECTIONS = [
                 "public-health surveillance."
             ),
             (
-                "The original thesis framed the problem through three research "
-                "questions that are retained in this proceedings paper. RQ1 asks how a "
+                "The study is organized around three research questions that are "
+                "retained in this proceedings paper. RQ1 asks how a "
                 "Vietnamese vaccine-domain corpus can be collected, cleaned, and "
                 "validated with a multi-axis annotation schema. RQ2 asks how well a "
                 "Dual-Student Hybrid architecture detects misinformation while also "
@@ -745,7 +764,7 @@ SECTIONS = [
                 "Eligible texts were public Vietnamese-language items discussing "
                 "human vaccination, vaccine safety, vaccine policy, adverse events, "
                 "or vaccine-related trust and refusal. Exclusion criteria followed "
-                "the thesis protocol: exact or near duplicates, spam and advertising, "
+                "the study protocol: exact or near duplicates, spam and advertising, "
                 "empty or extremely short texts, non-Vietnamese content, veterinary "
                 "vaccine content, and private-channel data from platforms such as "
                 "Zalo, Messenger, or Telegram. This kept the analysis focused on "
@@ -898,7 +917,7 @@ SECTIONS = [
                 "hesitation, or low calibrated confidence."
             ),
             (
-                "The QLoRA configuration followed the thesis experiment: 4-bit NF4 "
+                "The QLoRA configuration followed the modeling experiment: 4-bit NF4 "
                 "quantization, LoRA rank r = 16, LoRA alpha = 16, and text-only target "
                 "modules in the attention and MLP blocks. Only about 36.7 million "
                 "parameters were trainable, approximately 0.46% of the full model. "
@@ -928,7 +947,7 @@ SECTIONS = [
                 "overconfident but wrong prediction can mislead analysts."
             ),
             (
-                "The statistical tests were aligned with the hypotheses in the thesis. "
+                "The statistical tests were aligned with the pre-specified hypotheses. "
                 "H1 examined the association between sentiment and stance, H2 examined "
                 "the association between platform and misinformation, and H3 examined "
                 "whether opposing or hesitant stance concentrated misinformation more "
@@ -938,8 +957,8 @@ SECTIONS = [
             ),
             (
                 "Error analysis was defined on randomly sampled false-positive and "
-                "false-negative cases from the best-performing classifier. The thesis "
-                "protocol grouped errors into four categories: sarcasm or irony, "
+                "false-negative cases from the best-performing classifier. The "
+                "error-analysis protocol grouped errors into four categories: sarcasm or irony, "
                 "borderline medical content, out-of-vocabulary or emerging slang, and "
                 "very short texts with insufficient context. These categories informed "
                 "the future-work recommendations on sarcasm handling, active learning, "
@@ -1070,7 +1089,7 @@ SECTIONS = [
             ),
             {"table": "llm"},
             (
-                "Parser analysis from the thesis shows why this matters for "
+                "Parser analysis from the system evaluation shows why this matters for "
                 "deployment. The improved parser handled multi-block reasoning, "
                 "negation, contrastive conjunctions such as 'but' and 'however', and "
                 "partial outputs when at least two of three labels were recoverable. "
@@ -1175,7 +1194,7 @@ SECTIONS = [
             (
                 "The prototype follows a client-server design with a web interface, an "
                 "API analysis layer, model services, and persistent storage for history "
-                "and review queues. The operational modules mirror the thesis system: "
+                "and review queues. The operational modules mirror the implemented system: "
                 "single-text multi-task analysis, conversation-flow analysis, campaign "
                 "or narrative detection, batch processing, analysis history, manual "
                 "review, and system health monitoring. The classifier returns labels "
@@ -1187,13 +1206,13 @@ SECTIONS = [
                 "selective escalation. Clear low-risk cases can be handled by the "
                 "PhoBERT-v2 classifier, while ambiguous, sarcastic, low-confidence, or "
                 "high-risk cases are escalated to the reasoning layer and then to human "
-                "review. The thesis prototype also records a consistency flag such as "
+                "review. The prototype also records a consistency flag such as "
                 "plausible, unusual, high-risk, or evasion-suspected. This makes the "
                 "system closer to an analyst workbench than a simple demo classifier."
             ),
             (
                 "The proposed evidence layer combines retrieval-augmented generation "
-                "with a curated public-health knowledge base. In the thesis prototype, "
+                "with a curated public-health knowledge base. In the prototype, "
                 "official sources such as WHO, CDC, and Ministry of Health guidance "
                 "were treated as preferred anchors, while scientific and news sources "
                 "supported broader context. This approach is important because an "
@@ -1202,7 +1221,7 @@ SECTIONS = [
             ),
             (
                 "Table 14 summarizes the deployment-oriented technical profile "
-                "extracted from the thesis implementation. The key point is that the "
+                "extracted from the project implementation. The key point is that the "
                 "system was not designed as a single heavy model. It combines a "
                 "lightweight Vietnamese classifier, a parameter-efficient explanation "
                 "engine, calibration, structured parsing, and human review into an "
@@ -1220,7 +1239,7 @@ SECTIONS = [
                 "online diffusion dynamics [20]."
             ),
             (
-                "The thesis also implemented token-level explanation with Integrated "
+                "The system also implemented token-level explanation with Integrated "
                 "Gradients for PhoBERT-v2. This complements Gemma-generated rationales "
                 "because it exposes which tokens contributed to the classifier output. "
                 "For analysts, natural-language reasoning is easier to read; for model "
@@ -1762,27 +1781,22 @@ def build_latex():
         [
             r"\section*{Acknowledgements}",
             (
-                "The authors thank Hanoi University of Public Health and the project "
-                "supervisors for their guidance. This paper was prepared from the "
-                "VaccineNLP graduation thesis, full report, and project materials."
+                "The authors thank the annotators, domain reviewers, and technical "
+                "contributors who supported the VaccineNLP study, software prototype, "
+                "and supporting project materials."
             ),
             "",
             r"\bibliographystyle{splncs04}",
             r"\bibliography{references}",
             "",
             rf"\section*{{{latex_escape(CONTACT_SECTION_TITLE)}}}",
-            r"\noindent "
-            + latex_escape(CONTACT_PARAGRAPHS[0]).replace(
-                "quantl3@fpt.edu.vn", r"\texttt{quantl3@fpt.edu.vn}"
-            ),
-            "",
-            r"\noindent "
-            + latex_escape(CONTACT_PARAGRAPHS[1]).replace(
-                "thv79@gmail.com", r"\texttt{thv79@gmail.com}"
-            ),
-            "",
         ]
     )
+    for contact_paragraph in CONTACT_PARAGRAPHS:
+        contact_text = latex_escape(contact_paragraph)
+        for email in CONTACT_EMAILS:
+            contact_text = contact_text.replace(email, rf"\texttt{{{email}}}")
+        lines.extend([r"\noindent " + contact_text, ""])
     lines.extend([r"\end{document}", ""])
     return "\n".join(lines)
 
@@ -2407,9 +2421,9 @@ def build_docx(path, figure_paths):
     add_styled_text(doc, "Acknowledgements", "heading1", use_template_styles=use_template_styles)
     add_paragraph(
         doc,
-        "The authors thank Hanoi University of Public Health and the project supervisors "
-        "for their guidance. This paper was prepared from the VaccineNLP graduation "
-        "thesis, full report, and project materials.",
+        "The authors thank the annotators, domain reviewers, and technical contributors "
+        "who supported the VaccineNLP study, software prototype, and supporting "
+        "project materials.",
         style="p1a" if style_exists(doc, "p1a") else None,
         first_line_indent=False,
         use_template_styles=use_template_styles,
