@@ -33,9 +33,14 @@ INSTITUTIONS = [
     "Ha Noi University of Public Health, Ha Noi, Viet Nam",
     "Digital Health Center, Ha Noi University of Public Health, Ha Noi, Viet Nam",
 ]
-CONTACT_INFORMATION = [
-    ("Lam Quan Tran", "quantl3@fpt.edu.vn"),
-    ("Viet TH", "thv79@gmail.com"),
+CONTACT_SECTION_TITLE = "Correspondence"
+CONTACT_PARAGRAPHS = [
+    (
+        "Correspondence concerning this paper should be addressed to Lam Quan Tran, "
+        "Digital Health Center, Ha Noi University of Public Health, Ha Noi, Viet Nam. "
+        "Email: quantl3@fpt.edu.vn."
+    ),
+    "Additional academic contact: Hong Viet Tran. Email: thv79@gmail.com.",
 ]
 
 ABSTRACT = (
@@ -1717,11 +1722,15 @@ def build_latex():
             r"\bibliographystyle{splncs04}",
             r"\bibliography{references}",
             "",
-            r"\section*{Contact Information}",
+            rf"\section*{{{latex_escape(CONTACT_SECTION_TITLE)}}}",
             r"\noindent "
-            + r"\\ ".join(
-                rf"{latex_escape(name)}: \texttt{{{latex_escape(email)}}}"
-                for name, email in CONTACT_INFORMATION
+            + latex_escape(CONTACT_PARAGRAPHS[0]).replace(
+                "quantl3@fpt.edu.vn", r"\texttt{quantl3@fpt.edu.vn}"
+            ),
+            "",
+            r"\noindent "
+            + latex_escape(CONTACT_PARAGRAPHS[1]).replace(
+                "thv79@gmail.com", r"\texttt{thv79@gmail.com}"
             ),
             "",
         ]
@@ -2288,11 +2297,16 @@ def build_docx(path, figure_paths):
         if not use_template_styles:
             set_run_font(run, size=8.5)
 
-    add_styled_text(doc, "Contact Information", "heading1", use_template_styles=use_template_styles)
-    for idx, (name, email) in enumerate(CONTACT_INFORMATION):
+    add_styled_text(
+        doc,
+        CONTACT_SECTION_TITLE,
+        "heading1",
+        use_template_styles=use_template_styles,
+    )
+    for idx, paragraph_text in enumerate(CONTACT_PARAGRAPHS):
         add_paragraph(
             doc,
-            f"{name}: {email}",
+            paragraph_text,
             style=("p1a" if idx == 0 and style_exists(doc, "p1a") else "Normal"),
             first_line_indent=idx != 0,
             use_template_styles=use_template_styles,
