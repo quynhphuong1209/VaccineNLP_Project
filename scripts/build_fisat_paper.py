@@ -30,25 +30,35 @@ AUTHORS = [
     {"name": "Hang Nguyet Van Nguyen", "inst": "1"},
 ]
 AUTHOR_RUNNING = "Manh Hung Kim et al."
+FIRST_AUTHOR_EMAIL = "2211090016@studenthuph.edu.vn"
 INSTITUTIONS = [
-    "Ha Noi University of Public Health, Ha Noi, Viet Nam",
-    "Digital Health Center, Ha Noi University of Public Health, Ha Noi, Viet Nam",
-    (
-        "Institute of Artificial Intelligence, VNU University of Engineering "
-        "and Technology, Vietnam National University, Hanoi, Vietnam"
-    ),
+    {
+        "name": "Ha Noi University of Public Health, Ha Noi, Viet Nam",
+        "email": FIRST_AUTHOR_EMAIL,
+    },
+    {
+        "name": "Digital Health Center, Ha Noi University of Public Health, Ha Noi, Viet Nam",
+        "email": None,
+    },
+    {
+        "name": (
+            "Institute of Artificial Intelligence, VNU University of Engineering "
+            "and Technology, Vietnam National University, Hanoi, Vietnam"
+        ),
+        "email": None,
+    },
 ]
 CONTACT_SECTION_TITLE = "Correspondence and Author Contacts"
 ADDITIONAL_CONTACT_SECTION_TITLE = "Additional Author Contact Information"
 CONTACT_EMAILS = [
-    "211090016@studenthuph.edu.vn",
+    FIRST_AUTHOR_EMAIL,
     "quantl3@fpt.edu.vn",
-    "thv79@gmail.com",
+    "thviet79@gmail.com",
 ]
 CORRESPONDENCE_PARAGRAPH = (
     "Correspondence concerning this paper should be addressed to the first author, "
     "Manh Hung Kim, Ha Noi University of Public Health, Ha Noi, Viet Nam. "
-    "Email: 211090016@studenthuph.edu.vn."
+    f"Email: {FIRST_AUTHOR_EMAIL}."
 )
 ADDITIONAL_CONTACT_PARAGRAPHS = [
     (
@@ -59,7 +69,7 @@ ADDITIONAL_CONTACT_PARAGRAPHS = [
     (
         "Hong Viet Tran, Institute of Artificial Intelligence, "
         "VNU University of Engineering and Technology, Vietnam National University, "
-        "Hanoi, Vietnam. Email: thv79@gmail.com."
+        "Hanoi, Vietnam. Email: thviet79@gmail.com."
     ),
 ]
 
@@ -1732,7 +1742,14 @@ def build_latex():
     author_tex = " \\and ".join(
         f"{latex_escape(author['name'])}\\inst{{{author['inst']}}}" for author in AUTHORS
     )
-    institute_tex = " \\and ".join(latex_escape(institution) for institution in INSTITUTIONS)
+
+    def latex_institution(institution):
+        institution_tex = latex_escape(institution["name"])
+        if institution.get("email"):
+            institution_tex += rf"\\ \email{{{latex_escape(institution['email'])}}}"
+        return institution_tex
+
+    institute_tex = " \\and ".join(latex_institution(institution) for institution in INSTITUTIONS)
     lines = [
         r"\documentclass[runningheads]{llncs}",
         r"\usepackage{graphicx}",
@@ -2178,7 +2195,10 @@ def add_institution_block(doc, use_template_styles=False):
             paragraph.paragraph_format.line_spacing = 1.0
         marker = paragraph.add_run(str(idx))
         marker.font.superscript = True
-        paragraph.add_run(f" {institution}")
+        paragraph.add_run(f" {institution['name']}")
+        if institution.get("email"):
+            paragraph.add_run().add_break()
+            paragraph.add_run(f"Email: {institution['email']}")
 
 
 def clear_part_content(part):
