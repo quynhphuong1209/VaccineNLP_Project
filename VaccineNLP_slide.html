@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VaccineNLP — Đồ án tốt nghiệp HUPH 2026</title>
+  <title>VaccineNLP — Khung NLP đa nhiệm có giải thích</title>
   <link rel="icon"
     href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🦠</text></svg>">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/reveal.min.css">
@@ -1716,10 +1716,16 @@
         </div>
         <!-- Hàng 5: Tên đồ án -->
         <h1 class=""
-          style='font-size: 52px; max-width: 92%; line-height: 1.15; font-weight: 800; margin: 0px 0px 8px; font-family: "Playfair Display", sans-serif; color: rgb(255, 255, 255); position: relative;'>
-          Ứng dụng Xử lý Ngôn ngữ Tự nhiên trong phát hiện thông tin sai lệch về vaccine và phân tích thái độ cộng đồng
-          trên môi trường số tại Việt Nam</h1>
-        <hr class="divider" style="margin: 12px 0;" />
+          style='font-size: 50px; max-width: 94%; line-height: 1.14; font-weight: 800; margin: 0px 0px 8px; font-family: "Playfair Display", sans-serif; color: rgb(255, 255, 255); position: relative;'>
+          VaccineNLP: Khung NLP đa nhiệm có giải thích hỗ trợ giám sát thông tin sai lệch về vaccine tại Việt Nam</h1>
+        <p
+          style="font-size: 18px; color: var(--mint); font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; margin: 4px 0 8px;">
+          Misinformation · Stance · Sentiment · Human-in-the-Loop · Explainable AI</p>
+        <p
+          style="font-size: 15px; color: rgba(247,249,249,0.86); max-width: 96%; line-height: 1.35; margin: 0 0 8px;">
+          <b>Tên bài báo:</b> <i>VaccineNLP: A Human-in-the-Loop Explainable Multi-Task NLP Framework for Vietnamese
+            Vaccine Misinformation Surveillance</i></p>
+        <hr class="divider" style="margin: 10px 0;" />
         <div class="" style="margin: 0.35em 0px; position: relative; left: 16px; top: 37px; font-size: 40px;">
           <p class=""
             style="font-size: 0.4em; color: var(--mint); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; margin: 0px 0px 8px; position: relative; left: -1px; top: -66px;">
@@ -1764,19 +1770,19 @@
         <div class="grid2">
           <div class="card fragment" data-fragment-index="0"><span class="lbl">01</span>
             <h3>🔍 Đặt vấn đề</h3>
-            <p>Bối cảnh, khoảng trống &amp; mục tiêu nghiên cứu</p>
+            <p>Tên bài báo, bối cảnh, related work &amp; khoảng trống</p>
           </div>
           <div class="card fragment" data-fragment-index="1"><span class="lbl">02</span>
             <h3>🧪 Phương pháp</h3>
-            <p>Kiến trúc Dual-Student Hybrid &amp; quy trình dữ liệu</p>
+            <p>Workflow 6 bước, dữ liệu, gán nhãn HITL &amp; mô hình</p>
           </div>
           <div class="card fragment" data-fragment-index="2"><span class="lbl">03</span>
             <h3>📊 Kết quả thực nghiệm</h3>
-            <p>Benchmark, Calibration &amp; kiểm định giả thuyết</p>
+            <p>Table 6-9: benchmark, per-class F1, calibration, LLM reliability</p>
           </div>
           <div class="card fragment" data-fragment-index="3"><span class="lbl">04</span>
             <h3>⚠️ Phát hiện chính</h3>
-            <p>Tam giác Lan truyền Tin giả</p>
+            <p>Table 10-13: kiểm định thống kê &amp; tam giác rủi ro</p>
           </div>
           <div class="card fragment" data-fragment-index="4"><span class="lbl">05</span>
             <h3>💻 Sản phẩm Web App</h3>
@@ -1869,41 +1875,44 @@
       </section>
       <section class="has-light-background" data-background-color="#F7F9F9" data-fragment="3" spellcheck="false">
         <p class="eyebrow">PHẦN 01 · ĐẶT VẤN ĐỀ</p>
-        <h2 class="title" style="position: relative; left: -2px; top: 54px;">Bốn khoảng trống nghiên cứu</h2>
-        <div class="grid2" style="position: relative; left: -6px; top: 54px;">
+        <h2 class="title" style="position: relative; left: -2px; top: 22px;">So sánh nghiên cứu liên quan và khoảng trống</h2>
+        <div class="grid2" style="position: relative; left: -6px; top: 28px;">
           <div class="card fragment" data-fragment-index="0">
             <div style="display:flex;gap:12px;align-items:center;"><span class="badge">1</span>
-              <h3 style="color:var(--teal);margin:0;">Thiếu corpus tiếng Việt</h3>
+              <h3 style="color:var(--teal);margin:0;">ANTi-Vax / Checkovid</h3>
             </div>
-            <p class="" style="position: relative;">VFND chỉ 254 mẫu, không đặc thù vaccine; MiSoVac đa ngôn ngữ ít mẫu
-              Việt; ANTiVax là tiếng Anh.</p>
+            <p class="" style="position: relative;">Mạnh ở vaccine/COVID misinformation, nhưng chủ yếu tiếng Anh,
+              Twitter-centric và thường là bài toán nhị phân.</p>
           </div>
           <div class="card fragment" data-fragment-index="1">
             <div style="display:flex;gap:12px;align-items:center;"><span class="badge">2</span>
-              <h3 style="color:var(--teal);margin:0;">Chưa có baseline đồng nhất</h3>
+              <h3 style="color:var(--teal);margin:0;">VaxxHesitancy</h3>
             </div>
-            <p>PhoBERT vs XLM-R cho misinfo tiếng Việt chưa được đánh giá trên cùng một tập chuẩn.</p>
+            <p>Tập trung vào hesitancy/stance, chưa tách rõ kiểm chứng đúng-sai y khoa với lập trường và cảm xúc.</p>
           </div>
           <div class="card fragment" data-fragment-index="2" style="position: relative;">
             <div style="display:flex;gap:12px;align-items:center;"><span class="badge">3</span>
-              <h3 style="color:var(--teal);margin:0;">Tác vụ rời rạc</h3>
+              <h3 style="color:var(--teal);margin:0;">DANN + LIME / XAI</h3>
             </div>
-            <p>Các nghiên cứu xử lý misinfo / stance / sentiment độc lập, bỏ qua tương tác ngữ nghĩa giữa ba chiều.</p>
+            <p>Có hướng giải thích mô hình, nhưng chưa có Gold Test Set tiếng Việt, HITL chuyên gia và hiệu chuẩn độ tin cậy.</p>
           </div>
           <div class="card fragment" data-fragment-index="3">
             <div style="display:flex;gap:12px;align-items:center;"><span class="badge">4</span>
-              <h3 style="color:var(--teal);margin:0;">Vắng bóng XAI tiếng Việt</h3>
+              <h3 style="color:var(--teal);margin:0;">Khoảng trống của VaccineNLP</h3>
             </div>
-            <p>Hệ thống hiện có là black-box hoặc giải thích bằng feature-weights khó hiểu với người dùng phổ thông.</p>
+            <p>Đánh giá cùng một Gold Test Set tiếng Việt theo 3 trục: misinformation, stance, sentiment, có XAI, calibration và HITL.</p>
           </div>
         </div>
+        <p
+          style="font-size:.36em;color:var(--slate);text-align:center;margin-top:42px;line-height:1.35;">
+          Ghi chú: đây là so sánh định vị nghiên cứu, không phải leaderboard trực tiếp vì khác ngôn ngữ, nền tảng, nhãn và phân phối dữ liệu.</p>
         <div class="footer"><b>VaccineNLP</b> · HUPH 2026</div>
         <div class="pageno">4</div>
       </section>
       <section class="has-light-background" data-background-color="#F7F9F9" spellcheck="false">
         <p class="eyebrow">PHẦN 01 · ĐẶT VẤN ĐỀ</p>
-        <h2 class="title" style="position: relative; left: 2px; top: 73px;">Mục tiêu &amp; Câu hỏi nghiên cứu</h2>
-        <div class="grid3" style="position: relative; left: 2px; top: 84px;">
+        <h2 class="title" style="position: relative; left: 2px; top: 18px;">Mục tiêu, câu hỏi nghiên cứu và đóng góp</h2>
+        <div class="grid3" style="position: relative; left: 2px; top: 24px;">
           <div class="card" style="padding:0;overflow:hidden;border:none;">
             <div
               style="background:var(--teal);color:#fff;padding:14px 18px;font-family:'Playfair Display', sans-serif;font-weight:700;font-size:.6em;">
@@ -1936,6 +1945,24 @@
               <p style="font-style:italic;color:var(--slate);font-size:.44em;">Tin giả liên hệ ra sao với cảm xúc, lập
                 trường &amp; nền tảng nguồn tin?</p>
             </div>
+          </div>
+        </div>
+        <div class="grid4" style="position: relative; top: 44px; width: 100%; gap: 10px;">
+          <div class="card" style="padding:10px 12px;border-left-color:var(--danger);">
+            <p style="font-size:.34em;color:var(--danger);font-weight:800;margin:0 0 4px;">C1 · Gold Test Set</p>
+            <p style="font-size:.36em;line-height:1.28;margin:0;">186 mẫu tiếng Việt, 3 trục nhãn, chuyên gia xác nhận.</p>
+          </div>
+          <div class="card" style="padding:10px 12px;border-left-color:var(--teal);">
+            <p style="font-size:.34em;color:var(--teal);font-weight:800;margin:0 0 4px;">C2 · Benchmark đồng nhất</p>
+            <p style="font-size:.36em;line-height:1.28;margin:0;">XLM-R, PhoBERT-v2 và Gemma-4 4B trên cùng test set.</p>
+          </div>
+          <div class="card" style="padding:10px 12px;border-left-color:var(--seafoam);">
+            <p style="font-size:.34em;color:var(--seafoam);font-weight:800;margin:0 0 4px;">C3 · HITL + XAI</p>
+            <p style="font-size:.36em;line-height:1.28;margin:0;">Workflow có hiệu chuẩn xác suất và giải thích cho chuyên gia.</p>
+          </div>
+          <div class="card" style="padding:10px 12px;border-left-color:var(--warn);">
+            <p style="font-size:.34em;color:var(--warn);font-weight:800;margin:0 0 4px;">C4 · Giới hạn LLM</p>
+            <p style="font-size:.36em;line-height:1.28;margin:0;">Kappa misinformation 0,0525: LLM hỗ trợ, không thay thế chuyên gia.</p>
           </div>
         </div>
         <div class="footer"><b>VaccineNLP</b> · HUPH 2026</div>
@@ -2186,7 +2213,7 @@
       </section>
       <section class="has-light-background" data-background-color="#F7F9F9" spellcheck="false">
         <p class="eyebrow">PHẦN 02 · PHƯƠNG PHÁP</p>
-        <h2 class="title">Quy trình xây dựng dữ liệu 3 tầng</h2>
+        <h2 class="title">Quy trình triển khai: dữ liệu → mô hình → đánh giá</h2>
         <div class="grid2"
           style="grid-template-columns: 1fr 1.2fr; align-items: center; gap: 45px; width: 95%; max-width: 1050px; transform: scale(1.08) !important; transform-origin: center top !important; margin-top: 15px !important;">
           <div class="col" style="gap: 10px;">
@@ -2195,10 +2222,10 @@
               style="border-left: 5px solid var(--warn) !important; border-color: rgba(244,162,97,0.15) !important; padding: 16px 20px; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(8px);">
               <div style="display:flex; flex-direction:column; text-align:left;">
                 <b
-                  style="color:var(--warn); font-family:'Playfair Display', sans-serif; font-size:.62em; line-height:1.2; letter-spacing: 0.5px;">RAW
-                  DATA (1.856 mẫu thô)</b>
+                  style="color:var(--warn); font-family:'Playfair Display', sans-serif; font-size:.62em; line-height:1.2; letter-spacing: 0.5px;">B1-B2
+                  · Thu thập &amp; tiền xử lý (1.856 mẫu thô)</b>
                 <span style="font-size:.44em; color:var(--ink); margin-top:4px; font-weight:600; line-height:1.35;">Thu
-                  thập từ Facebook, YouTube, TikTok qua Apify &amp; yt-dlp</span>
+                  thập từ nguồn công khai, làm sạch Unicode/URL/HTML, chuẩn hóa teencode và tách từ tiếng Việt.</span>
               </div>
             </div>
             <div
@@ -2209,10 +2236,10 @@
               style="border-left: 5px solid var(--slate) !important; border-color: rgba(90,120,132,0.15) !important; padding: 16px 20px; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(8px);">
               <div style="display:flex; flex-direction:column; text-align:left;">
                 <b
-                  style="color:var(--slate); font-family:'Playfair Display', sans-serif; font-size:.62em; line-height:1.2; letter-spacing: 0.5px;">TRAIN
-                  SET (1.663 mẫu sạch)</b>
+                  style="color:var(--slate); font-family:'Playfair Display', sans-serif; font-size:.62em; line-height:1.2; letter-spacing: 0.5px;">B3
+                  · Gán nhãn 3 trục + Train/Val (1.663 mẫu)</b>
                 <span style="font-size:.44em; color:var(--ink); margin-top:4px; font-weight:600; line-height:1.35;">Gán
-                  nhãn tự động bởi Gemma-4 31B (90% Train / 10% Val)</span>
+                  nhãn yếu bằng LLM, chia train/validation và kiểm soát ba trục: misinfo, stance, sentiment.</span>
               </div>
             </div>
             <div
@@ -2223,10 +2250,10 @@
               style="border-left: 5px solid var(--teal) !important; border-color: rgba(2,128,144,0.15) !important; padding: 16px 20px; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(8px);">
               <div style="display:flex; flex-direction:column; text-align:left;">
                 <b
-                  style="color:var(--teal); font-family:'Playfair Display', sans-serif; font-size:.62em; line-height:1.2; letter-spacing: 0.5px;">TEST
-                  SET (186 mẫu chuẩn)</b>
+                  style="color:var(--teal); font-family:'Playfair Display', sans-serif; font-size:.62em; line-height:1.2; letter-spacing: 0.5px;">B4-B6
+                  · Huấn luyện, đánh giá, triển khai (186 mẫu chuẩn)</b>
                 <span style="font-size:.44em; color:var(--ink); margin-top:4px; font-weight:600; line-height:1.35;">Kiểm
-                  duyệt mù chuyên gia (chuẩn tham chiếu)</span>
+                  thử XLM-R/PhoBERT/Gemma trên Gold Test Set, hiệu chuẩn confidence và chuyển ca rủi ro cho HITL.</span>
               </div>
             </div>
           </div>
@@ -2482,7 +2509,7 @@
       </section>
       <section class="has-light-background" data-background-color="#F7F9F9" spellcheck="false">
         <p class="eyebrow">PHẦN 03 · KẾT QUẢ THỰC NGHIỆM</p>
-        <h2 class="title">Test set: 186 mẫu</h2>
+        <h2 class="title">Gold Test Set (Paper Table 5): 186 mẫu</h2>
         <div class="grid2" style="grid-template-columns: 1.1fr 1fr; gap: 28px; align-items:center; margin-top:10px;">
           <div>
             <table class="hyp">
@@ -2563,7 +2590,7 @@
       </section>
       <section class="has-light-background" data-background-color="#F7F9F9" spellcheck="false">
         <p class="eyebrow">PHẦN 03 · KẾT QUẢ THỰC NGHIỆM</p>
-        <h2 class="title">Kết quả đánh giá: Macro F1 trên Test set (n=186)</h2>
+        <h2 class="title">Kết quả chính (Paper Table 6): Macro F1 trên Gold Test Set</h2>
         <div class="grid2" style="grid-template-columns:1.5fr 1fr;align-items:center;gap:24px;">
           <div class="card"
             style="height: 310px; width: 100%; display: flex; align-items: center; justify-content: center; padding: 15px; border-left: none; box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.6), 0 4px 20px rgba(10, 46, 54, 0.04); background: rgba(255, 255, 255, 0.72); backdrop-filter: blur(16px);">
@@ -2604,7 +2631,7 @@
       </section>
       <section class="has-light-background" data-background-color="#F7F9F9" spellcheck="false">
         <p class="eyebrow">PHẦN 03 · KẾT QUẢ THỰC NGHIỆM</p>
-        <h2 class="title">Hiệu năng ba mô hình theo từng tác vụ</h2>
+        <h2 class="title">So sánh ba mô hình theo từng tác vụ (Paper Table 6)</h2>
         <table class="hyp" style="margin-top:8px;">
           <tbody>
             <tr>
@@ -2672,13 +2699,13 @@
         </div>
         <p class=""
           style="font-size: 0.36em; color: var(--slate); margin-top: 14px; text-align: center; position: relative; left: -4px; top: -300px;">
-          Macro F1 trên Test set (n=186).</p>
+          Bảng này là kết quả thực nghiệm chính; F1 theo từng lớp nằm ở Paper Table 7.</p>
         <div class="footer"><b>VaccineNLP</b> · HUPH 2026</div>
         <div class="pageno">13</div>
       </section>
       <section class="has-light-background" data-background-color="#F7F9F9" spellcheck="false">
         <p class="eyebrow">PHẦN 03 · KẾT QUẢ THỰC NGHIỆM</p>
-        <h2 class="title">Chuyên môn hóa tác vụ &amp; Hiệu chuẩn độ tin cậy</h2>
+        <h2 class="title">Chuyên môn hóa tác vụ &amp; hiệu chuẩn độ tin cậy (Tables 6-8)</h2>
         <div class="grid2" style="align-items:start;">
           <div class="col">
             <div class="card">
@@ -2723,7 +2750,7 @@
       </section>
       <section class="dark center-v has-dark-background" data-background-color="#0A2E36" spellcheck="false">
         <p class="eyebrow">PHẦN 03 · KẾT QUẢ THỰC NGHIỆM</p>
-        <h2 class="title" style="color:#fff;font-size:0.805em !important;">Phát hiện: Giới hạn của LLM trong kiểm chứng
+        <h2 class="title" style="color:#fff;font-size:0.805em !important;">Paper Table 9: Giới hạn của LLM trong kiểm chứng
           y tế</h2>
         <div class="grid2" style="align-items:center;gap:35px;margin-top:20px;">
           <div style="text-align:center;">
@@ -2751,7 +2778,7 @@
       <section class="center-v has-light-background" data-background-color="#F7F9F9" data-fragment="1"
         spellcheck="false">
         <p class="eyebrow">PHẦN 03 · KẾT QUẢ THỰC NGHIỆM</p>
-        <h2 class="title">Kiểm định ba giả thuyết</h2>
+        <h2 class="title">Kiểm định ba giả thuyết (Paper Tables 10-13)</h2>
         <table class="hyp fragment" data-fragment-index="0">
           <tbody>
             <tr>

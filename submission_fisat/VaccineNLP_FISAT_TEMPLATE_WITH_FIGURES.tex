@@ -5,8 +5,8 @@
 
 \begin{document}
 
-\title{VaccineNLP: A Human-in-the-Loop Explainable Multi-Task NLP Framework for Vietnamese Vaccine Misinformation Surveillance}
-\titlerunning{VaccineNLP: HITL Multi-Task Misinformation Surveillance}
+\title{VaccineNLP: An Explainable Human-in-the-Loop Multi-Task NLP Framework for Vietnamese Vaccine Misinformation Surveillance}
+\titlerunning{VaccineNLP: Explainable HITL Misinformation Surveillance}
 
 \author{Manh Hung Kim\inst{1} \and Quynh Phuong Dinh Le\inst{1} \and Lam Quan Tran\inst{2} \and Hang Nguyet Van Nguyen\inst{1}}
 \authorrunning{Manh Hung Kim et al.}
@@ -15,7 +15,7 @@
 \maketitle
 
 \begin{abstract}
-Vaccine misinformation has become a public-health informatics challenge in Vietnamese digital environments, where social media posts, online comments, and informal vaccine narratives can shape vaccine confidence. This paper presents VaccineNLP, a human-in-the-loop and explainable multi-task natural language processing framework for Vietnamese vaccine misinformation surveillance. We collected 1,856 Vietnamese vaccine-related texts from Facebook, YouTube, online news, Reddit, and public forums during 2020--2026, then applied an eight-step Vietnamese preprocessing pipeline and a three-axis annotation schema covering misinformation, stance, and sentiment. A 186-sample expert-validated Gold Test Set was used to compare XLM-RoBERTa, PhoBERT-v2 multi-task learning, and a Gemma-4 4B QLoRA reasoning model. PhoBERT-v2 achieved the highest average Macro F1 (0.6967), while XLM-RoBERTa obtained the best misinformation Macro F1 (0.7038) and Gemma-4 4B obtained the best sentiment Macro F1 (0.7700). Temperature Scaling reduced Expected Calibration Error by 44--56\% across the three axes. However, agreement between the LLM annotator and expert labels was very low for misinformation (Cohen's kappa = 0.0525), indicating that LLMs should support, not replace, expert medical fact-checking. Statistical tests further showed that anti-vaccine stance and negative sentiment were strongly associated with misinformation risk. The results support a cautious trustworthy-AI design for Vietnamese infodemic monitoring.
+Vaccine misinformation has become a public-health informatics challenge in Vietnamese digital environments, where social media posts, online comments, and informal vaccine narratives can shape vaccine confidence. This paper presents VaccineNLP, an explainable human-in-the-loop multi-task natural language processing framework for Vietnamese vaccine misinformation surveillance. We collected 1,856 Vietnamese vaccine-related texts from Facebook, YouTube, online news, Reddit, and public forums during 2020--2026, then applied an eight-step Vietnamese preprocessing pipeline and a three-axis annotation schema covering misinformation, stance, and sentiment. A 186-sample expert-validated Gold Test Set was used to compare XLM-RoBERTa, PhoBERT-v2 multi-task learning, and a Gemma-4 4B QLoRA reasoning model. PhoBERT-v2 achieved the highest average Macro F1 (0.6967), while XLM-RoBERTa obtained the best misinformation Macro F1 (0.7038) and Gemma-4 4B obtained the best sentiment Macro F1 (0.7700). Temperature Scaling reduced Expected Calibration Error by 44--56\% across the three axes. However, agreement between the LLM annotator and expert labels was very low for misinformation (Cohen's kappa = 0.0525), indicating that LLMs should support, not replace, expert medical fact-checking. Statistical tests further showed that anti-vaccine stance and negative sentiment were strongly associated with misinformation risk. The results support a cautious trustworthy-AI design for Vietnamese infodemic monitoring.
 
 \keywords{Vaccine misinformation \and Vietnamese NLP \and Infodemic surveillance \and Human-in-the-loop \and Explainable AI \and Multi-task learning \and PhoBERT \and Confidence calibration}
 \end{abstract}
@@ -29,7 +29,8 @@ The original thesis framed the problem through three research questions that are
 
 The Vietnamese setting makes this problem especially relevant for FISAT themes in artificial intelligence, digital transformation, and applied health informatics. Vaccine discussions often appear as short comments, conversational fragments, or screenshots copied across platforms. A single comment may include a personal adverse event narrative, a rhetorical question, and an implicit recommendation against vaccination. For this reason, the system is designed not as a binary censorship tool, but as an intelligent surveillance and triage layer that surfaces uncertain or high-risk texts for expert review.
 
-This paper contributes an applied intelligent-system study for the FISAT/Springer proceedings scope, at the intersection of natural language processing, trustworthy AI, health informatics, and social media analytics. Consistent with the original study protocol, the paper addresses two aims: (i) to build and evaluate Vietnamese NLP models for vaccine-related misinformation, stance, and sentiment classification; and (ii) to assess the usefulness and limitations of LLM support for medical text annotation and explanation. The contribution is fourfold: an expert-validated Vietnamese Gold Test Set for vaccine-related misinformation, stance, and sentiment; a comparative evaluation of XLM-RoBERTa, PhoBERT-v2, and Gemma-4 4B on the same test set; confidence calibration analysis for trustworthy deployment; and empirical evidence that LLM-based annotation remains insufficient as a replacement for expert medical fact-checking.
+\subsection{Research Contributions}
+This paper contributes an applied intelligent-system study for the FISAT/Springer proceedings scope, at the intersection of natural language processing, trustworthy AI, health informatics, and social media analytics. Consistent with the original study protocol, the paper addresses two aims: (i) to build and evaluate Vietnamese NLP models for vaccine-related misinformation, stance, and sentiment classification; and (ii) to assess the usefulness and limitations of LLM support for medical text annotation and explanation. To make the research contribution explicit, the paper reports four concrete outputs: C1, an expert-validated Vietnamese Gold Test Set for vaccine-related misinformation, stance, and sentiment; C2, a controlled benchmark of XLM-RoBERTa, PhoBERT-v2, and Gemma-4 4B on the same evaluation split; C3, a confidence-calibrated explainable HITL workflow for trustworthy public-health deployment; and C4, empirical evidence that LLM-based annotation remains insufficient as a replacement for expert medical fact-checking.
 
 \section{Related Work and Research Gap}
 Research on vaccine misinformation detection has progressed rapidly in English, including specialized datasets such as ANTi-Vax, where fine-tuned transformer models can reach high scores under in-domain conditions \cite{hayawi2022antivax}. Susceptibility to COVID-19 misinformation is also shaped by social-media exposure and analytic reasoning \cite{roozenbeek2020susceptibility}. However, direct transfer to Vietnamese vaccine discourse is limited by language shift, platform shift, and annotation-policy differences. Existing Vietnamese fake-news resources are useful but are generally small or not specific to vaccine and public-health communication.
@@ -38,10 +39,10 @@ The full project report identifies three concrete gaps in the Vietnamese literat
 
 Transformer encoders such as BERT \cite{devlin2019bert}, XLM-RoBERTa \cite{conneau2020xlmr}, and PhoBERT \cite{nguyen2020phobert}, all built on the Transformer architecture \cite{vaswani2017attention}, are well suited to text classification because they learn contextual sentence representations. PhoBERT is particularly relevant because it is pre-trained for Vietnamese and expects word-segmented input. In contrast, decoder-only LLMs are attractive for weak annotation and natural-language explanation, but their output format can be unstable and their factual judgments in medical domains require expert oversight \cite{gilardi2023chatgpt,singhal2023medpalm}.
 
-Table 1 positions the proposed study against related work. The table is not intended as a leaderboard because reported scores in the literature come from different languages, platforms, annotation policies, and class distributions. Instead, it clarifies the research gap addressed by VaccineNLP: Vietnamese vaccine misinformation has not been evaluated as a combined misinformation-stance-sentiment problem with expert validation, calibration, and operational XAI in one pipeline.
+Table 1 positions the proposed study against related work. The table is intentionally presented as a research-positioning comparison, not as a direct leaderboard, because reported scores in the literature come from different languages, platforms, annotation policies, and class distributions. Instead, it clarifies the research gap addressed by VaccineNLP: Vietnamese vaccine misinformation has not been evaluated as a combined misinformation-stance-sentiment problem with expert validation, calibration, and operational XAI in one pipeline.
 
 \begin{table}[t]
-\caption{Positioning of VaccineNLP against related misinformation and vaccine NLP studies.}\label{tab:literature}
+\caption{Research-positioning comparison of VaccineNLP against related misinformation and vaccine NLP studies.}\label{tab:literature}
 \centering
 \scriptsize
 \setlength{\tabcolsep}{1.8pt}
@@ -61,6 +62,8 @@ VaccineNLP (this study) & Vietnamese multi-source vaccine discourse & XLM-R, Pho
 \vspace{2pt}
 \parbox{\textwidth}{\footnotesize\emph{Note.} Reported scores are not directly comparable because datasets, languages, label definitions, and validation protocols differ.}
 \end{table}
+
+Accordingly, Table 1 should be read as a research-positioning comparison rather than as a direct benchmark. The controlled experimental comparison is reported later in Tables 6 and 7, where XLM-RoBERTa, PhoBERT-v2, and Gemma-4 4B are evaluated on the same Vietnamese Gold Test Set under the same label schema.
 
 The distinction between encoder and decoder models is important for this study. Encoder-only models are optimized for stable representations and classification, while decoder-only LLMs produce free-form explanations that can be useful for analysts but difficult to parse into controlled labels. This motivates the Dual-Student Hybrid architecture: PhoBERT-v2 performs routine multi-task classification, and Gemma-4 4B supports explanation for difficult cases. The design aligns with a practical division of labor instead of forcing a single model to be the classifier, annotator, fact-checker, and explainer at once.
 
@@ -152,6 +155,9 @@ Total & 1849 & 332 & 1517 & 529 & 772 & 548 & 370 & 711 & 768\\
 \parbox{\textwidth}{\footnotesize\emph{Note.} Mis. = misinformation; Corr. = correct/not misleading; Sup. = supportive stance; Neu-S = neutral stance; Opp. = opposing or hesitant stance; Neu-E = neutral sentiment; Pos./Neg. = positive/negative sentiment. Seven samples were dropped before modeling because word segmentation removed malformed or empty rows.}
 \end{table}
 
+\subsection{Implementation Workflow}
+The implementation can be summarized as a six-stage algorithmic workflow. Step 1 collects vaccine-related Vietnamese texts from news, social media, video comments, and public forums. Step 2 applies the Vietnamese preprocessing pipeline, including Unicode normalization, URL and HTML removal, hashtag segmentation, slang normalization, and word segmentation. Step 3 assigns three-axis labels for misinformation, stance, and sentiment through LLM-assisted annotation followed by HITL expert validation. Step 4 trains XLM-RoBERTa and PhoBERT-v2 classifiers and fine-tunes Gemma-4 4B with QLoRA for explanation-oriented reasoning. Step 5 evaluates all models on the expert-validated Gold Test Set using Macro F1, per-class F1, calibration error, parsing reliability, and agreement with expert labels. Step 6 deploys the calibrated PhoBERT-v2 output as the first-tier screening signal and escalates low-confidence or high-risk cases to the explanation and expert-review layer. This workflow is the operational algorithm used throughout the experiments, linking data preparation, modeling, evaluation, and human review in a single reproducible pipeline.
+
 \subsection{Dual-Student Hybrid Architecture}
 VaccineNLP adopts a Dual-Student Hybrid design. The classification engine is a PhoBERT-base-v2 shared encoder with three task-specific heads for misinformation, stance, and sentiment. The baseline is XLM-RoBERTa-base trained under comparable settings. The explanation engine is a Gemma-4 4B model fine-tuned with QLoRA to generate label-aware Vietnamese rationales \cite{dettmers2023qlora}. Figure 1 summarizes the two-tier architecture and the human-in-the-loop safety logic. The classification loss is a weighted multi-task objective:
 
@@ -187,6 +193,8 @@ Error analysis was defined on randomly sampled false-positive and false-negative
 The study used only publicly available text, did not collect private messages, and did not intervene on human participants. Usernames, profile URLs, phone numbers, and other potentially identifying details were removed or anonymized before analysis.
 
 \section{Results}
+The experimental results are organized so that each table answers a specific evaluation question. Table 5 describes the Gold Test Set used for evaluation. Table 6 is the primary model-comparison table: it reports task-level Macro F1 for XLM-RoBERTa, PhoBERT-v2, and Gemma-4 4B on the same expert-validated split. Table 7 provides the per-class F1 details behind those macro scores. Table 8 reports confidence calibration after Temperature Scaling, while Table 9 reports the reliability of LLM-assisted annotation against expert review. Tables 10--13 provide statistical evidence for public-health risk associations among sentiment, stance, platform, and misinformation.
+
 The Gold Test Set contains 186 expert-reviewed Vietnamese samples. Misinformation is the minority class, with 28 samples (15.1\%), while 158 samples were labeled as correct or not clearly misleading. For stance, 54 samples were supportive, 48 opposing or hesitant, and 84 neutral. For sentiment, 71 samples were negative, 75 neutral, and 40 positive (Table 5).
 
 \begin{table}[t]
@@ -213,10 +221,10 @@ Sentiment & Positive & 40 & 21.5\\
 
 The label distribution confirms why Macro F1 was selected as the primary metric. Accuracy alone would overstate system performance because the correct/not-misleading class dominates the misinformation axis. A classifier that misses most harmful misinformation could still appear acceptable under accuracy, but would be unsafe for infodemic surveillance. Macro F1 gives each class equal weight and therefore makes minority-class weakness visible.
 
-Table 6 summarizes Macro F1 across the three tasks. PhoBERT-v2 achieved the highest average Macro F1 (0.6967), suggesting that a Vietnamese-specific encoder is effective for multi-task health-text classification. XLM-RoBERTa slightly outperformed PhoBERT-v2 on the misinformation axis (0.7038 versus 0.6996), while Gemma-4 4B performed best on sentiment (0.7700), consistent with the strength of generative models in affective and contextual interpretation.
+Table 6 is therefore the main experimental-results table for model performance. It summarizes Macro F1 across the three tasks. PhoBERT-v2 achieved the highest average Macro F1 (0.6967), suggesting that a Vietnamese-specific encoder is effective for multi-task health-text classification. XLM-RoBERTa slightly outperformed PhoBERT-v2 on the misinformation axis (0.7038 versus 0.6996), while Gemma-4 4B performed best on sentiment (0.7700), consistent with the strength of generative models in affective and contextual interpretation.
 
 \begin{table}[t]
-\caption{Macro F1 on the expert-validated Gold Test Set.}\label{tab:macro}
+\caption{Primary experimental results: Macro F1 on the expert-validated Gold Test Set.}\label{tab:macro}
 \centering
 \small
 \setlength{\tabcolsep}{4pt}
@@ -239,7 +247,7 @@ The specialization pattern is also visible in the between-task Macro F1 range. T
 Per-class results show that misinformation detection remains the hardest operational task (Table 7). For the minority misinformation class, F1 was 0.5079 for XLM-RoBERTa, 0.5075 for PhoBERT-v2, and 0.4444 for Gemma-4 4B. In contrast, the correct-information class reached F1 scores close to 0.89 for the encoder models. This asymmetry reflects both label imbalance and the linguistic camouflage used in anti-vaccine content.
 
 \begin{table}[t]
-\caption{Per-class F1 by task on the Gold Test Set.}\label{tab:perclass}
+\caption{Detailed experimental results: per-class F1 by task on the Gold Test Set.}\label{tab:perclass}
 \centering
 \small
 \setlength{\tabcolsep}{4pt}

@@ -18,10 +18,10 @@ LATEX_TEMPLATE_DIR = Path("D:/Springer_Latex_Template")
 DOCX_TEMPLATE = Path("D:/Springer_DOCX_Template/splnproc1703.docm")
 
 TITLE = (
-    "VaccineNLP: A Human-in-the-Loop Explainable Multi-Task NLP "
+    "VaccineNLP: An Explainable Human-in-the-Loop Multi-Task NLP "
     "Framework for Vietnamese Vaccine Misinformation Surveillance"
 )
-TITLE_RUNNING = "VaccineNLP: HITL Multi-Task Misinformation Surveillance"
+TITLE_RUNNING = "VaccineNLP: Explainable HITL Misinformation Surveillance"
 AUTHORS = [
     {"name": "Manh Hung Kim", "inst": "1"},
     {"name": "Quynh Phuong Dinh Le", "inst": "1"},
@@ -47,7 +47,7 @@ ABSTRACT = (
     "Vaccine misinformation has become a public-health informatics challenge "
     "in Vietnamese digital environments, where social media posts, online "
     "comments, and informal vaccine narratives can shape vaccine confidence. "
-    "This paper presents VaccineNLP, a human-in-the-loop and explainable "
+    "This paper presents VaccineNLP, an explainable human-in-the-loop "
     "multi-task natural language processing framework for Vietnamese vaccine "
     "misinformation surveillance. We collected 1,856 Vietnamese vaccine-related "
     "texts from Facebook, YouTube, online news, Reddit, and public forums during "
@@ -152,7 +152,7 @@ TABLES = {
         ),
     },
     "literature_comparison": {
-        "caption": "Positioning of VaccineNLP against related misinformation and vaccine NLP studies.",
+        "caption": "Research-positioning comparison of VaccineNLP against related misinformation and vaccine NLP studies.",
         "label": "tab:literature",
         "headers": ["Study", "Setting", "Main task / model", "Reported result", "Gap addressed by VaccineNLP"],
         "rows": [
@@ -346,7 +346,7 @@ TABLES = {
         "note": "Mis. = misinformation; Corr. = correct/not misleading; Sup. = supportive stance; Neu-S = neutral stance; Opp. = opposing or hesitant stance; Neu-E = neutral sentiment; Pos./Neg. = positive/negative sentiment. Seven samples were dropped before modeling because word segmentation removed malformed or empty rows.",
     },
     "macro": {
-        "caption": "Macro F1 on the expert-validated Gold Test Set.",
+        "caption": "Primary experimental results: Macro F1 on the expert-validated Gold Test Set.",
         "label": "tab:macro",
         "headers": ["Model", "Role", "Misinfo", "Stance", "Sentiment", "Mean"],
         "rows": [
@@ -359,7 +359,7 @@ TABLES = {
         "widths": [1250, 2050, 850, 850, 950, 650],
     },
     "perclass": {
-        "caption": "Per-class F1 by task on the Gold Test Set.",
+        "caption": "Detailed experimental results: per-class F1 by task on the Gold Test Set.",
         "label": "tab:perclass",
         "headers": ["Task", "Class", "XLM-R-v1", "PhoBERT-v2", "Gemma-4 4B", "Support"],
         "rows": [
@@ -627,6 +627,7 @@ SECTIONS = [
                 "binary censorship tool, but as an intelligent surveillance and triage "
                 "layer that surfaces uncertain or high-risk texts for expert review."
             ),
+            {"subsection": "Research Contributions"},
             (
                 "This paper contributes an applied intelligent-system study for the "
                 "FISAT/Springer proceedings scope, at the intersection of natural "
@@ -635,14 +636,15 @@ SECTIONS = [
                 "paper addresses two aims: (i) to build and evaluate Vietnamese NLP "
                 "models for vaccine-related misinformation, stance, and sentiment "
                 "classification; and (ii) to assess the usefulness and limitations of "
-                "LLM support for medical text annotation and explanation. The "
-                "contribution is fourfold: an expert-validated "
-                "Vietnamese Gold Test Set for vaccine-related misinformation, stance, "
-                "and sentiment; a comparative evaluation of XLM-RoBERTa, PhoBERT-v2, "
-                "and Gemma-4 4B on the same test set; confidence calibration analysis "
-                "for trustworthy deployment; and empirical evidence that LLM-based "
-                "annotation remains insufficient as a replacement for expert medical "
-                "fact-checking."
+                "LLM support for medical text annotation and explanation. To make the "
+                "research contribution explicit, the paper reports four concrete "
+                "outputs: C1, an expert-validated Vietnamese Gold Test Set for "
+                "vaccine-related misinformation, stance, and sentiment; C2, a "
+                "controlled benchmark of XLM-RoBERTa, PhoBERT-v2, and Gemma-4 4B on "
+                "the same evaluation split; C3, a confidence-calibrated explainable "
+                "HITL workflow for trustworthy public-health deployment; and C4, "
+                "empirical evidence that LLM-based annotation remains insufficient as "
+                "a replacement for expert medical fact-checking."
             ),
         ],
     },
@@ -685,15 +687,22 @@ SECTIONS = [
             ),
             (
                 "Table 1 positions the proposed study against related work. The table "
-                "is not intended as a leaderboard because reported scores in the "
-                "literature come from different languages, platforms, annotation "
-                "policies, and class distributions. Instead, it clarifies the research "
-                "gap addressed by VaccineNLP: Vietnamese vaccine misinformation has "
-                "not been evaluated as a combined misinformation-stance-sentiment "
-                "problem with expert validation, calibration, and operational XAI in "
-                "one pipeline."
+                "is intentionally presented as a research-positioning comparison, not "
+                "as a direct leaderboard, because reported scores in the literature "
+                "come from different languages, platforms, annotation policies, and "
+                "class distributions. Instead, it clarifies the research gap addressed "
+                "by VaccineNLP: Vietnamese vaccine misinformation has not been "
+                "evaluated as a combined misinformation-stance-sentiment problem with "
+                "expert validation, calibration, and operational XAI in one pipeline."
             ),
             {"table": "literature_comparison"},
+            (
+                "Accordingly, Table 1 should be read as a research-positioning "
+                "comparison rather than as a direct benchmark. The controlled "
+                "experimental comparison is reported later in Tables 6 and 7, where "
+                "XLM-RoBERTa, PhoBERT-v2, and Gemma-4 4B are evaluated on the same "
+                "Vietnamese Gold Test Set under the same label schema."
+            ),
             (
                 "The distinction between encoder and decoder models is important for "
                 "this study. Encoder-only models are optimized for stable "
@@ -817,6 +826,27 @@ SECTIONS = [
                 "samples (Table 4)."
             ),
             {"table": "splits"},
+            {"subsection": "Implementation Workflow"},
+            (
+                "The implementation can be summarized as a six-stage algorithmic "
+                "workflow. Step 1 collects vaccine-related Vietnamese texts from "
+                "news, social media, video comments, and public forums. Step 2 "
+                "applies the Vietnamese preprocessing pipeline, including Unicode "
+                "normalization, URL and HTML removal, hashtag segmentation, slang "
+                "normalization, and word segmentation. Step 3 assigns three-axis "
+                "labels for misinformation, stance, and sentiment through "
+                "LLM-assisted annotation followed by HITL expert validation. Step 4 "
+                "trains XLM-RoBERTa and PhoBERT-v2 classifiers and fine-tunes "
+                "Gemma-4 4B with QLoRA for explanation-oriented reasoning. Step 5 "
+                "evaluates all models on the expert-validated Gold Test Set using "
+                "Macro F1, per-class F1, calibration error, parsing reliability, and "
+                "agreement with expert labels. Step 6 deploys the calibrated "
+                "PhoBERT-v2 output as the first-tier screening signal and escalates "
+                "low-confidence or high-risk cases to the explanation and "
+                "expert-review layer. This workflow is the operational algorithm used "
+                "throughout the experiments, linking data preparation, modeling, "
+                "evaluation, and human review in a single reproducible pipeline."
+            ),
             {"subsection": "Dual-Student Hybrid Architecture"},
             (
                 "VaccineNLP adopts a Dual-Student Hybrid design. The classification "
@@ -927,6 +957,19 @@ SECTIONS = [
         "title": "Results",
         "blocks": [
             (
+                "The experimental results are organized so that each table answers a "
+                "specific evaluation question. Table 5 describes the Gold Test Set "
+                "used for evaluation. Table 6 is the primary model-comparison table: "
+                "it reports task-level Macro F1 for XLM-RoBERTa, PhoBERT-v2, and "
+                "Gemma-4 4B on the same expert-validated split. Table 7 provides the "
+                "per-class F1 details behind those macro scores. Table 8 reports "
+                "confidence calibration after Temperature Scaling, while Table 9 "
+                "reports the reliability of LLM-assisted annotation against expert "
+                "review. Tables 10--13 provide statistical evidence for public-health "
+                "risk associations among sentiment, stance, platform, and "
+                "misinformation."
+            ),
+            (
                 "The Gold Test Set contains 186 expert-reviewed Vietnamese samples. "
                 "Misinformation is the minority class, with 28 samples (15.1%), while "
                 "158 samples were labeled as correct or not clearly misleading. For "
@@ -945,7 +988,9 @@ SECTIONS = [
                 "equal weight and therefore makes minority-class weakness visible."
             ),
             (
-                "Table 6 summarizes Macro F1 across the three tasks. PhoBERT-v2 "
+                "Table 6 is therefore the main experimental-results table for model "
+                "performance. It summarizes Macro F1 across the three tasks. "
+                "PhoBERT-v2 "
                 "achieved the highest average Macro F1 (0.6967), suggesting that a "
                 "Vietnamese-specific encoder is effective for multi-task health-text "
                 "classification. XLM-RoBERTa slightly outperformed PhoBERT-v2 on the "
