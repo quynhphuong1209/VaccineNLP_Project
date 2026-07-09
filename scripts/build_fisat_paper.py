@@ -22,6 +22,8 @@ TITLE = (
     "Framework for Vietnamese Vaccine Misinformation Surveillance"
 )
 TITLE_RUNNING = "VaccineNLP: Explainable HITL Misinformation Surveillance"
+LATEX_ABSTRACT_PULL_UP = r"\vspace{-0.65cm}"
+DOCX_ABSTRACT_TOP_SPACE_PT = 14
 AUTHORS = [
     {"name": "Manh Hung Kim", "inst": "1"},
     {"name": "Quynh Phuong Dinh Le", "inst": "1"},
@@ -1766,6 +1768,7 @@ def build_latex():
         rf"\institute{{{institute_tex}}}",
         "",
         r"\maketitle",
+        LATEX_ABSTRACT_PULL_UP,
         "",
         r"\begin{abstract}",
         latex_escape(ABSTRACT),
@@ -1959,6 +1962,16 @@ def reset_paragraph_spacing_and_indents(paragraph, space_before=0, space_after=0
     fmt.space_before = Pt(space_before)
     fmt.space_after = Pt(space_after)
     fmt.line_spacing = 1.0
+
+
+def set_paragraph_spacing(paragraph, space_before=None, space_after=None, line_spacing=None):
+    fmt = paragraph.paragraph_format
+    if space_before is not None:
+        fmt.space_before = Pt(space_before)
+    if space_after is not None:
+        fmt.space_after = Pt(space_after)
+    if line_spacing is not None:
+        fmt.line_spacing = line_spacing
 
 
 def set_cell_text(cell, text, bold=False, size=8.0, align="left"):
@@ -2395,12 +2408,18 @@ def build_docx(path, figure_paths):
     add_styled_text(doc, TITLE, "papertitle", WD_ALIGN_PARAGRAPH.CENTER, use_template_styles)
     add_author_block(doc, use_template_styles)
     add_institution_block(doc, use_template_styles)
-    add_styled_text(
+    abstract_paragraph = add_styled_text(
         doc,
         "Abstract. " + ABSTRACT,
         "abstract",
         WD_ALIGN_PARAGRAPH.JUSTIFY,
         use_template_styles,
+    )
+    set_paragraph_spacing(
+        abstract_paragraph,
+        space_before=DOCX_ABSTRACT_TOP_SPACE_PT,
+        space_after=3,
+        line_spacing=1.0,
     )
     add_styled_text(
         doc,
