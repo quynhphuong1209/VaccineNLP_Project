@@ -381,12 +381,12 @@ TABLES = {
         "headers": [
             "Axis",
             "T",
-            "ECE before",
-            "ECE after",
+            "ECE pre",
+            "ECE post",
             "Raw conf.",
             "Cal. conf.",
-            "Accuracy",
-            "ECE change",
+            "Acc.",
+            "ECE delta",
         ],
         "rows": [
             ["Misinformation", "1.82", "0.123", "0.054", "94.5%", "87.4%", "82.3%", "-56%"],
@@ -396,20 +396,21 @@ TABLES = {
         "align": ["left", "center", "center", "center", "center", "center", "center", "center"],
         "latex_align": "lrrrrrrr",
         "latex_spec": (
-            r"@{}>{\raggedright\arraybackslash}p{0.18\textwidth}"
-            r">{\centering\arraybackslash}p{0.06\textwidth}"
-            r">{\centering\arraybackslash}p{0.095\textwidth}"
-            r">{\centering\arraybackslash}p{0.09\textwidth}"
-            r">{\centering\arraybackslash}p{0.09\textwidth}"
-            r">{\centering\arraybackslash}p{0.09\textwidth}"
+            r"@{}>{\raggedright\arraybackslash}p{0.205\textwidth}"
+            r">{\centering\arraybackslash}p{0.065\textwidth}"
             r">{\centering\arraybackslash}p{0.085\textwidth}"
-            r">{\centering\arraybackslash}p{0.095\textwidth}@{}"
+            r">{\centering\arraybackslash}p{0.085\textwidth}"
+            r">{\centering\arraybackslash}p{0.09\textwidth}"
+            r">{\centering\arraybackslash}p{0.09\textwidth}"
+            r">{\centering\arraybackslash}p{0.07\textwidth}"
+            r">{\centering\arraybackslash}p{0.10\textwidth}@{}"
         ),
         "latex_font": "scriptsize",
         "tabcolsep": "2.0pt",
         "arraystretch": "1.06",
-        "widths": [1300, 500, 850, 850, 850, 850, 850, 650],
-        "font_size": 7.0,
+        "widths": [1700, 620, 780, 780, 840, 840, 650, 850],
+        "font_size": 6.9,
+        "nowrap_cols": [0, 1, 2, 3, 4, 5, 6, 7],
         "note": "ECE = Expected Calibration Error; T = learned temperature.",
     },
     "llm": {
@@ -1791,7 +1792,7 @@ def set_table_width(table, widths_dxa):
             set_cell_width(cell, widths_dxa[idx])
 
 
-def set_cell_margins(cell, top=70, start=80, bottom=70, end=80):
+def set_cell_margins(cell, top=65, start=60, bottom=65, end=60):
     tc_pr = cell._tc.get_or_add_tcPr()
     tc_mar = tc_pr.first_child_found_in("w:tcMar")
     if tc_mar is None:
@@ -1804,6 +1805,16 @@ def set_cell_margins(cell, top=70, start=80, bottom=70, end=80):
             tc_mar.append(node)
         node.set(qn("w:w"), str(value))
         node.set(qn("w:type"), "dxa")
+
+
+def set_cell_no_wrap(cell, no_wrap=True):
+    tc_pr = cell._tc.get_or_add_tcPr()
+    no_wrap_node = tc_pr.first_child_found_in("w:noWrap")
+    if no_wrap and no_wrap_node is None:
+        no_wrap_node = OxmlElement("w:noWrap")
+        tc_pr.append(no_wrap_node)
+    elif not no_wrap and no_wrap_node is not None:
+        tc_pr.remove(no_wrap_node)
 
 
 def set_cell_borders(cell, top=None, bottom=None):
@@ -2095,7 +2106,7 @@ def add_institution_block(doc, use_template_styles=False):
 
 def normalize_widths(widths):
     total = sum(widths)
-    target = 6600
+    target = 6900
     scaled = [int(width * target / total) for width in widths]
     scaled[-1] += target - sum(scaled)
     return scaled
@@ -2114,6 +2125,7 @@ def add_table(doc, table_key, number, use_template_styles=False):
 
     font_size = table_def.get("font_size", 7.8)
     aligns = table_def["align"]
+    nowrap_cols = set(table_def.get("nowrap_cols", []))
     header_top = {"sz": 10}
     header_bottom = {"sz": 7}
     bottom_rule = {"sz": 10}
@@ -2123,6 +2135,7 @@ def add_table(doc, table_key, number, use_template_styles=False):
         cell = table.rows[0].cells[idx]
         cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
         set_cell_margins(cell)
+        set_cell_no_wrap(cell, idx in nowrap_cols)
         set_cell_borders(cell, top=header_top, bottom=header_bottom)
         set_cell_text(cell, header, bold=True, size=font_size, align=aligns[idx])
 
@@ -2132,6 +2145,7 @@ def add_table(doc, table_key, number, use_template_styles=False):
             cell = row.cells[idx]
             cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
             set_cell_margins(cell)
+            set_cell_no_wrap(cell, idx in nowrap_cols)
             set_cell_borders(cell)
             set_cell_text(cell, value, size=font_size, align=aligns[idx])
 
