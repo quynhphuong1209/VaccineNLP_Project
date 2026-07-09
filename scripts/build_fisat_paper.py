@@ -650,10 +650,10 @@ SECTIONS = [
             ),
             (
                 "The Vietnamese setting makes this problem especially relevant for "
-                "FISAT themes in artificial intelligence, digital transformation, and "
-                "applied health informatics. Vaccine discussions often appear as "
-                "short comments, conversational fragments, or screenshots copied "
-                "across platforms. A single comment may include a personal adverse "
+                "intelligent-systems research in artificial intelligence, digital "
+                "transformation, and applied health informatics. Vaccine discussions "
+                "often appear as short comments, conversational fragments, or screenshots "
+                "copied across platforms. A single comment may include a personal adverse "
                 "event narrative, a rhetorical question, and an implicit recommendation "
                 "against vaccination. For this reason, the system is designed not as a "
                 "binary censorship tool, but as an intelligent surveillance and triage "
@@ -661,22 +661,21 @@ SECTIONS = [
             ),
             {"subsection": "Research Contributions"},
             (
-                "This paper contributes an applied intelligent-system study for the "
-                "FISAT/Springer proceedings scope, at the intersection of natural "
-                "language processing, trustworthy AI, health informatics, and social "
-                "media analytics. Consistent with the original study protocol, the "
-                "paper addresses two aims: (i) to build and evaluate Vietnamese NLP "
-                "models for vaccine-related misinformation, stance, and sentiment "
-                "classification; and (ii) to assess the usefulness and limitations of "
-                "LLM support for medical text annotation and explanation. To make the "
-                "research contribution explicit, the paper reports four concrete "
-                "outputs: C1, an expert-validated Vietnamese Gold Test Set for "
-                "vaccine-related misinformation, stance, and sentiment; C2, a "
-                "controlled benchmark of XLM-RoBERTa, PhoBERT-v2, and Gemma-4 4B on "
-                "the same evaluation split; C3, a confidence-calibrated explainable "
-                "HITL workflow for trustworthy public-health deployment; and C4, "
-                "empirical evidence that LLM-based annotation remains insufficient as "
-                "a replacement for expert medical fact-checking."
+                "This paper contributes an applied intelligent-system study at the "
+                "intersection of natural language processing, trustworthy AI, health "
+                "informatics, and social media analytics. Consistent with the original "
+                "study protocol, the paper addresses two aims: (i) to build and evaluate "
+                "Vietnamese NLP models for vaccine-related misinformation, stance, and "
+                "sentiment classification; and (ii) to assess the usefulness and "
+                "limitations of LLM support for medical text annotation and explanation. "
+                "To make the research contribution explicit, the paper reports four "
+                "concrete outputs: C1, an expert-validated Vietnamese Gold Test Set for "
+                "vaccine-related misinformation, stance, and sentiment; C2, a controlled "
+                "benchmark of XLM-RoBERTa, PhoBERT-v2, and Gemma-4 4B on the same "
+                "evaluation split; C3, a confidence-calibrated explainable HITL workflow "
+                "for trustworthy public-health deployment; and C4, empirical evidence "
+                "that LLM-based annotation remains insufficient as a replacement for "
+                "expert medical fact-checking."
             ),
         ],
     },
@@ -2529,7 +2528,7 @@ def build_docx(path, figure_paths):
     props = doc.core_properties
     props.title = TITLE
     props.author = "VaccineNLP Project Team"
-    props.subject = "FISAT full paper"
+    props.subject = "FISAT proceedings paper"
     props.keywords = ", ".join(KEYWORDS)
     configure_running_headers(doc)
     doc.save(path)
