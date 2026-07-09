@@ -1911,53 +1911,77 @@ def apply_compact_spacing(doc):
                 fmt.first_line_indent = Pt(0)
 
 
-def add_paragraph(doc, text, size=10, bold_prefix=None, style=None, first_line_indent=False):
+def add_paragraph(
+    doc,
+    text,
+    size=10,
+    bold_prefix=None,
+    style=None,
+    first_line_indent=False,
+    use_template_styles=False,
+):
     paragraph = doc.add_paragraph(style=style) if style else doc.add_paragraph()
-    paragraph.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-    paragraph.paragraph_format.space_before = Pt(0)
-    paragraph.paragraph_format.space_after = Pt(1)
-    paragraph.paragraph_format.line_spacing = 1.0
-    paragraph.paragraph_format.first_line_indent = Cm(0.35) if first_line_indent else Pt(0)
+    if not use_template_styles:
+        paragraph.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+        paragraph.paragraph_format.space_before = Pt(0)
+        paragraph.paragraph_format.space_after = Pt(1)
+        paragraph.paragraph_format.line_spacing = 1.0
+        paragraph.paragraph_format.first_line_indent = Cm(0.35) if first_line_indent else Pt(0)
     if bold_prefix and text.startswith(bold_prefix):
         run = paragraph.add_run(bold_prefix)
-        set_run_font(run, size=size, bold=True)
+        if use_template_styles:
+            run.bold = True
+        else:
+            set_run_font(run, size=size, bold=True)
         rest = paragraph.add_run(text[len(bold_prefix) :])
-        set_run_font(rest, size=size)
+        if not use_template_styles:
+            set_run_font(rest, size=size)
     else:
         run = paragraph.add_run(text)
-        set_run_font(run, size=size)
+        if not use_template_styles:
+            set_run_font(run, size=size)
     return paragraph
 
 
-def add_equation(doc, equation):
+def add_equation(doc, equation, use_template_styles=False):
     paragraph = doc.add_paragraph(style="equation") if "equation" in [s.name for s in doc.styles] else doc.add_paragraph()
     paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    paragraph.paragraph_format.space_before = Pt(1)
-    paragraph.paragraph_format.space_after = Pt(2)
-    paragraph.paragraph_format.line_spacing = 1.0
+    if not use_template_styles:
+        paragraph.paragraph_format.space_before = Pt(1)
+        paragraph.paragraph_format.space_after = Pt(2)
+        paragraph.paragraph_format.line_spacing = 1.0
     text = (
         "L = 1.2 L_misinfo + L_stance + L_sentiment."
         if "misinfo" in equation
         else equation
     )
     run = paragraph.add_run(text)
-    set_run_font(run, size=10)
+    if not use_template_styles:
+        set_run_font(run, size=10)
 
 
-def add_caption(doc, number, caption):
+def add_caption(doc, number, caption, use_template_styles=False):
     paragraph = (
         doc.add_paragraph(style="tablecaption")
         if "tablecaption" in [s.name for s in doc.styles]
         else doc.add_paragraph()
     )
-    paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
-    paragraph.paragraph_format.space_before = Pt(4)
-    paragraph.paragraph_format.space_after = Pt(1)
-    paragraph.paragraph_format.line_spacing = 1.0
+    if not use_template_styles:
+        paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
+        paragraph.paragraph_format.space_before = Pt(4)
+        paragraph.paragraph_format.space_after = Pt(1)
+        paragraph.paragraph_format.line_spacing = 1.0
     run_num = paragraph.add_run(f"Table {number}. ")
-    set_run_font(run_num, size=9, bold=True, italic=True)
+    if use_template_styles:
+        run_num.bold = True
+        run_num.italic = True
+    else:
+        set_run_font(run_num, size=9, bold=True, italic=True)
     run_caption = paragraph.add_run(caption)
-    set_run_font(run_caption, size=9, italic=True)
+    if use_template_styles:
+        run_caption.italic = True
+    else:
+        set_run_font(run_caption, size=9, italic=True)
 
 
 def add_note(doc, note):
@@ -1972,23 +1996,28 @@ def add_note(doc, note):
     set_run_font(run, size=8)
 
 
-def add_figure_caption(doc, number, caption):
+def add_figure_caption(doc, number, caption, use_template_styles=False):
     paragraph = (
         doc.add_paragraph(style="figurecaption")
         if "figurecaption" in [s.name for s in doc.styles]
         else doc.add_paragraph()
     )
-    paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    paragraph.paragraph_format.space_before = Pt(1)
-    paragraph.paragraph_format.space_after = Pt(3)
-    paragraph.paragraph_format.line_spacing = 1.0
+    if not use_template_styles:
+        paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        paragraph.paragraph_format.space_before = Pt(1)
+        paragraph.paragraph_format.space_after = Pt(3)
+        paragraph.paragraph_format.line_spacing = 1.0
     run_num = paragraph.add_run(f"Fig. {number}. ")
-    set_run_font(run_num, size=9, bold=True)
+    if use_template_styles:
+        run_num.bold = True
+    else:
+        set_run_font(run_num, size=9, bold=True)
     run_caption = paragraph.add_run(caption)
-    set_run_font(run_caption, size=9)
+    if not use_template_styles:
+        set_run_font(run_caption, size=9)
 
 
-def add_figure(doc, figure_key, number, figure_paths):
+def add_figure(doc, figure_key, number, figure_paths, use_template_styles=False):
     figure = FIGURES[figure_key]
     paragraph = doc.add_paragraph()
     paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -2003,26 +2032,28 @@ def add_figure(doc, figure_key, number, figure_paths):
     doc_pr.set("name", f"Fig. {number}")
     doc_pr.set("title", figure["caption"])
     doc_pr.set("descr", figure["alt"])
-    add_figure_caption(doc, number, figure["caption"])
+    add_figure_caption(doc, number, figure["caption"], use_template_styles=use_template_styles)
 
 
 def style_exists(doc, name):
     return any(style.name == name for style in doc.styles)
 
 
-def add_styled_text(doc, text, style_name, align=None):
+def add_styled_text(doc, text, style_name, align=None, use_template_styles=False):
     paragraph = doc.add_paragraph(style=style_name if style_exists(doc, style_name) else None)
     if align is not None:
         paragraph.alignment = align
-    paragraph.paragraph_format.line_spacing = 1.0
+    if not use_template_styles:
+        paragraph.paragraph_format.line_spacing = 1.0
     paragraph.add_run(text)
     return paragraph
 
 
-def add_author_block(doc):
+def add_author_block(doc, use_template_styles=False):
     paragraph = doc.add_paragraph(style="author" if style_exists(doc, "author") else None)
     paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    paragraph.paragraph_format.line_spacing = 1.0
+    if not use_template_styles:
+        paragraph.paragraph_format.line_spacing = 1.0
     for idx, author in enumerate(AUTHORS):
         if idx:
             paragraph.add_run(", " if idx < len(AUTHORS) - 1 else ", and ")
@@ -2031,11 +2062,12 @@ def add_author_block(doc):
         marker.font.superscript = True
 
 
-def add_institution_block(doc):
+def add_institution_block(doc, use_template_styles=False):
     for idx, institution in enumerate(INSTITUTIONS, 1):
         paragraph = doc.add_paragraph(style="address" if style_exists(doc, "address") else None)
         paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        paragraph.paragraph_format.line_spacing = 1.0
+        if not use_template_styles:
+            paragraph.paragraph_format.line_spacing = 1.0
         marker = paragraph.add_run(str(idx))
         marker.font.superscript = True
         paragraph.add_run(f" {institution}")
@@ -2049,9 +2081,9 @@ def normalize_widths(widths):
     return scaled
 
 
-def add_table(doc, table_key, number):
+def add_table(doc, table_key, number, use_template_styles=False):
     table_def = TABLES[table_key]
-    add_caption(doc, number, table_def["caption"])
+    add_caption(doc, number, table_def["caption"], use_template_styles=use_template_styles)
     cols = len(table_def["headers"])
     table = doc.add_table(rows=1, cols=cols)
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
@@ -2152,49 +2184,75 @@ def clear_document_body(doc):
 def build_docx(path, figure_paths):
     template_path = sanitize_springer_docm_template()
     doc = Document(str(template_path)) if template_path else Document()
+    use_template_styles = template_path is not None
     clear_document_body(doc)
-    if not template_path:
+    if not use_template_styles:
         configure_doc_styles(doc)
-    apply_compact_spacing(doc)
+        apply_compact_spacing(doc)
 
-    add_styled_text(doc, TITLE, "papertitle", WD_ALIGN_PARAGRAPH.CENTER)
-    add_author_block(doc)
-    add_institution_block(doc)
-    add_styled_text(doc, "Abstract. " + ABSTRACT, "abstract", WD_ALIGN_PARAGRAPH.JUSTIFY)
-    add_styled_text(doc, "Keywords: " + "; ".join(KEYWORDS) + ".", "keywords", WD_ALIGN_PARAGRAPH.LEFT)
+    add_styled_text(doc, TITLE, "papertitle", WD_ALIGN_PARAGRAPH.CENTER, use_template_styles)
+    add_author_block(doc, use_template_styles)
+    add_institution_block(doc, use_template_styles)
+    add_styled_text(
+        doc,
+        "Abstract. " + ABSTRACT,
+        "abstract",
+        WD_ALIGN_PARAGRAPH.JUSTIFY,
+        use_template_styles,
+    )
+    add_styled_text(
+        doc,
+        "Keywords: " + "; ".join(KEYWORDS) + ".",
+        "keywords",
+        WD_ALIGN_PARAGRAPH.LEFT,
+        use_template_styles,
+    )
 
     table_counter = 0
     figure_counter = 0
     first_body_after_heading = False
     for section in SECTIONS:
-        add_styled_text(doc, section["title"], "heading1")
+        add_styled_text(doc, section["title"], "heading1", use_template_styles=use_template_styles)
         first_body_after_heading = True
         for block in section["blocks"]:
             if isinstance(block, str):
                 is_first_body = first_body_after_heading
+                style_name = "p1a" if is_first_body else "Normal"
                 add_paragraph(
                     doc,
                     block,
-                    style="p1a" if is_first_body and style_exists(doc, "p1a") else None,
+                    style=style_name if style_exists(doc, style_name) else None,
                     first_line_indent=not is_first_body,
+                    use_template_styles=use_template_styles,
                 )
                 first_body_after_heading = False
             elif "subsection" in block:
-                add_styled_text(doc, block["subsection"], "heading2")
+                add_styled_text(
+                    doc,
+                    block["subsection"],
+                    "heading2",
+                    use_template_styles=use_template_styles,
+                )
                 first_body_after_heading = True
             elif "table" in block:
                 table_counter += 1
-                add_table(doc, block["table"], table_counter)
+                add_table(doc, block["table"], table_counter, use_template_styles=use_template_styles)
                 first_body_after_heading = True
             elif "figure" in block:
                 figure_counter += 1
-                add_figure(doc, block["figure"], figure_counter, figure_paths)
+                add_figure(
+                    doc,
+                    block["figure"],
+                    figure_counter,
+                    figure_paths,
+                    use_template_styles=use_template_styles,
+                )
                 first_body_after_heading = True
             elif "equation" in block:
-                add_equation(doc, block["equation"])
+                add_equation(doc, block["equation"], use_template_styles=use_template_styles)
                 first_body_after_heading = True
 
-    add_styled_text(doc, "Acknowledgements", "heading1")
+    add_styled_text(doc, "Acknowledgements", "heading1", use_template_styles=use_template_styles)
     add_paragraph(
         doc,
         "The authors thank Hanoi University of Public Health and the project supervisors "
@@ -2202,9 +2260,10 @@ def build_docx(path, figure_paths):
         "thesis, full report, and project materials.",
         style="p1a" if style_exists(doc, "p1a") else None,
         first_line_indent=False,
+        use_template_styles=use_template_styles,
     )
 
-    add_styled_text(doc, "References", "heading1")
+    add_styled_text(doc, "References", "heading1", use_template_styles=use_template_styles)
     for idx, ref in enumerate(REFERENCES, 1):
         paragraph = (
             doc.add_paragraph(style="referenceitem")
@@ -2215,7 +2274,8 @@ def build_docx(path, figure_paths):
         paragraph.paragraph_format.left_indent = Inches(0.22)
         paragraph.paragraph_format.space_after = Pt(2)
         run = paragraph.add_run(f"[{idx}] {ref}")
-        set_run_font(run, size=8.5)
+        if not use_template_styles:
+            set_run_font(run, size=8.5)
 
     props = doc.core_properties
     props.title = TITLE
