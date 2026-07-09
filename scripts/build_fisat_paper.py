@@ -2267,6 +2267,7 @@ def configure_running_headers(doc):
         paragraph.paragraph_format.line_spacing = 1.0
         paragraph.paragraph_format.tab_stops.add_tab_stop(Cm(0.7), WD_TAB_ALIGNMENT.LEFT)
         add_page_field(paragraph, bold=True)
+        paragraph.add_run(" ")
         paragraph.add_run("\t")
         run = paragraph.add_run(AUTHOR_RUNNING)
         set_run_font(run, size=8.0, bold=True)
@@ -2505,13 +2506,15 @@ def build_docx(path, figure_paths):
         "heading1",
         use_template_styles=use_template_styles,
     )
-    add_paragraph(
+    paragraph = add_paragraph(
         doc,
         CORRESPONDENCE_PARAGRAPH,
         style="p1a" if style_exists(doc, "p1a") else None,
         first_line_indent=False,
         use_template_styles=use_template_styles,
     )
+    paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    paragraph.paragraph_format.first_line_indent = Pt(0)
     add_styled_text(
         doc,
         ADDITIONAL_CONTACT_SECTION_TITLE,
@@ -2519,13 +2522,15 @@ def build_docx(path, figure_paths):
         use_template_styles=use_template_styles,
     )
     for idx, paragraph_text in enumerate(ADDITIONAL_CONTACT_PARAGRAPHS):
-        add_paragraph(
+        paragraph = add_paragraph(
             doc,
             paragraph_text,
             style=("p1a" if idx == 0 and style_exists(doc, "p1a") else "Normal"),
-            first_line_indent=idx != 0,
+            first_line_indent=False,
             use_template_styles=use_template_styles,
         )
+        paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
+        paragraph.paragraph_format.first_line_indent = Pt(0)
 
     props = doc.core_properties
     props.title = TITLE
