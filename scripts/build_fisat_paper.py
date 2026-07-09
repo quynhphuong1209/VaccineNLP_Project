@@ -33,6 +33,10 @@ INSTITUTIONS = [
     "Ha Noi University of Public Health, Ha Noi, Viet Nam",
     "Digital Health Center, Ha Noi University of Public Health, Ha Noi, Viet Nam",
 ]
+CONTACT_INFORMATION = [
+    ("Lam Quan Tran", "quantl3@fpt.edu.vn"),
+    ("Viet TH", "thv79@gmail.com"),
+]
 
 ABSTRACT = (
     "Vaccine misinformation has become a public-health informatics challenge "
@@ -1713,6 +1717,13 @@ def build_latex():
             r"\bibliographystyle{splncs04}",
             r"\bibliography{references}",
             "",
+            r"\section*{Contact Information}",
+            r"\noindent "
+            + r"\\ ".join(
+                rf"{latex_escape(name)}: \texttt{{{latex_escape(email)}}}"
+                for name, email in CONTACT_INFORMATION
+            ),
+            "",
         ]
     )
     lines.extend([r"\end{document}", ""])
@@ -2276,6 +2287,16 @@ def build_docx(path, figure_paths):
         run = paragraph.add_run(f"[{idx}] {ref}")
         if not use_template_styles:
             set_run_font(run, size=8.5)
+
+    add_styled_text(doc, "Contact Information", "heading1", use_template_styles=use_template_styles)
+    for idx, (name, email) in enumerate(CONTACT_INFORMATION):
+        add_paragraph(
+            doc,
+            f"{name}: {email}",
+            style=("p1a" if idx == 0 and style_exists(doc, "p1a") else "Normal"),
+            first_line_indent=idx != 0,
+            use_template_styles=use_template_styles,
+        )
 
     props = doc.core_properties
     props.title = TITLE
