@@ -140,16 +140,16 @@ After annotation and safety filtering, the modeling dataset contained 1,849 usab
 \renewcommand{\arraystretch}{1.06}
 \begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.14\textwidth}>{\centering\arraybackslash}p{0.075\textwidth}>{\centering\arraybackslash}p{0.065\textwidth}>{\centering\arraybackslash}p{0.085\textwidth}>{\centering\arraybackslash}p{0.065\textwidth}>{\centering\arraybackslash}p{0.105\textwidth}>{\centering\arraybackslash}p{0.065\textwidth}>{\centering\arraybackslash}p{0.065\textwidth}>{\centering\arraybackslash}p{0.105\textwidth}>{\centering\arraybackslash}p{0.065\textwidth}@{}}
 \hline
-Split & n & Mis. & Correct & Supp. & Neutral stance & Opp. & Pos. & Neutral sent. & Neg.\\
+Split & N & Mis. & Corr. & Sup. & Neu-S & Opp. & Pos. & Neu-E & Neg.\\
 \hline
-Train & 1,496 & 273 & 1,223 & 427 & 622 & 447 & 303 & 571 & 622\\
+Train & 1496 & 273 & 1223 & 427 & 622 & 447 & 303 & 571 & 622\\
 Validation & 167 & 31 & 136 & 48 & 66 & 53 & 27 & 65 & 75\\
 Gold Test & 186 & 28 & 158 & 54 & 84 & 48 & 40 & 75 & 71\\
-Total & 1,849 & 332 & 1,517 & 529 & 772 & 548 & 370 & 711 & 768\\
+Total & 1849 & 332 & 1517 & 529 & 772 & 548 & 370 & 711 & 768\\
 \hline
 \end{tabular}
 \vspace{2pt}
-\parbox{\textwidth}{\footnotesize\emph{Note.} Mis. = misinformation; Supp. = supportive stance; Opp. = opposing or hesitant stance; Pos./Neg. = positive/negative sentiment. Seven samples were dropped before modeling because word segmentation removed malformed or empty rows.}
+\parbox{\textwidth}{\footnotesize\emph{Note.} Mis. = misinformation; Corr. = correct/not misleading; Sup. = supportive stance; Neu-S = neutral stance; Opp. = opposing or hesitant stance; Neu-E = neutral sentiment; Pos./Neg. = positive/negative sentiment. Seven samples were dropped before modeling because word segmentation removed malformed or empty rows.}
 \end{table}
 
 \subsection{Dual-Student Hybrid Architecture}

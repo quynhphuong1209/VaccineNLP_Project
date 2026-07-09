@@ -295,21 +295,21 @@ TABLES = {
         "label": "tab:splits",
         "headers": [
             "Split",
-            "n",
+            "N",
             "Mis.",
-            "Correct",
-            "Supp.",
-            "Neutral stance",
+            "Corr.",
+            "Sup.",
+            "Neu-S",
             "Opp.",
             "Pos.",
-            "Neutral sent.",
+            "Neu-E",
             "Neg.",
         ],
         "rows": [
-            ["Train", "1,496", "273", "1,223", "427", "622", "447", "303", "571", "622"],
+            ["Train", "1496", "273", "1223", "427", "622", "447", "303", "571", "622"],
             ["Validation", "167", "31", "136", "48", "66", "53", "27", "65", "75"],
             ["Gold Test", "186", "28", "158", "54", "84", "48", "40", "75", "71"],
-            ["Total", "1,849", "332", "1,517", "529", "772", "548", "370", "711", "768"],
+            ["Total", "1849", "332", "1517", "529", "772", "548", "370", "711", "768"],
         ],
         "align": [
             "left",
@@ -339,9 +339,11 @@ TABLES = {
         "latex_font": "scriptsize",
         "tabcolsep": "1.8pt",
         "arraystretch": "1.06",
-        "widths": [950, 560, 520, 720, 620, 900, 560, 520, 900, 520],
-        "font_size": 6.8,
-        "note": "Mis. = misinformation; Supp. = supportive stance; Opp. = opposing or hesitant stance; Pos./Neg. = positive/negative sentiment. Seven samples were dropped before modeling because word segmentation removed malformed or empty rows.",
+        "widths": [1000, 690, 620, 700, 610, 640, 610, 610, 640, 610],
+        "font_size": 6.1,
+        "cell_margins": {"top": 55, "start": 30, "bottom": 55, "end": 30},
+        "nowrap_cols": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+        "note": "Mis. = misinformation; Corr. = correct/not misleading; Sup. = supportive stance; Neu-S = neutral stance; Opp. = opposing or hesitant stance; Neu-E = neutral sentiment; Pos./Neg. = positive/negative sentiment. Seven samples were dropped before modeling because word segmentation removed malformed or empty rows.",
     },
     "macro": {
         "caption": "Macro F1 on the expert-validated Gold Test Set.",
@@ -2126,6 +2128,7 @@ def add_table(doc, table_key, number, use_template_styles=False):
     font_size = table_def.get("font_size", 7.8)
     aligns = table_def["align"]
     nowrap_cols = set(table_def.get("nowrap_cols", []))
+    cell_margins = table_def.get("cell_margins", {})
     header_top = {"sz": 10}
     header_bottom = {"sz": 7}
     bottom_rule = {"sz": 10}
@@ -2134,7 +2137,8 @@ def add_table(doc, table_key, number, use_template_styles=False):
     for idx, header in enumerate(table_def["headers"]):
         cell = table.rows[0].cells[idx]
         cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
-        set_cell_margins(cell)
+        set_cell_width(cell, widths[idx])
+        set_cell_margins(cell, **cell_margins)
         set_cell_no_wrap(cell, idx in nowrap_cols)
         set_cell_borders(cell, top=header_top, bottom=header_bottom)
         set_cell_text(cell, header, bold=True, size=font_size, align=aligns[idx])
@@ -2144,7 +2148,8 @@ def add_table(doc, table_key, number, use_template_styles=False):
         for idx, value in enumerate(row_data):
             cell = row.cells[idx]
             cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
-            set_cell_margins(cell)
+            set_cell_width(cell, widths[idx])
+            set_cell_margins(cell, **cell_margins)
             set_cell_no_wrap(cell, idx in nowrap_cols)
             set_cell_borders(cell)
             set_cell_text(cell, value, size=font_size, align=aligns[idx])
